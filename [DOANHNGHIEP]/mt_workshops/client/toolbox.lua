@@ -1241,51 +1241,50 @@ RegisterNetEvent('mt_workshops:client:useRepairInvoice', function(slot, metadata
     local totalAmount = (body * bodyPrice) + (engine * enginePrice)
     if washed then totalAmount = totalAmount + 1000 end
 
-    lib.callback('mt_workshops:server:makePlayersList', false, function(onlineList)
-        local nearbyList = {}
-        if not onlineList then 
-            notify("Không tìm thấy người chơi nào trực tuyến!", "error") 
-            return 
-        end
+    local nearbyList = {}
+    local playerCoords = GetEntityCoords(cache.ped)
+    local nearbyPeds = getPlayersFromCoords(playerCoords, 3.0)
+    for k, v in pairs(nearbyPeds) do 
+        v.source = GetPlayerServerId(v)
+    end
 
-        local playerCoords = GetEntityCoords(cache.ped)
-        local nearbyPeds = getPlayersFromCoords(playerCoords, 3.0)
-        
-        for _, v in pairs(nearbyPeds) do
-            local targetServerId = GetPlayerServerId(v)
-            if targetServerId ~= cache.serverId then
-                local targetPed = GetPlayerPed(v)
-                local dist = #(GetEntityCoords(targetPed) - playerCoords)
-                for i = 1, #onlineList do
-                    if onlineList[i].value == targetServerId then
-                        nearbyList[#nearbyList+1] = { 
-                            value = targetServerId, 
-                            label = tostring(onlineList[i].text..' ('..math.floor(dist+0.05)..'m)') 
-                        }
-                    end
-                end
+    local results = lib.callback.await("mt_workshops:server:getInfoPlayers", false, nearbyPeds)
+    if not results then 
+        notify("Không tìm thấy người chơi nào trực tuyến!", "error") 
+        return 
+    end
+    for _, v in pairs(nearbyPeds) do
+        local src = v.source
+        if src ~= cache.serverId then
+            local targetPed = GetPlayerPed(v)
+            local dist = #(GetEntityCoords(targetPed) - playerCoords)
+            if results[src] then
+                nearbyList[#nearbyList+1] = { 
+                    value = src, 
+                    label = tostring(results[src].text..' ('..math.floor(dist+0.05)..'m)') 
+                }
             end
         end
+    end
 
-        if #nearbyList == 0 then
-            notify("Không tìm thấy người chơi nào trong bán kính 3m!", "error")
-            return
-        end
+    if #nearbyList == 0 then
+        notify("Không tìm thấy người chơi nào trong bán kính 3m!", "error")
+        return
+    end
 
-        local input = lib.inputDialog("HÓA ĐƠN SỬA XE", {
-            { type = "input", label = "Hóa đơn sửa phương tiện (Biển số)", default = plate, disabled = true },
-            { type = "input", label = "Thân vỏ đã sửa", default = tostring(body).."%", disabled = true },
-            { type = "input", label = "Động cơ đã sửa", default = tostring(engine).."%", disabled = true },
-            { type = "input", label = "Rửa xe", default = washed and "Có (+1000$)" or "Không", disabled = true },
-            { type = "input", label = "Tổng hóa đơn", default = tostring(totalAmount).."$", disabled = true },
-            { type = "select", required = true, label = "Người nhận", default = nearbyList[1].value, options = nearbyList },
-        })
+    local input = lib.inputDialog("HÓA ĐƠN SỬA XE", {
+        { type = "input", label = "Hóa đơn sửa phương tiện (Biển số)", default = plate, disabled = true },
+        { type = "input", label = "Thân vỏ đã sửa", default = tostring(body).."%", disabled = true },
+        { type = "input", label = "Động cơ đã sửa", default = tostring(engine).."%", disabled = true },
+        { type = "input", label = "Rửa xe", default = washed and "Có (+1000$)" or "Không", disabled = true },
+        { type = "input", label = "Tổng hóa đơn", default = tostring(totalAmount).."$", disabled = true },
+        { type = "select", required = true, label = "Người nhận", default = nearbyList[1].value, options = nearbyList },
+    })
 
-        if input and input[6] then
-            local targetServerId = input[6]
-            TriggerServerEvent('mt_workshops:server:sendRepairInvoiceToPlayer', targetServerId, plate, body, engine, totalAmount, slot)
-        end
-    end)
+    if input and input[6] then
+        local targetServerId = input[6]
+        TriggerServerEvent('mt_workshops:server:sendRepairInvoiceToPlayer', targetServerId, plate, body, engine, totalAmount, slot)
+    end
 end)
 
 RegisterNetEvent('mt_workshops:client:receiveRepairInvoice', function(billerSource, billerName, plate, body, engine, totalAmount, slot, discounts)

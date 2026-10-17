@@ -142,15 +142,7 @@ function GetOnlineEmployees(jobName)
         return cached.ids
     end
 
-    local employees = {}
-    local players   = exports.qbx_core:GetQBPlayers()
-    if players then
-        for playerId, player in pairs(players) do
-            if player.PlayerData.job.name == jobName and player.PlayerData.job.onduty then
-                employees[#employees + 1] = playerId
-            end
-        end
-    end
+    local employees = exports.vx_gps:ImplCall("Main", "GetJobPlayers", jobName)
 
     _employeeCache[jobName] = { ids = employees, ts = now }
     return employees

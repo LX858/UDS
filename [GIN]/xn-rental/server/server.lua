@@ -17,16 +17,6 @@ lib.callback.register('ars-rental:checkTaxiDrivers', function(source)
     end
     
     local numTaxiDrivers = GlobalState['taxi_count'] or 0    
-    -- Fallback to QBCore
-    local players = QBCore.Functions.GetQBPlayers()
-    print("^3[DEBUG] Fallback to QBCore, checking " .. #players .. " players^7")
-    
-    for k, v in pairs(players) do
-        if v and v.PlayerData and v.PlayerData.job and v.PlayerData.job.name == 'taxi' and v.PlayerData.job.onduty then
-            numTaxiDrivers = numTaxiDrivers + 1
-            print("^2[DEBUG] Found taxi driver: " .. (v.PlayerData.charinfo.firstname or "Unknown") .. "^7")
-        end
-    end
     
     print("^1[DEBUG] Total taxi drivers: " .. numTaxiDrivers .. "^7")
     return numTaxiDrivers > 0

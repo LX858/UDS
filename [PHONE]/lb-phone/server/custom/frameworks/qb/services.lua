@@ -59,14 +59,7 @@ end
 ---@param job string
 ---@return table # Player sources
 function GetEmployees(job)
-    local employees = {}
-    local players = QB.Functions.GetQBPlayers()
-
-    for _, v in pairs(players) do
-        if v?.PlayerData.job.name == job and v.PlayerData.job.onduty then
-            employees[#employees+1] = v.PlayerData.source
-        end
-    end
+    local employees = exports.vx_gps:ImplCall("Main", "GetJobPlayers", job)
 
     return employees
 end

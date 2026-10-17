@@ -106,10 +106,18 @@ function Impl:OnJobUpdate(playerId, job, removed)
   end
 end
 
+function Impl:GetJobPlayers(jobName)
+  if not jobName then return {} end 
+  local players = {}
+  for playerId, jobData in pairs(self.GlobalJobs) do 
+    if jobData.jobName == jobName and jobData.onDuty then
+      table.insert(players, playerId)
+    end
+  end
+  return players
+end
+
 function Impl:EventHandlers()
-  -- AddStateBagChangeHandler(nil, nil, function(bag, key, value)
-  --   print("StateBagChangeHandler", bag, key, value)
-  -- end)
   exports("RemovePlayerFromGlobalPosition", function(...)
     return self:RemovePlayerFromGlobalPosition(...)
   end)

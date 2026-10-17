@@ -130,30 +130,6 @@ lib.callback.register('xx_shoprobbery:serversidecooldown', function(source, mark
         return false
     end   
 end)
-
--- Callback để lấy số lượng cảnh sát online
-lib.callback.register("tromcho:GetPoliceCount", function(source)
-    local policeJobs = {"police"}
-    local policeCount = 0
-    if QBCore then
-        local players = QBCore.Functions.GetQBPlayers()
-        for _, player in pairs(players) do
-            if player and player.PlayerData and player.PlayerData.job then
-                for _, policeJob in pairs(policeJobs) do
-                    if player.PlayerData.job.name == policeJob and player.PlayerData.job.onduty then
-                        policeCount = policeCount + 1
-                        break
-                    end
-                end
-            end
-        end
-    end
-    return policeCount
-end)
-
-
-
-
 -- Cooldown toàn cục giữa các vụ cướp tạp hóa
 RegisterServerEvent('xx_shoprobbery:Server:BeginCooldown')
 AddEventHandler('xx_shoprobbery:Server:BeginCooldown', function(targetShopId)

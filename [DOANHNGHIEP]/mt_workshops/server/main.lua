@@ -82,26 +82,6 @@ RegisterNetEvent('mt_workshops:server:setVehicleMods', function(vehicle, newMods
     TriggerClientEvent('mt_workshops:client:setVehicleMods', -1, vehicle, newMods, player, tuningType)
 end)
 
-lib.callback.register('mt_workshops:server:checkMecs', function(source)
-    for jk, jv in pairs(Config.workshops) do
-        if Config.framework == 'qb' then
-            for k, v in pairs(Config.core.Functions.GetQBPlayers()) do
-                if v then if (v.PlayerData.job.name == jv.job and v.PlayerData.job.onduty) then return false end end
-            end
-        elseif Config.framework == 'esx' then
-            for k, v in pairs(GetPlayers()) do
-                local Player = Config.core.GetPlayerFromId(tonumber(v))
-                if Player then if (Player.getJob().name == jv.job) then return false end end
-            end
-        elseif Config.framework == 'qbx' then
-            for k, v in pairs(exports.qbx_core:GetQBPlayers()) do
-                if v then if (v.PlayerData.job.name == jv.job and v.PlayerData.job.onduty) then return false end end
-            end
-        end
-    end
-    return true
-end)
-
 RegisterNetEvent('mt_workshops:server:payRepair', function(price)
     local src = source
     if Config.framework == 'qb' then

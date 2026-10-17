@@ -30,7 +30,7 @@ local PlayerJob = {}
 
 -- Function để get số lượng cảnh sát an toàn
 local function GetPoliceCount()
-    return lib.callback.await("tromcho:GetPoliceCount", false) or 0
+    return GlobalState["police_count"] or 0
 end
 
 local function PoliceCall(callType) 

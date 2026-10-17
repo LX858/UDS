@@ -471,15 +471,7 @@ end)
 
 -- Helper lấy danh sách player ID theo Job
 local function getDutyPlayers(jobName)
-    local players = {}
-    local xPlayers = exports.qbx_core:GetQBPlayers()
-    if xPlayers then
-        for _, player in pairs(xPlayers) do
-            if player.PlayerData and player.PlayerData.job and player.PlayerData.job.name == jobName then
-                players[#players + 1] = player.PlayerData.source
-            end
-        end
-    end
+    local players = exports.vx_gps:ImplCall("Main", "GetJobPlayers", jobName) or {}
     return players
 end
 

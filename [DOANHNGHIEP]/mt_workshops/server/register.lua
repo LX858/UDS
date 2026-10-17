@@ -1,26 +1,16 @@
 lib.locale()
 
-lib.callback.register('mt_workshops:server:makePlayersList', function(source)
-	local onlineList = {}
-    if Config.framework == 'qb' then
-        for _, v in pairs(Config.core.Functions.GetQBPlayers()) do
-            if not v then return end
-            onlineList[#onlineList+1] = { value = v.PlayerData.source, text = "["..v.PlayerData.source.."] - "..v.PlayerData.charinfo.firstname..' '..v.PlayerData.charinfo.lastname }
-        end
-    elseif Config.framework == 'qbx' then
-        for _, v in pairs(exports.qbx_core:GetQBPlayers()) do
-            if not v then return end
-            onlineList[#onlineList+1] = { value = v.PlayerData.source, text = "["..v.PlayerData.source.."] - "..v.PlayerData.charinfo.firstname..' '..v.PlayerData.charinfo.lastname }
-        end
-    elseif Config.framework == 'esx' then
-        for _, v in pairs(GetPlayers()) do
-            local id = tonumber(v)
-            local Player = Config.core.GetPlayerFromId(id)
-            if not Player then return end
-            onlineList[#onlineList+1] = { value = id, text = "["..id.."] - "..Player.getName() }
+lib.callback.register("mt_workshops:server:getInfoPlayers", function(playerId, players)
+    local playerInfo = {}
+    for _, v in pairs(players) do
+        local src = v.source
+        local id = tonumber(src)
+        local Player = exports.qbx_core:GetPlayer(id)
+        if Player then
+            playerInfo[src] = { value = Player.PlayerData.source, text = "["..Player.PlayerData.source.."] - "..Player.PlayerData.charinfo.firstname..' '..Player.PlayerData.charinfo.lastname }
         end
     end
-	return onlineList
+    return playerInfo
 end)
 
 lib.callback.register('mt_workshops:server:chargePlayer', function(source, player, price, type, job, id)

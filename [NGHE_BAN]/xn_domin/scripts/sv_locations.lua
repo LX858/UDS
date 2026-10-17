@@ -55,17 +55,7 @@ end
 
 -- Function to count police on duty
 function CountPoliceOnDuty()
-    local count = 0
-    local players = exports.qbx_core:GetQBPlayers()
-    
-    for _, player in pairs(players) do
-        if player and player.PlayerData and player.PlayerData.job then
-            if player.PlayerData.job.name == 'police' and player.PlayerData.job.onduty then
-                count = count + 1
-            end
-        end
-    end
-    
+    local count = GlobalState["police_count"] or 0
     return count
 end
 
