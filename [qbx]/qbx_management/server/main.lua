@@ -439,34 +439,10 @@ local function SetPlayerDinhDanh(targetPlayer, newLevel)
     targetPlayer.PlayerData.charinfo.dinhdanh = newLevel
     targetPlayer.PlayerData.charinfo.ngay_cap = currentDate
 
-    -- 2. Cập nhật StateBag của Player (cho QBX Core & các script như qbx_idcard)
-    if source and source > 0 then
-        pcall(function()
-            Player(source).state:set('PlayerData', targetPlayer.PlayerData, true)
-        end)
-    end
+    -- 2. Đồng bộ charinfo một lần qua qbx_core.
+    exports.qbx_core:SetPlayerData(source, 'charinfo', targetPlayer.PlayerData.charinfo)
 
-    -- 3. Gọi các export của qbx_core để cập nhật dữ liệu nhân vật
-    pcall(function()
-        exports.qbx_core:SetCharInfo(source, 'dinhdanh', newLevel)
-        exports.qbx_core:SetCharInfo(source, 'ngay_cap', currentDate)
-    end)
-    pcall(function()
-        exports.qbx_core:SetPlayerData(source, 'charinfo', targetPlayer.PlayerData.charinfo)
-    end)
-
-    -- 4. Gọi hàm bridge SetCharInfo / UpdatePlayerData của QBCore nếu có
-    if targetPlayer.Functions then
-        if targetPlayer.Functions.SetCharInfo then
-            targetPlayer.Functions.SetCharInfo('dinhdanh', newLevel)
-            targetPlayer.Functions.SetCharInfo('ngay_cap', currentDate)
-        end
-        if targetPlayer.Functions.UpdatePlayerData then
-            targetPlayer.Functions.UpdatePlayerData()
-        end
-    end
-
-    -- 5. Xóa id_card cũ trong túi đồ và cấp vật phẩm id_card mới chứa metadata Cấp định danh mới & Ngày cấp
+    -- 3. Xóa id_card cũ trong túi đồ và cấp vật phẩm id_card mới chứa metadata Cấp định danh mới & Ngày cấp
     if source and source > 0 then
         pcall(function()
             local charinfo = targetPlayer.PlayerData.charinfo
@@ -510,20 +486,13 @@ local function SetPlayerDinhDanh(targetPlayer, newLevel)
     end
 
 
-    -- 6. Đồng bộ trực tiếp PlayerData xuống Client người chơi qua các event client
-    if source and source > 0 then
-        TriggerClientEvent('QBCore:Player:SetPlayerData', source, targetPlayer.PlayerData)
-        TriggerClientEvent('qbx_core:client:playerLoaded', source, targetPlayer.PlayerData)
-        TriggerClientEvent('qbx_core:client:setPlayerData', source, targetPlayer.PlayerData)
-    end
-
-    -- 7. Lưu trực tiếp vào cột charinfo (dạng JSON) của bảng `players` trong Database
+    -- 4. Lưu trực tiếp vào cột charinfo (dạng JSON) của bảng `players` trong Database
     local charinfo = targetPlayer.PlayerData.charinfo
     charinfo.dinhdanh = newLevel
     charinfo.ngay_cap = currentDate
     MySQL.update('UPDATE `players` SET `charinfo` = ? WHERE `citizenid` = ?', { json.encode(charinfo), citizenid })
 
-    -- 8. Gọi lệnh lưu player của qbx_core nếu có
+    -- 5. Gọi lệnh lưu player của qbx_core nếu có
     pcall(function()
         exports.qbx_core:SavePlayer(source)
     end)
@@ -598,33 +567,10 @@ local function RevokePlayerIdentityCard(targetPlayer)
     targetPlayer.PlayerData.charinfo.dinhdanh = 1
     targetPlayer.PlayerData.charinfo.ngay_cap = nil
 
-    -- 2. Cập nhật StateBag của Player
-    if targetSource and targetSource > 0 then
-        pcall(function()
-            Player(targetSource).state:set('PlayerData', targetPlayer.PlayerData, true)
-        end)
-    end
+    -- 2. Đồng bộ charinfo một lần qua qbx_core.
+    exports.qbx_core:SetPlayerData(targetSource, 'charinfo', targetPlayer.PlayerData.charinfo)
 
-    -- 3. Gọi core sync
-    pcall(function()
-        exports.qbx_core:SetCharInfo(targetSource, 'dinhdanh', 1)
-        exports.qbx_core:SetCharInfo(targetSource, 'ngay_cap', nil)
-    end)
-    pcall(function()
-        exports.qbx_core:SetPlayerData(targetSource, 'charinfo', targetPlayer.PlayerData.charinfo)
-    end)
-
-    if targetPlayer.Functions then
-        if targetPlayer.Functions.SetCharInfo then
-            targetPlayer.Functions.SetCharInfo('dinhdanh', 1)
-            targetPlayer.Functions.SetCharInfo('ngay_cap', nil)
-        end
-        if targetPlayer.Functions.UpdatePlayerData then
-            targetPlayer.Functions.UpdatePlayerData()
-        end
-    end
-
-    -- 4. Thu hồi và xóa toàn bộ vật phẩm id_card / idcard khỏi túi đồ người chơi
+    -- 3. Thu hồi và xóa toàn bộ vật phẩm id_card / idcard khỏi túi đồ người chơi
     if GetResourceState('ox_inventory') == 'started' then
         local count1 = exports.ox_inventory:GetItemCount(targetSource, 'id_card') or 0
         if count1 > 0 then
@@ -642,14 +588,7 @@ local function RevokePlayerIdentityCard(targetPlayer)
         end)
     end
 
-    -- 5. Đồng bộ PlayerData xuống Client người chơi
-    if targetSource and targetSource > 0 then
-        TriggerClientEvent('QBCore:Player:SetPlayerData', targetSource, targetPlayer.PlayerData)
-        TriggerClientEvent('qbx_core:client:playerLoaded', targetSource, targetPlayer.PlayerData)
-        TriggerClientEvent('qbx_core:client:setPlayerData', targetSource, targetPlayer.PlayerData)
-    end
-
-    -- 6. Lưu Cấp định danh vào MySQL Database
+    -- 4. Lưu Cấp định danh vào MySQL Database
     local charinfo = targetPlayer.PlayerData.charinfo
     charinfo.dinhdanh = 1
     charinfo.ngay_cap = nil

@@ -83,6 +83,32 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
     PlayerCache.loaded = true
 end)
 
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    if type(key) ~= 'string' then return end
+    PlayerCache.data[key] = value
+    if key == 'job' then PlayerCache.job = value or {} end
+    if key == 'gang' then PlayerCache.gang = value or {} end
+    if key == 'citizenid' then PlayerCache.citizenid = value end
+    if key == 'metadata' then PlayerCache.metadata = value or {} end
+end)
+
+RegisterNetEvent('qbx_core:client:metadataUpdated', function(key, value)
+    if type(key) ~= 'string' then return end
+    PlayerCache.metadata[key] = value
+    PlayerCache.data.metadata = PlayerCache.metadata
+end)
+
+RegisterNetEvent('qbx_core:client:moneyUpdated', function(moneyType, balance)
+    if type(moneyType) ~= 'string' then return end
+    PlayerCache.data.money = PlayerCache.data.money or {}
+    PlayerCache.data.money[moneyType] = balance
+end)
+
+AddEventHandler('ox_inventory:updateInventory', function()
+    if not PlayerCache.loaded or GetResourceState('ox_inventory') ~= 'started' then return end
+    PlayerCache.data.items = exports.ox_inventory:GetPlayerItems()
+end)
+
 -- Khởi tạo cache khi resource start trong lúc player đã login
 CreateThread(function()
     while not LocalPlayer.state.isLoggedIn do

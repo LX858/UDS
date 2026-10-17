@@ -43,18 +43,21 @@ end)
 
 
 
-RegisterNetEvent('QBCore:Player:SetPlayerData')
-AddEventHandler('QBCore:Player:SetPlayerData', function(PlayerData)
-    -- metadata.stress may be missing on unrelated PlayerData syncs (job/money/etc);
-    -- only resync when the server actually sent a stress value, otherwise it
-    -- would fall back to 0 and make the bar look like it randomly dropped.
-    if not PlayerData.metadata or PlayerData.metadata.stress == nil then return end
-    local metaStress = PlayerData.metadata.stress
+local function syncStress(metaStress)
+    if metaStress == nil then return end
     stress = stress or 0
     if math.abs(stress - metaStress) > 0.1 then
         stress = math.max(0, math.min(100, metaStress))
         SendNUIMessage({ action = "setStress", stress = stress })
     end
+end
+
+RegisterNetEvent('QBCore:Player:SetPlayerData', function(playerData)
+    syncStress(playerData.metadata and playerData.metadata.stress)
+end)
+
+RegisterNetEvent('qbx_core:client:metadataUpdated', function(key, value)
+    if key == 'stress' then syncStress(value) end
 end)
 
 

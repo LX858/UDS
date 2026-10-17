@@ -147,7 +147,7 @@ AddEventHandler('esx_status:onTick', function(data)
 end)
 
 -- ─── QBCore / QBX SetPlayerData Listener ─────────────────────────
-RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
+local function applyPlayerData(val)
     if not val then return end
     if val.citizenid then PlayerCache.citizenid = val.citizenid end
     if val.job then
@@ -159,8 +159,8 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
     end
     if val.gang then PlayerCache.gang = val.gang end
     if val.money then
-        PlayerCache.money.cash = val.money.cash or PlayerCache.money.cash
-        PlayerCache.money.bank = val.money.bank or PlayerCache.money.bank
+        if val.money.cash ~= nil then PlayerCache.money.cash = val.money.cash end
+        if val.money.bank ~= nil then PlayerCache.money.bank = val.money.bank end
         SendNUIMessage({
             action = "updateMoney",
             cash = PlayerCache.money.cash,
@@ -177,6 +177,24 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
             stress = math.max(0, math.min(100, tonumber(val.metadata.stress) or 0))
             SendNUIMessage({ action = "setStress", stress = stress })
         end
+    end
+end
+
+RegisterNetEvent('QBCore:Player:SetPlayerData', applyPlayerData)
+
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    if key == 'citizenid' or key == 'job' or key == 'gang' or key == 'money' or key == 'metadata' then
+        applyPlayerData({ [key] = value })
+    end
+end)
+
+RegisterNetEvent('qbx_core:client:metadataUpdated', function(key, value)
+    if value ~= nil then applyPlayerData({ metadata = { [key] = value } }) end
+end)
+
+RegisterNetEvent('qbx_core:client:moneyUpdated', function(moneyType, balance)
+    if moneyType == 'cash' or moneyType == 'bank' then
+        applyPlayerData({ money = { [moneyType] = balance } })
     end
 end)
 

@@ -1,8 +1,19 @@
+function HasMecOnline()
+    for k, v in pairs(Config.workshops) do 
+        local jobName = v.job
+        local online = GlobalState[("%s_count"):format(jobName)] or 0
+        if online > 0 then
+            return false
+        end
+    end
+    return true
+end
+
 openStation = function(id)
     local station = Config.stations[id]
     if not IsPedInAnyVehicle(cache.ped, false) then notify(locale('notify_error_no_vehicle_in'), 'error') return end
     local vehicle = GetVehiclePedIsIn(cache.ped, false)
-    local mecsOn = lib.callback.await('mt_workshops:server:checkMecs', false)
+    local mecsOn = HasMecOnline()
     if (not station.checkMecs) or (station.checkMecs and mecsOn) then
         local averageHealth = math.ceil(((GetVehicleEngineHealth(vehicle) + GetVehicleBodyHealth(vehicle)) / 2) / 10)
         local price = math.ceil(station.price * (1 - (averageHealth / 100)))

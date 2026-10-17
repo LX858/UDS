@@ -195,7 +195,8 @@ if Framework.Initial == "esx" then
         onPlayerDropped(source)
     end)
 elseif Framework.Initial == "qb" then
-    AddEventHandler("QBCore:Player:SetPlayerData", function(playerData)
+    local function refreshPlayerRadioState(playerData)
+        if not playerData then return end
         local source = playerData.source
         if not source then return end
         local isAllowedToChangeName = isPlayerAllowedToChangeName(source, false)
@@ -211,6 +212,25 @@ elseif Framework.Initial == "qb" then
             local allowedToSeeRadioList = (Config.GroupsWithAccessToTheRadioList[playerData.job?.name] and playerData.job?.onduty) or Config.GroupsWithAccessToTheRadioList[playerData.gang?.name]
             modifyPermissionToSeeRadioList(source, allowedToSeeRadioList)
         end
+    end
+
+    local function refreshFromSource(source)
+        local player = Framework.GetPlayer(source)
+        if player then refreshPlayerRadioState(player.PlayerData) end
+    end
+
+    AddEventHandler("QBCore:Player:SetPlayerData", refreshPlayerRadioState)
+    AddEventHandler("QBCore:Server:PlayerLoaded", function(player)
+        refreshPlayerRadioState(player.PlayerData)
+    end)
+    AddEventHandler("QBCore:Server:OnJobUpdate", refreshFromSource)
+    AddEventHandler("QBCore:Server:OnGangUpdate", refreshFromSource)
+    AddEventHandler("QBCore:Server:SetDuty", refreshFromSource)
+    AddEventHandler("qbx_core:server:onSetMetaData", function(key, _, _, source)
+        if key == 'callsign' then refreshFromSource(source) end
+    end)
+    AddEventHandler("qbx_core:server:playerDataUpdated", function(source, key)
+        if key == 'job' or key == 'gang' or key == 'metadata' then refreshFromSource(source) end
     end)
 
     AddEventHandler("QBCore:Server:OnPlayerUnload", function(source)

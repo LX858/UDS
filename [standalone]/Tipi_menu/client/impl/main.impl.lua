@@ -114,6 +114,12 @@ function Impl:EventHandler()
     self.coin = GetCoinAmounts(playerData.accounts)
     SendReactMessage("setPlayerCoin", self.coin)
   end)
+
+  RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    if key ~= 'accounts' or UsesDbCoinColumn() then return end
+    self.coin = GetCoinAmounts(value)
+    SendReactMessage("setPlayerCoin", self.coin)
+  end)
 end
 
 function Impl:NuiHandler()

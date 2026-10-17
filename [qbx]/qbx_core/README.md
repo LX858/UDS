@@ -59,6 +59,25 @@ local player = exports.qbx_core:GetPlayerByUserId(userId)
 local source = exports.qbx_core:GetSource('discord:123456789')
 ```
 
+# PlayerData synchronization in this server
+
+`QBCore:Player:SetPlayerData` sends a full snapshot when a character loads or a
+server resource explicitly calls `UpdatePlayerData(source)`. Routine writes send
+only the changed data:
+
+- `qbx_core:client:metadataUpdated(key, value)` sends one top-level metadata
+  entry. A write to `a.b` sends the current `metadata.a` table.
+- `qbx_core:client:moneyUpdated(moneyType, balance)` sends the absolute balance
+  after `AddMoney`, `RemoveMoney`, or `SetMoney` succeeds.
+- `qbx_core:client:playerDataUpdated(key, value)` sends another top-level field,
+  such as `charinfo`, `job`, or `gang`.
+
+`QBCore:Client:OnMoneyChange`, `QBCore:Client:OnJobUpdate`,
+`QBCore:Client:OnGangUpdate`, and `QBCore:Client:SetDuty` retain their existing
+notification contracts. With `ox_inventory`, item changes reach the client through
+its inventory events; use `exports.ox_inventory:GetPlayerItems()` for the live
+inventory. Server-side `PlayerData.items` remains available.
+
 # Dependencies
 
 - [oxmysql](https://github.com/overextended/oxmysql)

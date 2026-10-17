@@ -24,11 +24,44 @@ end)
 RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
     local invokingResource = GetInvokingResource()
     if invokingResource and invokingResource ~= cache.resource then return end
-    QBX.PlayerData = val
+    if type(val) ~= 'table' then return end
+    if val == QBX.PlayerData then return end
+    table.wipe(QBX.PlayerData)
+    for key, value in pairs(val) do QBX.PlayerData[key] = value end
+end)
+
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    local invokingResource = GetInvokingResource()
+    if invokingResource and invokingResource ~= cache.resource then return end
+    if type(key) ~= 'string' then return end
+    QBX.PlayerData[key] = value
+end)
+
+RegisterNetEvent('qbx_core:client:metadataUpdated', function(key, value)
+    local invokingResource = GetInvokingResource()
+    if invokingResource and invokingResource ~= cache.resource then return end
+    if type(key) ~= 'string' then return end
+    QBX.PlayerData.metadata = QBX.PlayerData.metadata or {}
+    QBX.PlayerData.metadata[key] = value
+end)
+
+RegisterNetEvent('qbx_core:client:moneyUpdated', function(moneyType, balance)
+    local invokingResource = GetInvokingResource()
+    if invokingResource and invokingResource ~= cache.resource then return end
+    if type(moneyType) ~= 'string' or type(balance) ~= 'number' then return end
+    QBX.PlayerData.money = QBX.PlayerData.money or {}
+    QBX.PlayerData.money[moneyType] = balance
+end)
+
+-- ox_inventory already sends slot changes; reuse its local cache without a second network payload.
+AddEventHandler('ox_inventory:updateInventory', function()
+    if not QBX.PlayerData.citizenid or GetResourceState('ox_inventory') ~= 'started' then return end
+    QBX.PlayerData.items = exports.ox_inventory:GetPlayerItems()
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     QBX.IsLoggedIn = false
+    table.wipe(QBX.PlayerData)
 end)
 
 ---@param value boolean

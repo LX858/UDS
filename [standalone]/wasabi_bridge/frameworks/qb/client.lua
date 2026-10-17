@@ -53,6 +53,21 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(newPlayerData)
     SwitchHandler('QBCore:Player:SetPlayerData', newPlayerData)
 end)
 
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    if type(key) ~= 'string' then return end
+    WSB.playerData[key] = value
+end)
+
+RegisterNetEvent('qbx_core:client:metadataUpdated', function(key, value)
+    WSB.playerData.metadata = WSB.playerData.metadata or {}
+    WSB.playerData.metadata[key] = value
+end)
+
+RegisterNetEvent('qbx_core:client:moneyUpdated', function(moneyType, balance)
+    WSB.playerData.money = WSB.playerData.money or {}
+    WSB.playerData.money[moneyType] = balance
+end)
+
 ---@diagnostic disable: duplicate-set-field
 function WSB.serverCallback(name, cb, ...)
     Callback(name, false, cb, ...)

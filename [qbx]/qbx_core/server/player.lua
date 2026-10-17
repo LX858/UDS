@@ -14,6 +14,22 @@ for i = 1, #accounts do
     accountsAsItems[accounts[i]] = 0
 end
 
+-- Keep the server's PlayerData authoritative while only sending the changed field.
+-- ox_inventory already replicates item slots to the client.
+local function syncPlayerField(player, key, value)
+    if player.Offline then return end
+
+    local source = player.PlayerData.source
+    if key == 'items' and GetResourceState('ox_inventory') == 'started' then return end
+    TriggerEvent('qbx_core:server:playerDataUpdated', source, key, value)
+    TriggerClientEvent('qbx_core:client:playerDataUpdated', source, key, value)
+end
+
+local function syncMetadata(player, key)
+    if player.Offline then return end
+    TriggerClientEvent('qbx_core:client:metadataUpdated', player.PlayerData.source, key, player.PlayerData.metadata[key])
+end
+
 ---@param source Source
 ---@param citizenid? string
 ---@param newData? PlayerEntity
@@ -154,10 +170,9 @@ function SetJobDuty(identifier, onDuty)
 
     if player.Offline then return end
 
+    syncPlayerField(player, 'job', player.PlayerData.job)
     TriggerEvent('QBCore:Server:SetDuty', player.PlayerData.source, player.PlayerData.job.onduty)
     TriggerClientEvent('QBCore:Client:SetDuty', player.PlayerData.source, player.PlayerData.job.onduty)
-
-    UpdatePlayerData(identifier)
 end
 
 exports('SetJobDuty', SetJobDuty)
@@ -219,7 +234,7 @@ function SetPlayerPrimaryJob(citizenid, jobName)
         SaveOffline(player.PlayerData)
     else
         Save(player.PlayerData.source)
-        UpdatePlayerData(player.PlayerData.source)
+        syncPlayerField(player, 'job', player.PlayerData.job)
         TriggerEvent('QBCore:Server:OnJobUpdate', player.PlayerData.source, player.PlayerData.job)
         TriggerClientEvent('QBCore:Client:OnJobUpdate', player.PlayerData.source, player.PlayerData.job)
     end
@@ -443,7 +458,7 @@ function SetPlayerPrimaryGang(citizenid, gangName)
         SaveOffline(player.PlayerData)
     else
         Save(player.PlayerData.source)
-        UpdatePlayerData(player.PlayerData.source)
+        syncPlayerField(player, 'gang', player.PlayerData.gang)
         TriggerEvent('QBCore:Server:OnGangUpdate', player.PlayerData.source, player.PlayerData.gang)
         TriggerClientEvent('QBCore:Client:OnGangUpdate', player.PlayerData.source, player.PlayerData.gang)
     end
@@ -826,7 +841,7 @@ function CreatePlayer(playerData, Offline)
         self.PlayerData.metadata[self.PlayerData.job.name].reputation += amount
 
         ---@diagnostic disable-next-line: param-type-mismatch
-        UpdatePlayerData(self.Offline and self.PlayerData.citizenid or self.PlayerData.source)
+        syncMetadata(self, self.PlayerData.job.name)
     end
 
     ---@param moneytype MoneyType
@@ -936,7 +951,7 @@ function CreatePlayer(playerData, Offline)
         self.PlayerData.charinfo.card = cardNumber
 
         ---@diagnostic disable-next-line: param-type-mismatch
-        UpdatePlayerData(self.Offline and self.PlayerData.citizenid or self.PlayerData.source)
+        syncPlayerField(self, 'charinfo', self.PlayerData.charinfo)
     end
 
     ---@deprecated use Save or SaveOffline instead
@@ -992,7 +1007,7 @@ function CreatePlayer(playerData, Offline)
         end
 
         if not self.Offline then
-            UpdatePlayerData(self.PlayerData.source)
+            syncPlayerField(self, 'job', self.PlayerData.job)
             TriggerEvent('QBCore:Server:OnJobUpdate', self.PlayerData.source, self.PlayerData.job)
             TriggerClientEvent('QBCore:Client:OnJobUpdate', self.PlayerData.source, self.PlayerData.job)
         end
@@ -1032,7 +1047,7 @@ function CreatePlayer(playerData, Offline)
         end
 
         if not self.Offline then
-            UpdatePlayerData(self.PlayerData.source)
+            syncPlayerField(self, 'gang', self.PlayerData.gang)
             TriggerEvent('QBCore:Server:OnGangUpdate', self.PlayerData.source, self.PlayerData.gang)
             TriggerClientEvent('QBCore:Client:OnGangUpdate', self.PlayerData.source, self.PlayerData.gang)
         end
@@ -1125,7 +1140,7 @@ function SetPlayerData(identifier, key, value)
 
     player.PlayerData[key] = value
 
-    UpdatePlayerData(identifier)
+    syncPlayerField(player, key, value)
 end
 
 exports('SetPlayerData', SetPlayerData)
@@ -1172,9 +1187,8 @@ function SetMetadata(identifier, metadata, value)
         player.PlayerData.metadata[metadata] = value
     end
 
-    UpdatePlayerData(identifier)
-
     if not player.Offline then
+        syncMetadata(player, metadata)
         local playerState = Player(player.PlayerData.source).state
 
         TriggerClientEvent('qbx_core:client:onSetMetaData', player.PlayerData.source, metadata, oldValue, value)
@@ -1254,7 +1268,7 @@ function SetCharInfo(identifier, charInfo, value)
         end
     end
 
-    UpdatePlayerData(identifier)
+    syncPlayerField(player, 'charinfo', player.PlayerData.charinfo)
 end
 
 exports('SetCharInfo', SetCharInfo)
@@ -1309,7 +1323,7 @@ function AddMoney(identifier, moneyType, amount, reason)
     player.PlayerData.money[moneyType] += amount
 
     if not player.Offline then
-        UpdatePlayerData(identifier)
+        TriggerClientEvent('qbx_core:client:moneyUpdated', player.PlayerData.source, moneyType, player.PlayerData.money[moneyType])
 
         local tags = amount > 100000 and config.logging.role or nil
         local resource = GetInvokingResource() or cache.resource
@@ -1364,7 +1378,7 @@ function RemoveMoney(identifier, moneyType, amount, reason)
     player.PlayerData.money[moneyType] -= amount
 
     if not player.Offline then
-        UpdatePlayerData(identifier)
+        TriggerClientEvent('qbx_core:client:moneyUpdated', player.PlayerData.source, moneyType, player.PlayerData.money[moneyType])
 
         local tags = amount > 100000 and config.logging.role or nil
         local resource = GetInvokingResource() or cache.resource
@@ -1412,7 +1426,7 @@ function SetMoney(identifier, moneyType, amount, reason)
     player.PlayerData.money[moneyType] = amount
 
     if not player.Offline then
-        UpdatePlayerData(identifier)
+        TriggerClientEvent('qbx_core:client:moneyUpdated', player.PlayerData.source, moneyType, player.PlayerData.money[moneyType])
 
         local difference = amount - oldAmount
         local dirChange = difference < 0 and 'removed' or 'added'

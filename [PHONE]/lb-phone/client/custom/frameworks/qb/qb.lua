@@ -46,12 +46,31 @@ RegisterNetEvent("QBCore:Player:SetPlayerData", function(newData)
     end
 end)
 
-RegisterNetEvent("QBCore:Client:OnMoneyChange", function(moneyType)
-    if moneyType ~= "bank" then
-        return
+RegisterNetEvent("qbx_core:client:playerDataUpdated", function(key, value)
+    if type(key) ~= "string" then return end
+    PlayerData[key] = value
+    if key == "items" and Config.Item.Require and not Config.Item.Unique then
+        Wait(500)
+        if currentPhone and not HasPhoneItem() then OnDeath() end
     end
+end)
 
-    SendReactMessage("wallet:setBalance", math.floor(PlayerData.money.bank))
+RegisterNetEvent("qbx_core:client:metadataUpdated", function(key, value)
+    PlayerData.metadata = PlayerData.metadata or {}
+    PlayerData.metadata[key] = value
+end)
+
+RegisterNetEvent("qbx_core:client:moneyUpdated", function(moneyType, balance)
+    PlayerData.money = PlayerData.money or {}
+    PlayerData.money[moneyType] = balance
+    if moneyType == "bank" then SendReactMessage("wallet:setBalance", math.floor(balance)) end
+end)
+
+AddEventHandler("ox_inventory:updateInventory", function()
+    if not Config.Item.Require or Config.Item.Unique then return end
+    PlayerData.items = exports.ox_inventory:GetPlayerItems()
+    Wait(500)
+    if currentPhone and not HasPhoneItem() then OnDeath() end
 end)
 
 function CanOpenPhone()

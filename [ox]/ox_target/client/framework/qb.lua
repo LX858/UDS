@@ -37,6 +37,12 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
     if not usingOxInventory then setPlayerItems() end
 end)
 
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    if source == '' or type(key) ~= 'string' then return end
+    playerData[key] = value
+    if key == 'items' and not usingOxInventory then setPlayerItems() end
+end)
+
 ---@diagnostic disable-next-line: duplicate-set-field
 function utils.hasPlayerGotGroup(filter)
     local _type = type(filter)

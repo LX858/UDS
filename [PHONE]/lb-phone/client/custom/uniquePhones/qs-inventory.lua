@@ -86,6 +86,12 @@ RegisterNetEvent("QBCore:Player:SetPlayerData", function(newData)
     UpdatePhoneAfterInventoryUpdate()
 end)
 
+RegisterNetEvent("qbx_core:client:playerDataUpdated", function(key)
+    if key == "items" then UpdatePhoneAfterInventoryUpdate() end
+end)
+
+AddEventHandler("ox_inventory:updateInventory", UpdatePhoneAfterInventoryUpdate)
+
 RegisterNetEvent("esx:removeInventoryItem", function(item)
     if item == Config.Item.Name then
         UpdatePhoneAfterInventoryUpdate()

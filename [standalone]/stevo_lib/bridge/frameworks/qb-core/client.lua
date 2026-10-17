@@ -95,6 +95,23 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
     PlayerData = val
 end)
 
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    PlayerData = PlayerData or {}
+    PlayerData[key] = value
+end)
+
+RegisterNetEvent('qbx_core:client:metadataUpdated', function(key, value)
+    PlayerData = PlayerData or {}
+    PlayerData.metadata = PlayerData.metadata or {}
+    PlayerData.metadata[key] = value
+end)
+
+RegisterNetEvent('qbx_core:client:moneyUpdated', function(moneyType, balance)
+    PlayerData = PlayerData or {}
+    PlayerData.money = PlayerData.money or {}
+    PlayerData.money[moneyType] = balance
+end)
+
 AddEventHandler('gameEventTriggered', function(event, data)
     if event ~= 'CEventNetworkEntityDamage' then return end
     local victim, victimDied = data[1], data[4]

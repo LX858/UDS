@@ -742,6 +742,19 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
 	end
 end)
 
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key)
+	if key == 'items' then
+		Wait(50)
+		if not override or QBX.PlayerData.metadata.inside.apartment.apartmentId then DoItemCheck() end
+	end
+end)
+
+AddEventHandler('ox_inventory:updateInventory', function()
+	if not FullyLoaded then return end
+	Wait(50)
+	if not override or QBX.PlayerData.metadata.inside.apartment.apartmentId then DoItemCheck() end
+end)
+
 -- Handles state if resource is restarted live.
 AddEventHandler('onResourceStart', function(resource)
 	if GetCurrentResourceName() == resource then

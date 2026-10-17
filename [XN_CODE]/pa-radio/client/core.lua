@@ -166,6 +166,24 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
     DoRadioCheck()
 end)
 
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    if type(key) ~= 'string' then return end
+    PlayerData = PlayerData or {}
+    PlayerData[key] = value
+    if key == 'items' then DoRadioCheck() end
+end)
+
+RegisterNetEvent('qbx_core:client:metadataUpdated', function(key, value)
+    PlayerData = PlayerData or {}
+    PlayerData.metadata = PlayerData.metadata or {}
+    PlayerData.metadata[key] = value
+    if key == 'isdead' or key == 'inlaststand' then DoRadioCheck() end
+end)
+
+AddEventHandler('ox_inventory:updateInventory', function()
+    if CoreReady and (CoreName == 'qb-core' or CoreName == 'qbx_core') then DoRadioCheck() end
+end)
+
 RegisterNetEvent('esx:playerLoaded', function(xPlayer)
     PlayerData = xPlayer
     DoRadioCheck()

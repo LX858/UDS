@@ -25,6 +25,15 @@ RegisterNetEvent('QBCore:Player:SetPlayerData', function(val)
     PlayerData = val
 end)
 
+RegisterNetEvent('qbx_core:client:playerDataUpdated', function(key, value)
+    if type(key) == 'string' then PlayerData[key] = value end
+end)
+
+RegisterNetEvent('qbx_core:client:metadataUpdated', function(key, value)
+    PlayerData.metadata = PlayerData.metadata or {}
+    PlayerData.metadata[key] = value
+end)
+
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     PlayerLoaded = false
