@@ -1,0 +1,12 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test DiemUyTin Reputation Warning",
+			"type": "shell",
+			"command": "echo 'DiemUyTin Reputation Warning System has been implemented!'",
+			"group": "test",
+			"isBackground": false
+		}
+	]
+}

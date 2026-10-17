@@ -1,0 +1,264 @@
+{
+  "exit": "Bạn đã thoát khỏi trò chơi.",
+  "nui": {
+    "menu": {
+      "playgame": {
+        "label": "Vào game",
+        "description": "Bắt đầu hành trình của bạn"
+      },
+      "settings": {
+        "label": "Cài đặt",
+        "description": "Điều chỉnh tùy chọn của bạn"
+      },
+      "credits": {
+        "label": "Thông tin",
+        "description": "Xem đội ngũ phát triển"
+      },
+      "store": {
+        "label": "Cửa hàng",
+        "description": "Chợ vật phẩm"
+      },
+      "quit": {
+        "label": "Thoát game",
+        "description": "Tạm biệt!"
+      }
+    },
+    "register": {
+      "title": "Đăng ký nhân vật",
+      "description": "Vui lòng nhập thông tin để đăng ký nhân vật.",
+      "firstname": {
+        "label": "Tên",
+        "placeholder": "Nguyễn"
+      },
+      "lastname": {
+        "label": "Họ",
+        "placeholder": "Văn A"
+      },
+      "dob": "Ngày sinh",
+      "gender": {
+        "label": "Giới tính",
+        "placeholder": "Chọn giới tính",
+        "sex": {
+          "male": "Nam",
+          "female": "Nữ"
+        }
+      },
+      "height": "Chiều cao",
+      "backstory": {
+        "label": "Tiểu sử nhân vật",
+        "placeholder": "Viết tiểu sử nhân vật của bạn..."
+      },
+      "nationality": {
+        "label": "Quốc tịch",
+        "placeholder": "Chọn quốc tịch"
+      },
+      "submit": "Tạo nhân vật"
+    },
+    "delete": {
+      "title": "Xóa nhân vật",
+      "description": "Bạn có chắc chắn muốn xóa nhân vật này không? Hành động này không thể hoàn tác.",
+      "confirm": "Xóa nhân vật",
+      "cancel": "Hủy"
+    },
+    "zodiacSigns": {
+      "aries": "Bạch Dương",
+      "taurus": "Kim Ngưu",
+      "gemini": "Song Tử",
+      "cancer": "Cự Giải",
+      "leo": "Sư Tử",
+      "virgo": "Xử Nữ",
+      "libra": "Thiên Bình",
+      "scorpio": "Bọ Cạp",
+      "sagittarius": "Nhân Mã",
+      "capricorn": "Ma Kết",
+      "aquarius": "Bảo Bình",
+      "pisces": "Song Ngư"
+    },
+    "settings": {
+      "title": "Cài đặt",
+      "tabs": {
+        "general": "Cài đặt chung",
+        "character": "Cài đặt nhân vật",
+        "weather": "Cài đặt thời tiết",
+        "purchases": "Lịch sử mua hàng",
+        "reset": "Đặt lại cài đặt"
+      },
+      "general": {
+        "title": "Cài đặt chung",
+        "description": "Điều chỉnh các tùy chọn chung của bạn.",
+        "fps_mode": {
+          "label": "Chế độ FPS",
+          "description": "Tắt hiệu ứng mờ và hạt thời tiết để cải thiện hiệu năng."
+        },
+        "cinematic_mode": {
+          "label": "Chế độ điện ảnh",
+          "description": "Thêm viền đen điện ảnh ở phía trên và dưới màn hình."
+        },
+        "cam_distance": {
+          "label": "Khoảng cách camera",
+          "description": "Điều chỉnh khoảng cách camera tới nhân vật của bạn.",
+          "placeholder": "Chọn",
+          "selection": {
+            "close": "Gần",
+            "far": "Xa"
+          }
+        },
+        "filter": {
+          "label": "Bộ lọc",
+          "description": "Áp dụng bộ lọc hình ảnh cho màn hình.",
+          "placeholder": "Chọn"
+        }
+      },
+      "weather": {
+        "title": "Cài đặt thời tiết",
+        "description": "Tùy chỉnh thời gian và thời tiết trong game.",
+        "clock": {
+          "label": "Thời gian",
+          "description": "Thiết lập thời gian trong game."
+        },
+        "weather_type": {
+          "label": "Loại thời tiết",
+          "description": "Chọn kiểu thời tiết bạn muốn.",
+          "placeholder": "Chọn",
+          "selection": {
+            "clear": "Quang đãng",
+            "extrasunny": "Nắng đẹp",
+            "clouds": "Nhiều mây",
+            "overcast": "U ám",
+            "rain": "Mưa",
+            "thunder": "Mưa bão",
+            "smog": "Sương khói",
+            "fog": "Sương mù",
+            "xmas": "Giáng sinh",
+            "snowlight": "Tuyết nhẹ",
+            "blizzard": "Bão tuyết",
+            "snow": "Có tuyết",
+            "neutral": "Trung tính"
+          }
+        }
+      },
+      "purchases": {
+        "title": "Lịch sử mua hàng",
+        "description": "Xem tất cả giao dịch mua hàng của bạn.",
+        "redeem_title": "Nhập mã đổi thưởng",
+        "input_placeholder": "Nhập mã của bạn tại đây...",
+        "submit": "Nhận thưởng",
+        "checking": "Đang kiểm tra...",
+        "no_history": "Bạn chưa có lịch sử mua hàng.",
+        "table": {
+          "product": "Sản phẩm",
+          "date": "Ngày",
+          "status": "Trạng thái"
+        },
+        "status": {
+          "completed": "Hoàn tất",
+          "pending": "Đang chờ",
+          "refunded": "Đã hoàn tiền"
+        }
+      },
+      "character": {
+        "title": "Cài đặt nhân vật",
+        "description": "Tùy chỉnh ngoại hình và tùy chọn của nhân vật.",
+        "music": {
+          "title": "Trình phát nhạc",
+          "description": "Phát nhạc nền cho nhân vật từ YouTube.",
+          "url_placeholder": "Dán liên kết YouTube tại đây...",
+          "load": "Tải",
+          "delete": "Xóa",
+          "no_track": "Chưa tải bài nhạc nào",
+          "enter_url": "Nhập liên kết YouTube"
+        },
+        "partner": {
+          "title": "Nhân vật đồng hành",
+          "description": "Quản lý nhân vật đồng hành của bạn.",
+          "button": "Xóa đồng hành"
+        },
+        "height": {
+          "title": "Chiều cao nhân vật",
+          "description": "Điều chỉnh chiều cao nhân vật. Hãy nhớ rằng thay đổi này sẽ được giữ nguyên sau khi điều chỉnh!",
+          "required": "Bắt buộc điều chỉnh"
+        },
+        "backstory": {
+          "title": "Tiểu sử nhân vật",
+          "description": "Viết tiểu sử nhân vật của bạn. Nội dung này sẽ hiển thị trên thẻ nhân vật.",
+          "placeholder": "Viết tiểu sử nhân vật của bạn...",
+          "save": "Lưu tiểu sử",
+          "required": "Bắt buộc nhập"
+        },
+        "badge": {
+          "title": "Huy hiệu tùy chỉnh",
+          "description": "Tạo huy hiệu riêng của bạn bằng biểu tượng cảm xúc và văn bản.",
+          "emoji_label": "Chọn biểu tượng",
+          "text_label": "Nội dung huy hiệu",
+          "text_placeholder": "Nhập nội dung huy hiệu...",
+          "preview_placeholder": "Huy hiệu của bạn",
+          "save": "Lưu huy hiệu"
+        }
+      },
+      "reset": {
+        "title": "Đặt lại cài đặt",
+        "description": "Đặt lại toàn bộ cài đặt về mặc định.",
+        "confirm": "Đồng ý, đặt lại",
+        "cancel": "Hủy"
+      }
+    },
+    "zod": {
+      "firstname": {
+        "min": "Tên phải có ít nhất %s ký tự",
+        "max": "Tên không được vượt quá %s ký tự",
+        "required": "Bắt buộc nhập tên",
+        "regex": "Chỉ được nhập chữ cái"
+      },
+      "lastname": {
+        "min": "Họ phải có ít nhất %s ký tự",
+        "max": "Họ không được vượt quá %s ký tự",
+        "required": "Bắt buộc nhập họ",
+        "regex": "Chỉ được nhập chữ cái"
+      },
+      "birthdate": {
+        "required": "Bắt buộc nhập ngày sinh",
+        "invalid": "Ngày không hợp lệ",
+        "age": "Bạn phải đủ ít nhất 18 tuổi"
+      },
+      "gender": {
+        "required": "Bắt buộc chọn giới tính",
+        "regex": "Không được chứa ký tự đặc biệt"
+      },
+      "nationality": {
+        "required": "Bắt buộc chọn quốc tịch",
+        "regex": "Không được chứa ký tự đặc biệt"
+      },
+      "backstory": {
+        "min": "Tiểu sử phải có ít nhất %s ký tự",
+        "max": "Tiểu sử không được vượt quá %s ký tự"
+      },
+      "redeem": {
+        "regex": "Mã chứa ký tự không hợp lệ"
+      }
+    },
+    "newCharacter": {
+      "welcome": "Chào mừng,",
+      "stranger": "Người lạ",
+      "description": "Tạo nhân vật mới để bắt đầu cuộc phiêu lưu. Số phận của bạn đang chờ đợi!"
+    }
+  },
+  "redeem": {
+    "error": {
+      "invalid_transaction_id": "Mã giao dịch không hợp lệ.",
+      "transaction_not_found_or_already_claimed": "Không tìm thấy giao dịch hoặc giao dịch đã được nhận.",
+      "rate_limited": "Bạn đang thao tác quá nhanh. Vui lòng thử lại sau. Thời gian còn lại: %s"
+    },
+    "success": "Đổi giao dịch thành công"
+  },
+  "partnerInvite": {
+    "title": "Lời mời đồng hành",
+    "description": "Bạn nhận được lời mời đồng hành từ %s. Nếu chấp nhận, hai bạn sẽ trở thành đồng hành của nhau.",
+    "accept": "Chấp nhận",
+    "decline": "Từ chối",
+    "accepted": "%s đã chấp nhận lời mời đồng hành.",
+    "declined": "%s đã từ chối lời mời đồng hành.",
+    "invite_sent": "Đã gửi lời mời đồng hành.",
+    "couple": "Cặp đôi",
+    "best_friend": "Bạn thân"
+  }
+}

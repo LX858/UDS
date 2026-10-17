@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiemUyTin Warning</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="warningContainer" class="warning-container hidden">
+        <!-- Warning Card -->
+        <div class="warning-card">
+            <!-- Header -->
+            <div class="warning-header">
+                <h1 class="warning-title">CẢNH BÁO</h1>
+                <div class="warning-subtitle">ĐIỂM UY TÍN BỊ TRỪ</div>
+            </div>
+
+            <!-- Info Section -->
+            <div class="info-section">
+                <div class="info-card">
+                    <div class="info-label">Thông tin hiện tại:</div>
+                    <div class="info-content">
+                        <div class="info-item">
+                            <span class="info-icon">👤</span>
+                            <span>Tên: <strong id="playerName">N/A</strong></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-icon">⭐</span>
+                            <span>Điểm uy tín còn lại: <strong id="reputationScore" class="reputation-value">0/100</strong> <span id="reputationPercent" class="reputation-percent">(0%)</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span>Mức độ uy tín</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+                        <div class="progress-glow"></div>
+                    </div>
+                    <div class="progress-markers">
+                        <span class="marker" style="left: 0%">0</span>
+                        <span class="marker" style="left: 25%">25</span>
+                        <span class="marker" style="left: 50%">50</span>
+                        <span class="marker" style="left: 75%">75</span>
+                        <span class="marker" style="left: 100%">100</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Section -->
+            <div class="danger-section">
+                <div class="danger-icon">⚠️</div>
+                <div class="danger-title">NGUY HIỂM:</div>
+                <div class="danger-text">
+                    Nếu tiếp tục có hành vi vi phạm, bạn sẽ <strong>bị tù liên bang</strong> khi uy tín xuống dưới <strong>50 điểm!</strong>
+                </div>
+            </div>
+
+            <!-- Avoid Actions Section -->
+            <div class="avoid-section">
+                <div class="avoid-title">Cách tránh bị tù:</div>
+                <div class="avoid-list">
+                    <div class="avoid-item">
+                        <span class="avoid-icon">🚫</span>
+                        <span>Không đánh nhau trong khu vực cấm</span>
+                    </div>
+                    <div class="avoid-item">
+                        <span class="avoid-icon">🚗</span>
+                        <span>Không đâm xe vào người chơi khác</span>
+                    </div>
+                    <div class="avoid-item">
+                        <span class="avoid-icon">⚖️</span>
+                        <span>Tuân thủ luật pháp trong game</span>
+                    </div>
+                    <div class="avoid-item">
+                        <span class="avoid-icon">🤝</span>
+                        <span>Tránh các hành vi gây mất uy tín khác</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="warning-footer">
+                <div class="footer-text">Hãy cẩn thận với hành vi của bạn!</div>
+                <div class="countdown-container">
+                    <svg class="countdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    <span class="countdown-text">Tự động đóng sau <strong id="countdown">10</strong>s</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Background Effects -->
+        <div class="bg-effects">
+            <div class="effect-circle effect-1"></div>
+            <div class="effect-circle effect-2"></div>
+            <div class="effect-circle effect-3"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

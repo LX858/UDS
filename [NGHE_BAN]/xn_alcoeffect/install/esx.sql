@@ -1,0 +1,20 @@
+
+INSERT INTO `items` (`name`, `label`, `weight`, `rare`, `can_remove`) VALUES
+('breathalyzer', 'Breathalyzer', 1, 0, 1),
+('beer', 'Beer', 1, 0, 1),
+('vodka', 'Vodka', 1, 0, 1),
+('vodka_shot', 'Vodka Shot', 1, 0, 1),
+('whiskey', 'Whiskey', 1, 0, 1),
+('whiskey_glass', 'Whiskey Glass', 1, 0, 1),
+('tequila', 'Tequila', 1, 0, 1),
+('tequila_shot', 'Tequila Shot', 1, 0, 1),
+('wine', 'Wine', 1, 0, 1),
+('wine_glass', 'Wine Glass', 1, 0, 1),
+('rum', 'Rum', 1, 0, 1),
+('rum_glass', 'Rum Glass', 1, 0, 1),
+('champagne_glass', 'Champagne Glass', 1, 0, 1),
+('mojito', 'Mojito', 1, 0, 1),
+('martini', 'Martini', 1, 0, 1),
+('bloody_mary', 'Bloody Mary', 1, 0, 1),
+('sex_on_the_beach', 'Sex on the Beach', 1, 0, 1),
+('pina_colada', 'Pina Colada', 1, 0, 1);

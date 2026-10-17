@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VX Runtime Monitor</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="login" class="login-shell">
+    <form id="login-form" class="login-card">
+      <div class="eyebrow">VX / OBSERVABILITY</div>
+      <h1>Runtime Monitor</h1>
+      <p>Nhập token quản trị để xem hoạt động Lua server, player và entity.</p>
+      <label for="token">Access token</label>
+      <input id="token" name="token" type="password" autocomplete="off" required>
+      <button type="submit">Mở dashboard</button>
+      <div id="login-error" class="error" role="alert"></div>
+    </form>
+  </div>
+
+  <div id="dashboard" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">VX</span><span>Runtime<br>Monitor</span></div>
+      <div class="nav-caption">THEO DÕI</div>
+      <button class="nav active" data-view="stats">Thống kê event <span>01</span></button>
+      <button class="nav" data-view="records">Log chi tiết <span>02</span></button>
+      <button class="nav" data-view="players">Players <span>03</span></button>
+      <button class="nav" data-view="entities">Entities <span>04</span></button>
+      <div class="sidebar-bottom">
+        <div id="agent-info">Đang kết nối…</div>
+        <button id="logout" class="quiet">Đóng phiên</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><div class="eyebrow">SERVER TELEMETRY</div><h1 id="view-title">Thống kê event</h1></div>
+        <div class="top-actions"><span id="health-badge" class="badge">Đang tải</span><button id="refresh" class="outline">Làm mới</button></div>
+      </header>
+
+      <section class="metrics" aria-label="Tổng quan">
+        <div class="metric"><span>Bản ghi đã nhận</span><strong id="metric-total">—</strong><small>Từ lần khởi động monitor</small></div>
+        <div class="metric"><span>Players online</span><strong id="metric-players">—</strong><small>Snapshot hiện tại</small></div>
+        <div class="metric"><span>Entities</span><strong id="metric-entities">—</strong><small>Object · Ped · Vehicle</small></div>
+        <div class="metric warning"><span>Mất trong phiên monitor</span><strong id="metric-dropped">—</strong><small id="drop-detail">Đang tính…</small></div>
+      </section>
+
+      <section id="stats-view" class="view">
+        <div class="section-heading"><div><h2>Top event theo tên</h2><p>Đếm theo lượt gọi đã ghi thành công vào log. Một lần gửi -1 là một broadcast.</p></div><span class="mode">LIVE STATS</span></div>
+        <div class="stats-toolbar">
+          <div class="segmented" role="group" aria-label="Khoảng thời gian"><button class="window active" data-window="5m">5 phút</button><button class="window" data-window="1h">1 giờ</button><button class="window" data-window="24h">24 giờ</button></div>
+          <label class="stats-search">Tìm tên / resource<input id="stats-search" type="search" placeholder="Ví dụ: qb-weather"></label>
+        </div>
+        <div class="stats-tabs" role="tablist" aria-label="Loại lời gọi">
+          <button class="stats-tab active" data-stats-view="client">Gửi client</button>
+          <button class="stats-tab" data-stats-view="local">Event nội bộ</button>
+          <button class="stats-tab" data-stats-view="handled">Handler nhận</button>
+          <button class="stats-tab" data-stats-view="exports">Exports</button>
+        </div>
+        <div class="stats-meta"><span id="stats-range">Đang tải khoảng thời gian…</span><span id="stats-total"></span></div>
+        <div id="stats-notice" class="stats-notice hidden"></div>
+        <div class="table-wrap"><table id="stats-table"><thead id="stats-head"></thead><tbody id="stats-body"><tr><td class="empty">Đang tính thống kê…</td></tr></tbody></table></div>
+        <div id="stats-detail" class="stats-detail hidden"></div>
+        <p class="stats-footnote">Gửi client tính <code>TriggerClientEvent</code> và <code>TriggerLatentClientEvent</code> theo lượt gọi. Handler và export hiển thị riêng từng bước xử lý.</p>
+      </section>
+
+      <section id="records-view" class="view hidden">
+        <div class="section-heading"><div><h2>Log chi tiết</h2><p>Tra cứu từng bản ghi gốc, gồm cả event vòng đời player và entity.</p></div><span id="mode-label" class="mode">LIVE</span></div>
+        <form id="filters" class="filters">
+          <label>Tên event / export<input name="name" placeholder="Tìm theo tên"></label>
+          <label>Resource<input name="resource" placeholder="Tên resource"></label>
+          <label>Từ<input name="from" type="datetime-local"></label>
+          <label>Đến<input name="to" type="datetime-local"></label>
+          <button type="submit">Tìm log</button>
+          <button type="button" id="all-records" class="outline">Hiện tất cả</button>
+          <button type="button" id="history" class="outline">Xem log lưu</button>
+          <details class="more-filters"><summary>Lọc thêm</summary><div class="more-fields">
+          <label>Loại<select name="kind"><option value="">Tất cả</option><option value="event">Event</option><option value="export">Export</option><option value="player">Player</option><option value="entity">Entity</option><option value="resource">Resource</option></select></label>
+          <label>Player ID<input name="playerSessionId" inputmode="numeric" placeholder="ID phiên"></label>
+          <label>Entity Net ID<input name="entityNetId" inputmode="numeric" placeholder="Network ID"></label>
+          </div></details>
+        </form>
+        <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Loại / bước</th><th>Resource</th><th>Tên</th><th>Player / Entity</th><th>Bytes / ms</th><th>Trạng thái</th></tr></thead><tbody id="records-body"></tbody></table></div>
+        <div class="pager"><span id="records-count"></span><div><button id="records-prev" class="outline">Trước</button><span id="records-page">1</span><button id="records-next" class="outline">Sau</button></div></div>
+      </section>
+
+      <section id="players-view" class="view hidden">
+        <div class="section-heading"><div><h2>Players online</h2><p>Chỉ lưu ID phiên và tên hiển thị.</p></div><span id="players-count" class="mode">0 ONLINE</span></div>
+        <div class="table-wrap"><table><thead><tr><th>ID phiên</th><th>Tên</th><th>Monitor thấy từ</th></tr></thead><tbody id="players-body"></tbody></table></div>
+        <div class="pager"><span>Danh sách trực tiếp</span><div><button id="players-prev" class="outline">Trước</button><span id="players-page">1</span><button id="players-next" class="outline">Sau</button></div></div>
+      </section>
+
+      <section id="entities-view" class="view hidden">
+        <div class="section-heading"><div><h2>Entities hiện tại</h2><p>Resource tạo hiển thị khi artifact cung cấp được.</p></div><span id="entities-count" class="mode">0 ENTITIES</span></div>
+        <div class="entity-toolbar"><label>Loại<select id="entity-type"><option value="">Tất cả</option><option value="object">Object</option><option value="ped">Ped</option><option value="vehicle">Vehicle</option></select></label><label>Resource<input id="entity-resource" placeholder="Tên resource"></label></div>
+        <div class="table-wrap"><table><thead><tr><th>Handle</th><th>Loại</th><th>Model</th><th>Net ID</th><th>Owner</th><th>Resource</th></tr></thead><tbody id="entities-body"></tbody></table></div>
+        <div class="pager"><span>Snapshot server</span><div><button id="entities-prev" class="outline">Trước</button><span id="entities-page">1</span><button id="entities-next" class="outline">Sau</button></div></div>
+      </section>
+      <footer><span>VX Runtime Monitor</span><span id="last-update">Chưa cập nhật</span></footer>
+    </main>
+  </div>
+</body>
+</html>

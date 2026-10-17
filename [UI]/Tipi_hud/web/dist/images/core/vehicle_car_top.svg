@@ -1,0 +1,32 @@
+<svg width="80" height="140" viewBox="0 0 80 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path
+    d="M24 18C24 10.268 30.268 4 38 4H42C49.732 4 56 10.268 56 18V28L58 38V102L56 112V122C56 129.732 49.732 136 42 136H38C30.268 136 24 129.732 24 122V112L22 102V38L24 28V18Z"
+    fill="white"
+    fill-opacity="0.88"
+  />
+  <path
+    d="M28 30H52V48C52 50.209 50.209 52 48 52H32C29.791 52 28 50.209 28 48V30Z"
+    fill="white"
+    fill-opacity="0.28"
+  />
+  <path
+    d="M28 88H52V106C52 108.209 50.209 110 48 110H32C29.791 110 28 108.209 28 106V88Z"
+    fill="white"
+    fill-opacity="0.28"
+  />
+  <rect x="36" y="54" width="8" height="32" rx="2" fill="white" fill-opacity="0.18" />
+  <circle cx="26" cy="34" r="5" fill="white" fill-opacity="0.42" />
+  <circle cx="54" cy="34" r="5" fill="white" fill-opacity="0.42" />
+  <circle cx="26" cy="106" r="5" fill="white" fill-opacity="0.42" />
+  <circle cx="54" cy="106" r="5" fill="white" fill-opacity="0.42" />
+  <path
+    d="M34 8H44C46.761 8 49 10.239 49 13V18H29V13C29 10.239 31.239 8 34 8Z"
+    fill="white"
+    fill-opacity="0.55"
+  />
+  <path
+    d="M34 122H44C46.761 122 49 124.239 49 127V132H29V127C29 124.239 31.239 122 34 122Z"
+    fill="white"
+    fill-opacity="0.55"
+  />
+</svg>

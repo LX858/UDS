@@ -1,0 +1,19 @@
+
+-- CreateThread(function()
+--     local Coords = exports["1307_TuongTac"]:AddInteractionCoords(vec3(300, -584, 18.0), {
+--         checkVisibility = true,
+--         {
+--             name = 'rakhoitunel',
+--             icon = "fa-solid fa-circle-info",
+--             label = 'Rời khỏi nơi này',
+--             key = "E",
+--             duration = 2000,
+--             action = function()
+--                 exports.qbx_core:Notify('Vui lòng đợi 3s sau bạn sẽ được về sân bệnh viện nhé ^^', 'error')
+--                 Wait(3000)
+--                 exports.qbx_core:Notify('Bạn đã được kéo ra khỏi hầm thành công', 'error')
+--                 SetEntityCoords(PlayerPedId(), 280.8455, -612.802, 43.273, false, false, false, false)
+--             end
+--         }
+--     })
+-- end)

@@ -1,0 +1,13 @@
+Qbox Medical Integration (qbx_medical)
+
+brezel_ffa has been updated to automatically invoke:
+`exports['qbx_medical']:HideDeathUI()`
+
+This hides the Death Screen UI, Dynamic Island, and clears screen blur and movement lock when:
+1. Entering an FFA lobby
+2. Dying in FFA
+3. Respawning / Reviving in FFA
+4. Leaving FFA
+
+brezel_ffa also exports:
+`exports['brezel_ffa']:IsInFFA()`

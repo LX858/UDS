@@ -1,0 +1,20 @@
+{
+    "error": {
+        "not_enough_money": "Bạn không có đủ 💵...",
+        "invalid_type": "Đây không phải là loại ID hợp lệ..."
+    },
+    "success": {
+        "item_recieved": "Bạn đã nhận được ",
+        "new_job": "Chúc mừng bạn với công việc mới!"
+    },
+    "info": {
+        "cityhall": "Văn Phòng Một Cửa",
+        "open_cityhall": "[E] Nhận Căn Cước Công Dân",
+        "target_open_cityhall": "Nhận Căn Cước Công Dân",
+        "identity": "Danh tính",
+        "employment": "Việc làm",
+        "obtain_license_identity": "Nhận giấy phép của bạn",
+        "select_job": "Chọn một công việc mới",
+        "price": "Giá: $%s"
+    }
+}

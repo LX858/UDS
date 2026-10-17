@@ -1,0 +1,73 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" />
+    <link href="style.css" rel="stylesheet" type="text/css" />
+  </head>
+  <body>
+    <div id="vignette"></div>
+    <div id="options-wrapper"></div>
+
+    <div id="settings">
+      <div class="sp">
+        <header class="sp-head">
+          <span class="sp-brand">bp<b>target</b></span>
+          <button class="sp-x" id="sp-close"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+
+        <canvas id="sp-preview" width="300" height="104"></canvas>
+
+        <div class="sp-section">
+          <h4>Marker</h4>
+          <div class="sp-cards">
+            <button class="sp-card" data-marker="eye">
+              <svg viewBox="0 0 44 22" aria-hidden="true">
+                <path d="M2 11C8 3 16 3 22 3s14 0 20 8c-6 8-14 8-20 8s-14 0-20-8z" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <circle cx="22" cy="11" r="5" fill="currentColor" fill-opacity="0.45" stroke="currentColor" stroke-width="1.2" />
+                <circle cx="22" cy="11" r="2" fill="#05070b" />
+              </svg>
+              <span>Eye</span>
+            </button>
+            <button class="sp-card" data-marker="crosshair">
+              <svg viewBox="0 0 44 22" aria-hidden="true">
+                <circle cx="22" cy="11" r="7.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.5" />
+                <path d="M22 1.5v3.5M22 17v3.5M11.5 11H15M29 11h3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                <circle cx="22" cy="11" r="1.6" fill="currentColor" />
+              </svg>
+              <span>Crosshair</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="sp-section">
+          <h4>Accent colour</h4>
+          <div class="sp-modes">
+            <button class="sp-pill" data-mode="auto">Auto</button>
+            <button class="sp-pill" data-mode="custom">Custom</button>
+          </div>
+          <div id="sp-custom">
+            <div class="sp-swatches" id="sp-swatches"></div>
+            <div class="sp-hexrow">
+              <input type="color" id="sp-color" />
+              <input type="text" id="sp-hex" spellcheck="false" maxlength="7" />
+            </div>
+          </div>
+          <p class="sp-note" id="sp-note"></p>
+        </div>
+
+        <div class="sp-section">
+          <h4>Options</h4>
+          <button class="sp-row" data-key="vignette"><span>Vignette</span><i class="sp-sw"></i></button>
+          <button class="sp-row" data-key="handCursor"><span>Hand cursor</span><i class="sp-sw"></i></button>
+          <button class="sp-row" data-key="hotkeys"><span>Number keys 1-9</span><i class="sp-sw"></i></button>
+        </div>
+
+        <footer class="sp-foot">
+          <button class="sp-reset" id="sp-reset">Reset</button>
+          <span>ESC to close</span>
+        </footer>
+      </div>
+    </div>
+
+    <script defer type="module" src="js/main.js"></script>
+  </body>
+</html>

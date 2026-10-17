@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+  <!-- Moon crescent -->
+  <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 1 0 9.79 9.79z"/>
+  <!-- Z letters -->
+  <text x="13" y="10" font-family="Arial" font-size="4" font-weight="bold" fill="white">Z</text>
+  <text x="15.5" y="7.5" font-family="Arial" font-size="3" font-weight="bold" fill="white">z</text>
+</svg>

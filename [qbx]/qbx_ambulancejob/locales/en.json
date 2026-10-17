@@ -1,0 +1,93 @@
+{
+    "error": {
+        "canceled": "Đã hủy bỏ",
+        "max_armor_50": "Bạn đã có tối đa 50% giáp từ áo này!",
+        "impossible": "Hành động không thể thực hiện...",
+        "no_player": "Không có người chơi ở gần",
+        "no_firstaid": "Bạn cần một bộ sơ cứu",
+        "no_bandage": "Bạn cần một băng gạc",
+        "beds_taken": "Giường đã có người sử dụng...",
+        "possessions_taken": "Toàn bộ tài sản của bạn đã bị lấy...",
+        "cant_help": "Bạn không thể giúp người này...",
+        "not_ems": "Bạn không phải là nhân viên y tế hoặc chưa đăng nhập",
+        "no_downed_players": "Không có người chơi nào đang ngất hoặc chết"
+    },
+    "success": {
+        "revived": "Bạn đã hồi sinh một người",
+        "healthy_player": "Người chơi khỏe mạnh",
+        "helped_player": "Bạn đã giúp người đó",
+        "being_helped": "Bạn đang được giúp...",
+        "dragged_players": "Đã kéo người ngất về phía bạn"
+    },
+    "info": {
+        "civ_died": "Thường dân đã chết",
+        "civ_down": "Thường dân bị hạ gục",
+        "civ_call": "Cuộc gọi từ thường dân",
+        "ems_down": "Bác sĩ %s bị hạ gục",
+        "respawn_txt": "HỒI SINH SAU: ~r~%s~s~ GIÂY",
+        "respawn_revive": "GIỮ [~r~E~s~] TRONG %s GIÂY ĐỂ HỒI SINH VỚI $~r~%s~s~",
+        "bleed_out": "GÕ LỆNH [~r~/GOIBACSI~s~] ĐỂ GỌI BÁC SĨ, ĐANG CHẢY MÁU: ~r~%s~s~ GIÂY",
+        "bleed_out_help": "BẠN SẼ CHẢY MÁU ĐẾN CHẾT SAU: ~r~%s~s~ GIÂY, CÓ THỂ ĐƯỢC GIÚP",
+        "request_help": "GÕ LỆNH [~r~/GOIBACSI~s~] ĐỂ YÊU CẦU GIÚP ĐỠ",
+        "help_requested": "ĐÃ THÔNG BÁO CHO NHÂN VIÊN Y TẾ",
+        "amb_plate": "CỨU THƯƠNG",
+        "heli_plate": "TRỰC THĂNG",
+        "status": "Kiểm tra tình trạng",
+        "is_status": "Tình trạng của %s",
+        "healthy": "Bạn đã hoàn toàn khỏe mạnh trở lại!",
+        "safe": "Bệnh viện an toàn",
+        "ems_alert": "Cảnh báo EMS - %s",
+        "mr": "Ông",
+        "mrs": "Bà",
+        "dr_needed": "Cần bác sĩ tại bệnh viện Pillbox",
+        "dr_alert": "Bác sĩ đã được thông báo",
+        "ems_report": "Báo cáo EMS",
+        "message_sent": "Tin nhắn đã được gửi",
+        "check_health": "Kiểm tra sức khỏe người chơi",
+        "heal_player": "Chữa lành cho người chơi",
+        "revive_player": "Hồi sinh người chơi",
+        "player_dragged": "Đang kéo %s về phía bạn..."
+    },
+    "mail": {
+        "sender": "Bệnh viện Pillbox",
+        "subject": "Chi phí bệnh viện",
+        "message": "Kính gửi %s %s, <br /><br />Bạn nhận được email thông báo về chi phí lần khám bệnh gần nhất.<br />Tổng chi phí là: <strong>$%s</strong><br /><br />Chúng tôi chúc bạn mau chóng hồi phục!"
+    },
+    "menu": {
+        "amb_vehicles": "Phương tiện cứu thương",
+        "status": "Tình trạng sức khỏe"
+    },
+    "text": {
+        "pstash_button": "Tủ đồ cá nhân",
+        "pstash": "Tủ đồ cá nhân",
+        "onduty_button": "Vào ca trực",
+        "offduty_button": "Kết thúc ca trực",
+        "duty": "Trực/Nghỉ",
+        "armory_button": "Kho dồ công vụ",
+        "armory": "Kho đồ công vụ",
+        "veh_button": "Lấy / Cất xe",
+        "elevator_roof": "Đi thang máy lên tầng thượng",
+        "elevator_main": "Đi thang máy xuống",
+        "el_roof": "Đi thang máy lên tầng thượng",
+        "el_main": "Đi thang máy xuống tầng chính",
+        "call_doc": "Gọi bác sĩ",
+        "call": "Gọi",
+        "check_in": "Đăng ký khám",
+        "check": "Đăng ký",
+        "lie_bed": "Nằm lên giường",
+        "bed": "Nằm trên giường",
+        "put_bed": "Đặt thường dân lên giường",
+        "bed_out": "Rời khỏi giường..",
+        "alert": "Cảnh báo!"
+    },
+    "progress": {
+        "ifaks": "Đang lấy bộ sơ cứu...",
+        "bandage": "Đang dùng băng gạc...",
+        "bandage_lv2": "Đang dùng băng gạc LV2...",
+        "ao_giap_gang": "Đang mặc áo giáp gang...",
+        "painkillers": "Đang uống thuốc giảm đau...",
+        "revive": "Đang hồi sinh người...",
+        "healing": "Đang chữa lành vết thương...",
+        "checking_in": "Đang đăng ký khám..."
+    }
+}

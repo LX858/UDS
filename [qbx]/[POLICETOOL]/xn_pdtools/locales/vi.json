@@ -1,0 +1,18 @@
+{
+    "vehicle_check": "Kiểm tra thông tin xe",
+    "no_permission": "Chỉ có công an mới được phép kiểm tra thông tin xe!",
+    "no_data": "Không có dữ liệu về phương tiện này",
+    "vehicle_info": "Thông tin phương tiện",
+    "plate": "Biển số",
+    "owner": "Tên chủ xe",
+    "status": "Tình trạng",
+    "model": "Mẫu xe",
+    "color": "Màu sắc",
+    "registration_date": "Ngày đăng ký",
+    "unknown": "Không xác định",
+    "no_info": "Không rõ",
+    "normal": "Bình thường",
+    "wanted": "Bị truy nã",
+    "stolen": "Bị đánh cắp",
+    "impounded": "Đã tịch thu"
+}

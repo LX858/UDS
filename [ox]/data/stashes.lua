@@ -1,0 +1,96 @@
+return {
+	-- {
+	-- 	coords = vec3(-345.7063, -112.1157, 39.0097), --- -345.7063, -112.1157, 39.0097, 70.5506
+	-- 	target = {
+	-- 		loc = vec3(-345.7063, -112.1157, 39.0097),
+	-- 		length = 0.6,
+	-- 		width = 1.8,
+	-- 		heading = 340,
+	-- 		minZ = 43.34,
+	-- 		maxZ = 44.74,
+	-- 		label = 'Open personal locker'
+	-- 	},
+	-- 	name = 'mechaniclocker',
+	-- 	label = 'Personal Locker',
+	-- 	owner = true,
+	-- 	slots = 70,
+	-- 	weight = 1000000,
+	-- 	groups = {['mechanic'] = 0}
+	-- },
+
+	-- {
+	-- 	coords = vec3(442.97, -1000.85, 30.72),
+	-- 	target = {
+	-- 		loc = vec3(442.97, -1000.85, 30.72),
+	-- 		length = 0.6,
+	-- 		width = 1.8,
+	-- 		heading = 206,
+	-- 		minZ = 28.34,
+	-- 		maxZ = 32.74,
+	-- 		label = 'Mở tủ đồ cá nhân'
+	-- 	},
+	-- 	name = 'policelocker',
+	-- 	label = 'Police Stash Locker',
+	-- 	owner = true,
+	-- 	slots = 70,
+	-- 	weight = 3000000,
+	-- 	groups = {}
+	-- },
+
+	-- {
+	-- 	coords = vec3(-316.82, -129.91, 39.02),
+	-- 	target = {
+	-- 		loc = vec3(-316.82, -129.91, 39.02),
+	-- 		length = 0.6,
+	-- 		width = 1.8,
+	-- 		heading = 242.68,
+	-- 		minZ = 0.0,
+	-- 		maxZ = 32.74,
+	-- 		label = 'Tủ đồ chung MCN'
+	-- 	},
+	-- 	name = 'mcn_stash',
+	-- 	label = 'MNC Stash',
+	-- 	owner = false,
+	-- 	slots = 50,
+	-- 	weight = 4000000,
+	-- 	groups = {'mechanic'}
+	-- },
+
+	-- {
+	-- 	coords = vec3(301.3, -600.23, 43.28),
+	-- 	target = {
+	-- 		loc = vec3(301.82, -600.99, 43.29),
+	-- 		length = 0.6,
+	-- 		width = 1.8,
+	-- 		heading = 340,
+	-- 		minZ = 43.34,
+	-- 		maxZ = 44.74,
+	-- 		label = 'Open personal locker'
+	-- 	},
+	-- 	name = 'emslocker',
+	-- 	label = 'Personal Locker',
+	-- 	owner = true,
+	-- 	slots = 70,
+	-- 	weight = 1000000,
+	-- 	groups = {['ambulance'] = 0}
+	-- },
+
+	-- {
+	-- 	coords = vec3(-250.2940, -954.3140, 31.2200), --- -250.2940, -954.3140, 31.2200, 70.2601
+	-- 	target = {
+	-- 		loc = vec3(-250.2940, -954.3140, 31.2200),
+	-- 		length = 0.6,
+	-- 		width = 1.8,
+	-- 		heading = 340,
+	-- 		minZ = 43.34,
+	-- 		maxZ = 44.74,
+	-- 		label = 'Open personal locker'
+	-- 	},
+	-- 	name = 'unemployedlocker',
+	-- 	label = 'Personal Locker',
+	-- 	owner = true,
+	-- 	slots = 70,
+	-- 	weight = 200000,
+	-- 	groups = {['unemployed'] = 0}
+	-- },
+}

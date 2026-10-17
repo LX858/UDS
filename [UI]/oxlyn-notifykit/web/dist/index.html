@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OXLYN NotifyKit</title>
+<!-- Font Awesome 7 Free — bundled locally (no CDN). fa-pro-compat.css maps
+     Pro-only style classes / icon names onto the Free set. -->
+<link rel="stylesheet" href="../fontawesome/css/all.min.css" />
+<link rel="stylesheet" href="../fontawesome/css/fa-pro-compat.css" />
+<link rel="stylesheet" href="app.min.css" />
+</head>
+<body>
+<div id="app">
+  <!-- Notifications (never take the mouse) -->
+  <div id="layer-notify" class="layer"></div>
+  <!-- History panel (takes the mouse) -->
+  <div id="layer-history" class="layer"></div>
+  <!-- Editor window (takes the mouse) -->
+  <div id="layer-editor" class="layer"></div>
+
+  <textarea id="clip" aria-hidden="true" tabindex="-1"></textarea>
+</div>
+<script src="app.min.js"></script>
+</body>
+</html>

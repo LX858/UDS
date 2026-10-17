@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UnderStar Updates</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div class="update-modal">
+            <!-- Header Section with Logo & Banner -->
+            <div class="modal-header">
+                <div class="banner-overlay"></div>
+                <div class="header-content">
+                    <div class="logo-wrapper">
+                        <img src="images/logo.png" alt="UnderStar Logo" class="server-logo">
+                    </div>
+                    <div class="header-titles">
+                        <span class="sub-heading">NHẬT KÝ CẬP NHẬT MÁY CHỦ</span>
+                        <h1 class="main-heading" id="serverTitle">UNDER STAR ROLEPLAY</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button id="adminPostBtn" class="btn btn-admin hidden">
+                            <i class="fa-solid fa-plus-circle"></i> Đăng Bài Mới
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bar & Search -->
+            <div class="filter-bar">
+                <div class="category-tabs" id="categoryTabs">
+                    <button class="tab-btn active" data-category="all">
+                        <i class="fa-solid fa-layer-group"></i> Tất cả
+                    </button>
+                    <button class="tab-btn" data-category="feature">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Tính năng mới
+                    </button>
+                    <button class="tab-btn" data-category="update">
+                        <i class="fa-solid fa-wrench"></i> Cập nhật
+                    </button>
+                    <button class="tab-btn" data-category="fix">
+                        <i class="fa-solid fa-bug-slash"></i> Sửa lỗi
+                    </button>
+                    <button class="tab-btn" data-category="event">
+                        <i class="fa-solid fa-trophy"></i> Sự kiện
+                    </button>
+                </div>
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Tìm kiếm cập nhật...">
+                </div>
+            </div>
+
+            <!-- Main Split Body Content -->
+            <div class="modal-body">
+                <!-- Left Sidebar: Update Feed List -->
+                <div class="updates-list-wrapper">
+                    <div class="updates-list" id="updatesList">
+                        <!-- Dynamic Update items rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Right Detail View Panel -->
+                <div class="update-detail-panel" id="detailPanel">
+                    <div class="detail-placeholder hidden" id="detailPlaceholder">
+                        <i class="fa-regular fa-newspaper"></i>
+                        <p>Chọn một bản cập nhật từ danh sách để xem chi tiết</p>
+                    </div>
+                    
+                    <div class="detail-content" id="detailContent">
+                        <div class="detail-header">
+                            <div class="detail-meta-top">
+                                <span class="badge" id="detailCategory">Cập nhật</span>
+                                <span class="version-tag" id="detailVersion">v1.0.0</span>
+                            </div>
+                            <h2 class="detail-title" id="detailTitle">Chào mừng tới UNDER STAR ROLEPLAY!</h2>
+                            <div class="detail-author-row">
+                                <span><i class="fa-solid fa-user-shield"></i> <strong id="detailAuthor">BQL UnderStar</strong></span>
+                                <span><i class="fa-regular fa-calendar-days"></i> <span id="detailDate">08/08/2026</span></span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-body-scroll">
+                            <div class="detail-body" id="detailBody">
+                                <!-- Formatted update content -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Action Bar -->
+            <div class="modal-footer">
+                <div class="footer-info">
+                    <i class="fa-solid fa-circle-info"></i> Bạn có thể xem lại bảng tin bất kỳ lúc nào bằng lệnh <code>/newupdate</code>
+                </div>
+                <button id="readCloseBtn" class="btn btn-close-cyan">
+                    <i class="fa-solid fa-check-circle"></i> ĐÃ ĐỌC & VÀO GAME
+                </button>
+            </div>
+        </div>
+
+        <!-- Admin Post Create Modal Overlay -->
+        <div id="adminModal" class="admin-modal-overlay hidden">
+            <div class="admin-modal-box">
+                <div class="admin-modal-header">
+                    <h3><i class="fa-solid fa-pen-to-square"></i> ĐĂNG BÀI CẬP NHẬT MỚI</h3>
+                    <button id="closeAdminModal" class="btn-icon-close"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <form id="postForm" class="admin-form">
+                    <div class="form-group">
+                        <label for="postTitle">Tiêu đề bài viết</label>
+                        <input type="text" id="postTitle" placeholder="Nhập tiêu đề cập nhật..." required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <label for="postCategory">Phân loại</label>
+                            <select id="postCategory" required>
+                                <option value="update">Cập nhật hệ thống</option>
+                                <option value="feature">Tính năng mới</option>
+                                <option value="fix">Sửa lỗi</option>
+                                <option value="event">Sự kiện</option>
+                            </select>
+                        </div>
+                        <div class="form-group col">
+                            <label for="postVersion">Phiên bản (Version)</label>
+                            <input type="text" id="postVersion" placeholder="e.g. v1.2.0" value="v1.0.0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="postContent">Nội dung cập nhật</label>
+                        <div class="editor-toolbar" id="editorToolbar">
+                            <button type="button" class="tool-btn" data-tag="bold" title="In đậm"><i class="fa-solid fa-bold"></i> In Đậm (**)</button>
+                            <button type="button" class="tool-btn" data-tag="uppercase" title="In hoa"><i class="fa-solid fa-font"></i> In Hoa (^^)</button>
+                            <button type="button" class="tool-btn" data-tag="italic" title="In nghiêng"><i class="fa-solid fa-italic"></i> In Nghiêng (*)</button>
+                            <button type="button" class="tool-btn" data-tag="cyan" title="Màu Cyan"><i class="fa-solid fa-palette"></i> Màu Cyan</button>
+                            <button type="button" class="tool-btn" data-tag="link" title="Chèn liên kết Web/Discord"><i class="fa-solid fa-link"></i> Chèn Link</button>
+                            <button type="button" class="tool-btn" data-tag="bullet" title="Gạch đầu dòng"><i class="fa-solid fa-list-ul"></i> Đầu Dòng (•)</button>
+                        </div>
+                        <textarea id="postContent" rows="6" placeholder="Nhập chi tiết các nội dung cập nhật mới..." required></textarea>
+                    </div>
+
+                    <div class="admin-form-actions">
+                        <button type="button" id="cancelPostBtn" class="btn btn-secondary">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-cyan-submit">
+                            <i class="fa-solid fa-paper-plane"></i> Đăng Thông Báo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script src="app.js"></script>
+</body>
+</html>

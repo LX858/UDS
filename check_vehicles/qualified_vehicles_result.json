@@ -1,0 +1,125 @@
+[
+    {
+        "citizenid": "H3TUT701",
+        "vehicleList": [
+            {
+                "plate": "UDS09241",
+                "garage": "N/A",
+                "vehicle": "r2f2fgts",
+                "state": 0
+            },
+            {
+                "plate": "UDS62528",
+                "garage": "N/A",
+                "vehicle": "r2f2fs2000",
+                "state": 0
+            },
+            {
+                "plate": "UDS38079",
+                "garage": "N/A",
+                "vehicle": "chargerf8",
+                "state": 0
+            },
+            {
+                "plate": "UDS01688",
+                "garage": "N/A",
+                "vehicle": "r2f2fmk4",
+                "state": 0
+            },
+            {
+                "plate": "UDS13486",
+                "garage": "N/A",
+                "vehicle": "fnfmits",
+                "state": 0
+            },
+            {
+                "plate": "UDS92222",
+                "garage": "N/A",
+                "vehicle": "r2f2fmle7",
+                "state": 0
+            },
+            {
+                "plate": "UDS85732",
+                "garage": "N/A",
+                "vehicle": "fnfrx7",
+                "state": 0
+            },
+            {
+                "plate": "UDS69081",
+                "garage": "N/A",
+                "vehicle": "r2f2fgtr34",
+                "state": 0
+            }
+        ],
+        "totalUnique": 8,
+        "uniqueVehicles": {
+            "r2f2fgtr34": true,
+            "fnfmits": true,
+            "chargerf8": true,
+            "r2f2fmk4": true,
+            "r2f2fs2000": true,
+            "fnfrx7": true,
+            "r2f2fgts": true,
+            "r2f2fmle7": true
+        },
+        "playerName": "Bryan Ho"
+    },
+    {
+        "citizenid": "X6N840JZ",
+        "vehicleList": [
+            {
+                "plate": "UDS16650",
+                "garage": "750 Garage",
+                "vehicle": "r2f2fgts",
+                "state": 1
+            },
+            {
+                "plate": "UDS22883",
+                "garage": "N/A",
+                "vehicle": "r2f2fs2000",
+                "state": 0
+            },
+            {
+                "plate": "UDS55179",
+                "garage": "633 Garage",
+                "vehicle": "r2f2fmle7",
+                "state": 1
+            },
+            {
+                "plate": "UDS26696",
+                "garage": "750 Garage",
+                "vehicle": "r2f2fmk4",
+                "state": 1
+            },
+            {
+                "plate": "UDS55169",
+                "garage": "Khách sạn DX",
+                "vehicle": "GODz95GSX",
+                "state": 1
+            },
+            {
+                "plate": "UDS87341",
+                "garage": "Khách sạn DX",
+                "vehicle": "fnfmits",
+                "state": 1
+            },
+            {
+                "plate": "UDS65911",
+                "garage": "N/A",
+                "vehicle": "r2f2fgtr34",
+                "state": 0
+            }
+        ],
+        "totalUnique": 7,
+        "uniqueVehicles": {
+            "r2f2fgtr34": true,
+            "fnfmits": true,
+            "r2f2fmk4": true,
+            "r2f2fs2000": true,
+            "godz95gsx": true,
+            "r2f2fgts": true,
+            "r2f2fmle7": true
+        },
+        "playerName": "Mr Jacky"
+    }
+]

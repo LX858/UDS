@@ -1,0 +1,15 @@
+--- Events
+RegisterNetEvent('LuxuModules:Client:PlayerLoaded')
+
+RegisterNetEvent("esx:playerLoaded", function()
+      local source = GetPlayerServerId(PlayerId())
+      local src = tonumber(source)
+      TriggerEvent('LuxuModules:Client:PlayerLoaded')
+      TriggerServerEvent('LuxuModules:Server:PlayerLoaded', src)
+end)
+RegisterNetEvent("QBCore:Client:OnPlayerLoaded", function()
+      local source = GetPlayerServerId(PlayerId())
+      local src = tonumber(source)
+      TriggerEvent('LuxuModules:Client:PlayerLoaded')
+      TriggerServerEvent('LuxuModules:Server:PlayerLoaded', src)
+end)

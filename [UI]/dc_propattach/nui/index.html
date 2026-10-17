@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>Prop Attach V2</title>
+<link rel="stylesheet" href="style.css">
+<div id="propAttachContainer" class="menu-container">
+     <h1>Prop Attach V2</h1>
+     <div class="section">
+          <h2>Animations</h2>
+          <div class="flex-row" style="align-items:center; gap:0.75rem;"><button id="animPrevBtn"
+                    class="nav-btn">&laquo; Prev</button> <select id="animationSelect" class="dark-select"
+                    style="flex:1;"></select> <button id="animNextBtn" class="nav-btn">Next &raquo;</button></div>
+          <div class="section">
+               <div class="flex-row" style="margin-top: 0.5rem;">
+                    <div style="flex: 1;"><label for="customAnimDict">Custom Dict:</label> <input id="customAnimDict"
+                              class="dark-input" placeholder="Animation Dictionary"></div>
+                    <div style="flex: 1; margin-left: 0.5rem;"><label for="customAnimName">Custom Anim:</label> <input
+                              id="customAnimName" class="dark-input" placeholder="Animation Name"></div>
+               </div>
+          </div>
+          <div class="flex-row button-row" style="justify-content: center; align-items: center;"><label
+                    for="animFlagsInput" style="min-width: 60px; font-size: 1.05rem; font-weight: bold;">Flags:</label>
+               <input type="number" id="animFlagsInput" class="dark-input" value="49" style="width:60px;">
+               <div class="preset-container" style="margin-left: 5px;"><button class="preset-button flag-preset"
+                         data-value="1">1</button> <button class="preset-button flag-preset" data-value="8">8</button>
+                    <button class="preset-button flag-preset" data-value="16">16</button> <button
+                         class="preset-button flag-preset" data-value="32">32</button> <button
+                         class="preset-button flag-preset" data-value="48">48</button> <button
+                         class="preset-button flag-preset" data-value="49">49</button> <button
+                         class="preset-button flag-preset" data-value="50">50</button></div>
+          </div>
+          <div class="button-row"><button id="btnPlayAnim" class="action-btn">Play Anim</button> <button
+                    id="btnStopAnim" class="delete-btn">Stop Anim</button></div>
+     </div>
+     <div class="section speed-section">
+          <div><label for="moveSpeedSlider">Move Speed: <span id="moveSpeedValue">0.01</span></label> <input
+                    type="range" id="moveSpeedSlider" min="0.001" max="1.0" step="0.001" value="0.01">
+               <div id="moveSpeedPresets" class="preset-container button-row"></div>
+          </div>
+          <div><label for="rotateSpeedSlider">Rotate Speed: <span id="rotateSpeedValue">0.1</span></label> <input
+                    type="range" id="rotateSpeedSlider" min="0.001" max="5.0" step="0.001" value="0.1">
+               <div id="rotateSpeedPresets" class="preset-container button-row"></div>
+          </div>
+     </div>
+     <div class="section camera-controls">
+          <h2>Camera Controls</h2>
+          <div class="section"><label>Focus:</label> <select id="cameraFocusSelect" class="dark-select">
+                    <option value="ped">Player/Ped
+                    <option value="prop1">Prop 1
+                    <option value="prop2">Prop 2
+               </select></div>
+          <div class="section"><label for="camDistance">Distance: <span id="distanceValue">2.5</span></label>
+               <div class="flex-row button-row"><button data-axis="dist" data-amount="-0.1"
+                         class="camNudgeBtn">-</button> <input type="range" id="camDistance" min="0.1" max="10.0"
+                         step="0.1" value="2.5" style="flex:1;"> <button data-axis="dist" data-amount="0.1"
+                         class="camNudgeBtn">+</button></div>
+          </div>
+          <div class="section"><label for="camAngle">Angle: <span id="angleValue">0</span></label>
+               <div class="flex-row button-row"><button data-axis="angle" data-amount="-5"
+                         class="camNudgeBtn">-</button> <input type="range" id="camAngle" min="0" max="359" step="1"
+                         value="0" style="flex:1;"> <button data-axis="angle" data-amount="5"
+                         class="camNudgeBtn">+</button></div>
+          </div>
+          <div class="section"><label for="camHeight">Height: <span id="heightValue">0.5</span></label>
+               <div class="flex-row button-row"><button data-axis="height" data-amount="-0.1"
+                         class="camNudgeBtn">-</button> <input type="range" id="camHeight" min="-2.0" max="5.0"
+                         step="0.1" value="0.5" style="flex:1;"> <button data-axis="height" data-amount="0.1"
+                         class="camNudgeBtn">+</button></div>
+          </div>
+     </div>
+     <div class="prop-panel">
+          <h2>Prop 1</h2>
+          <div class="section">
+               <div class="flex-row" style="align-items:center; gap:0.75rem;"><button id="prop1PrevBtn"
+                         class="nav-btn">&laquo; Prev</button> <select class="dark-select" id="propSelect1"
+                         style="flex:1;"></select> <button id="prop1NextBtn" class="nav-btn">Next &raquo;</button></div>
+               <label>Or custom name:</label> <input id="customProp1" class="dark-input" placeholder="prop_model_name">
+               <div class="button-row"><button data-propindex="1" class="spawnPropBtn spawn-btn">Spawn</button> <button
+                         data-propindex="1" class="deletePropBtn delete-btn">Delete</button></div>
+          </div>
+          <div class="section"><label for="boneSelect1">Select Bone:</label> <select id="boneSelect1"
+                    class="dark-select"></select>
+               <div style="margin-top: 0.5rem;"><label for="customBoneID1">Custom Bone ID:</label> <input type="number"
+                         id="customBoneID1" class="dark-input" placeholder="Enter bone ID"></div>
+          </div>
+          <div class="section"><label for="rotationOrder1">Rotation Order:</label> <select id="rotationOrder1"
+                    class="dark-select">
+                    <option value="0">0
+                    <option value="1" selected="selected">1 (default)
+                    <option value="2">2
+                    <option value="3">3
+                    <option value="4">4
+                    <option value="5">5
+               </select></div>
+          <div class="section control-groups">
+               <div class="control-section">
+                    <h3>Position</h3>
+                    <div class="controls"><button class="btnPos" data-direction="forward"
+                              data-propindex="1">Forward</button> <button class="btnPos" data-direction="back"
+                              data-propindex="1">Backward</button> <button class="btnPos" data-direction="left"
+                              data-propindex="1">Left</button> <button class="btnPos" data-direction="right"
+                              data-propindex="1">Right</button> <button class="btnPos" data-direction="up"
+                              data-propindex="1">Up</button> <button class="btnPos" data-direction="down"
+                              data-propindex="1">Down</button></div>
+               </div>
+               <div class="control-section">
+                    <h3>Rotation</h3>
+                    <div class="controls"><button class="btnRot" data-direction="rotLeft"
+                              data-propindex="1">Left</button> <button class="btnRot" data-direction="rotRight"
+                              data-propindex="1">Right</button> <button class="btnRot" data-direction="rotUp"
+                              data-propindex="1">Up</button> <button class="btnRot" data-direction="rotDown"
+                              data-propindex="1">Down</button> <button class="btnRot" data-direction="rotClock"
+                              data-propindex="1">CW</button> <button class="btnRot" data-direction="rotCClock"
+                              data-propindex="1">CCW</button></div>
+               </div>
+          </div>
+          <div class="section">
+               <h3 style="margin-bottom:0.4rem">Direct Input</h3>
+               <div class="offset-input-row"><span class="offset-label">Pos</span><input type="text" id="posVec1"
+                         class="dark-input" placeholder="vec3(x, y, z)"></div>
+               <div class="offset-input-row"><span class="offset-label">Rot</span><input type="text" id="rotVec1"
+                         class="dark-input" placeholder="vec3(x, y, z)"></div><button class="action-btn applyOffsetBtn"
+                    data-propindex="1" style="width:100%;margin-top:0.3rem">Apply Offset</button>
+          </div>
+          <div class="section button-row"><button data-propindex="1" class="resetPropBtn action-btn">Reset
+                    Offsets</button> <button data-propindex="1" class="copyDataBtn save-btn">Copy Data</button> <select
+                    id="formatSelect1" class="dark-select format-select">
+                    <option value="devcore">Devcore
+                    <option value="ox">OX
+                    <option value="emotes">Emotes
+               </select></div>
+     </div>
+     <div class="prop-panel">
+          <h2>Prop 2</h2>
+          <div class="section">
+               <div class="flex-row" style="align-items:center; gap:0.75rem;"><button id="prop2PrevBtn"
+                         class="nav-btn">&laquo; Prev</button> <select class="dark-select" id="propSelect2"
+                         style="flex:1;"></select> <button id="prop2NextBtn" class="nav-btn">Next &raquo;</button></div>
+               <label>Or custom name:</label> <input id="customProp2" class="dark-input" placeholder="prop_model_name">
+               <div class="button-row"><button data-propindex="2" class="spawnPropBtn spawn-btn">Spawn</button> <button
+                         data-propindex="2" class="deletePropBtn delete-btn">Delete</button></div>
+          </div>
+          <div class="section"><label for="boneSelect2">Select Bone:</label> <select id="boneSelect2"
+                    class="dark-select"></select>
+               <div style="margin-top: 0.5rem;"><label for="customBoneID2">Custom Bone ID:</label> <input type="number"
+                         id="customBoneID2" class="dark-input" placeholder="Enter bone ID"></div>
+          </div>
+          <div class="section"><label for="rotationOrder2">Rotation Order:</label> <select id="rotationOrder2"
+                    class="dark-select">
+                    <option value="0">0
+                    <option value="1" selected="selected">1 (default)
+                    <option value="2">2
+                    <option value="3">3
+                    <option value="4">4
+                    <option value="5">5
+               </select></div>
+          <div class="section control-groups">
+               <div class="control-section">
+                    <h3>Position</h3>
+                    <div class="controls"><button class="btnPos" data-direction="forward"
+                              data-propindex="2">Forward</button> <button class="btnPos" data-direction="back"
+                              data-propindex="2">Backward</button> <button class="btnPos" data-direction="left"
+                              data-propindex="2">Left</button> <button class="btnPos" data-direction="right"
+                              data-propindex="2">Right</button> <button class="btnPos" data-direction="up"
+                              data-propindex="2">Up</button> <button class="btnPos" data-direction="down"
+                              data-propindex="2">Down</button></div>
+               </div>
+               <div class="control-section">
+                    <h3>Rotation</h3>
+                    <div class="controls"><button class="btnRot" data-direction="rotLeft"
+                              data-propindex="2">Left</button> <button class="btnRot" data-direction="rotRight"
+                              data-propindex="2">Right</button> <button class="btnRot" data-direction="rotUp"
+                              data-propindex="2">Up</button> <button class="btnRot" data-direction="rotDown"
+                              data-propindex="2">Down</button> <button class="btnRot" data-direction="rotClock"
+                              data-propindex="2">CW</button> <button class="btnRot" data-direction="rotCClock"
+                              data-propindex="2">CCW</button></div>
+               </div>
+          </div>
+          <div class="section">
+               <h3 style="margin-bottom:0.4rem">Direct Input</h3>
+               <div class="offset-input-row"><span class="offset-label">Pos</span><input type="text" id="posVec2"
+                         class="dark-input" placeholder="vec3(x, y, z)"></div>
+               <div class="offset-input-row"><span class="offset-label">Rot</span><input type="text" id="rotVec2"
+                         class="dark-input" placeholder="vec3(x, y, z)"></div><button class="action-btn applyOffsetBtn"
+                    data-propindex="2" style="width:100%;margin-top:0.3rem">Apply Offset</button>
+          </div>
+          <div class="section button-row"><button data-propindex="2" class="resetPropBtn action-btn">Reset
+                    Offsets</button> <button data-propindex="2" class="copyDataBtn save-btn">Copy Data</button> <select
+                    id="formatSelect2" class="dark-select format-select">
+                    <option value="devcore">Devcore
+                    <option value="ox">OX
+                    <option value="emotes">Emotes
+               </select></div>
+     </div>
+     <div class="section button-row"><button id="btnResetAll" class="action-btn">Reset All</button> <button
+               id="btnCloseUI" class="close-button">Close</button></div>
+</div>
+<script src="script.js"></script>

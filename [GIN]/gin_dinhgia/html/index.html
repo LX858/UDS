@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Định Giá & Quy Đổi Vật Phẩm</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app" class="hidden">
+        <!-- Main Modal Container -->
+        <div class="valuation-modal" id="valuationModal">
+            <!-- Top Cyber Header -->
+            <div class="modal-header">
+                <div class="header-brand">
+                    <div class="brand-icon">
+                        <i class="fa-solid fa-gem"></i>
+                    </div>
+                    <div class="brand-text">
+                        <h2>TRUNG TÂM ĐỊNH GIÁ & QUY ĐỔI VẬT PHẨM</h2>
+                        <span class="sub-title"><i class="fa-solid fa-bolt"></i> GIAO DỊCH TỰ ĐỘNG • ĐỊNH GIÁ NHANH
+                            CHÓNG • BẢO MẬT TUYỆT ĐỐI</span>
+                    </div>
+                </div>
+                <div class="header-right-group">
+                    <!-- Badge Trạng thái Khung Giờ (Định Giá / Rửa) -->
+                    <div class="time-mode-badge" id="timeModeBadge">
+                        <div class="mode-icon" id="timeModeIcon"><i class="fa-solid fa-clock"></i></div>
+                        <div class="mode-text-group">
+                            <span class="mode-label" id="timeModeLabel">TRẠNG THÁI</span>
+                            <span class="mode-value" id="timeModeValue">GIỜ RỬA TIỀN</span>
+                        </div>
+                    </div>
+
+                    <!-- Timer Đếm Ngược Biến Động Giá -->
+                    <div class="market-timer-badge hidden" id="marketTimerBadge">
+                        <div class="timer-icon"><i class="fa-solid fa-clock-rotate-left fa-spin"></i></div>
+                        <div class="timer-text-group">
+                            <span class="timer-label">ĐỔI GIÁ TIẾP THEO</span>
+                            <span class="timer-value" id="marketTimerValue">00:00</span>
+                        </div>
+                    </div>
+                    <button class="btn-close-modal" id="btnCloseModal" title="Đóng giao diện">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Body Layout (Tab 1 bên trái, Tab 2 5 ô ngang bên phải) -->
+            <div class="modal-body">
+                <!-- TAB 1: Danh sách vật phẩm có sẵn trong túi đồ -->
+                <div class="panel panel-inventory">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fa-solid fa-wallet"></i> TAB 1: TÚI ĐỒ VẬT PHẨM
+                        </div>
+                        <span class="item-count-badge" id="inventoryCountBadge">0 Vật phẩm</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="inventory-grid" id="inventoryContainer">
+                            <!-- JS render các card vật phẩm -->
+                        </div>
+                        <div class="empty-state hidden" id="emptyInventory">
+                            <div class="empty-icon"><i class="fa-solid fa-box-open"></i></div>
+                            <p>Túi đồ của bạn không có vật phẩm quy đổi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: 5 Ô chứa định giá nằm trên 1 hàng ngang -->
+                <div class="panel panel-appraisal">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <i class="fa-solid fa-microchip"></i> TAB 2: KHU VỰC ĐỊNH GIÁ (5 Ô NẰM NGANG)
+                        </div>
+                        <span class="item-count-badge cyan-badge" id="appraisalCountBadge">0 / 5 Ô</span>
+                    </div>
+                    <div class="panel-content appraisal-body">
+                        <!-- 5 ô chứa nằm 1 hàng ngang -->
+                        <div class="slots-horizontal-row" id="slotsContainer">
+                            <div class="appraisal-slot" data-slot="1">
+                                <div class="slot-content"></div>
+                            </div>
+                            <div class="appraisal-slot" data-slot="2">
+                                <div class="slot-content"></div>
+                            </div>
+                            <div class="appraisal-slot" data-slot="3">
+                                <div class="slot-content"></div>
+                            </div>
+                            <div class="appraisal-slot" data-slot="4">
+                                <div class="slot-content"></div>
+                            </div>
+                            <div class="appraisal-slot" data-slot="5">
+                                <div class="slot-content"></div>
+                            </div>
+                        </div>
+
+                        <div class="instruction-banner" id="instructionBanner">
+                            <i class="fa-solid fa-circle-info"></i> Click chọn vật phẩm từ <b>Tab 1</b> sang <b>Tab 2</b> (Tối thiểu 2 món, tối đa 5 món để thực hiện quy đổi).
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer: DỰ ĐOÁN THỰC NHẬN (LIVE CALCULATION) -->
+            <div class="modal-footer">
+                <div class="calculation-container">
+                    <div class="calc-tag">
+                        <i class="fa-solid fa-calculator"></i> DỰ ĐOÁN THỰC NHẬN (LIVE CALCULATION)
+                    </div>
+                    <div class="calc-details">
+                        <div class="calc-item">
+                            <span class="calc-label">- Tổng giá trị hiện tại:</span>
+                            <span class="calc-val cyan-text" id="calcPriceRange">~ $0</span>
+                        </div>
+                        <div class="calc-item" id="priceTrendRow">
+                            <span class="calc-label">- Biến động tỷ giá:</span>
+                            <span class="calc-val" id="calcPriceTrend">0% ($0)</span>
+                        </div>
+                        <div class="calc-item" id="realPayoutRow">
+                            <span class="calc-label">- Thực nhận dự kiến:</span>
+                            <span class="calc-val green-text" id="calcRealPayout">~ $0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-confirm" id="btnConfirm" disabled>
+                        <i class="fa-solid fa-check-double"></i> XÁC NHẬN QUY ĐỔI
+                    </button>
+                    <button class="btn btn-cancel" id="btnCancel">
+                        <i class="fa-solid fa-xmark"></i> HỦY BỎ (X)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Progress Bar ở bên dưới giữa màn hình -->
+        <div class="processing-overlay hidden" id="processingOverlay">
+            <div class="bottom-loader-card">
+                <div class="loader-header">
+                    <div class="loader-spinner"><i class="fa-solid fa-sync fa-spin"></i></div>
+                    <div class="loader-text-group">
+                        <h3 class="loader-title">ĐANG TIẾN HÀNH ĐỊNH GIÁ & QUY ĐỔI...</h3>
+                        <span class="loader-sub">Không thể di chuyển hoặc mở túi đồ. Dùng chuột xoay quan sát xung
+                            quanh.</span>
+                    </div>
+                    <button class="btn-cancel-process" id="btnCancelProcess" title="Hủy quá trình">
+                        <i class="fa-solid fa-xmark"></i> HỦY (X)
+                    </button>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+                <div class="progress-footer">
+                    <span class="progress-status"><i class="fa-solid fa-arrows-rotate fa-spin"></i> Đang kiểm tra & định
+                        giá...</span>
+                    <span class="progress-text" id="progressPercent">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI Thông Báo Kết Quả Định Giá & Quy Đổi -->
+        <div class="result-overlay hidden" id="resultOverlay">
+            <div class="result-modal-card">
+                <div class="result-header">
+                    <div class="result-icon-badge">
+                        <i class="fa-solid fa-sack-dollar"></i>
+                    </div>
+                    <div class="result-title-group">
+                        <h2>KẾT QUẢ ĐỊNH GIÁ & QUY ĐỔI</h2>
+                        <span class="result-subtitle"><i class="fa-solid fa-circle-check"></i> Đã hoàn tất kiểm định •
+                            Nhấn XÁC NHẬN để nhận tiền vào túi đồ</span>
+                    </div>
+                </div>
+
+                <div class="result-body">
+                    <!-- Thẻ tổng tiền thực nhận -->
+                    <div class="result-payout-box">
+                        <span class="payout-box-title"><i class="fa-solid fa-coins"></i> SỐ TIỀN QUY ĐỔI THỰC
+                            NHẬN</span>
+                        <span class="payout-box-amount" id="resultPayoutAmount">+$0</span>
+                        <span class="payout-box-note">Tiền sẽ được tự động chuyển thẳng vào túi đồ của bạn</span>
+                    </div>
+
+                    <!-- Danh sách các item quy đổi -->
+                    <div class="result-summary-section">
+                        <span class="summary-title"><i class="fa-solid fa-boxes-stacked"></i> Danh sách vật phẩm đã quy
+                            đổi:</span>
+                        <div class="result-items-list" id="resultItemsList">
+                            <!-- JS render các item quy đổi -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="result-footer">
+                    <button class="btn btn-claim" id="btnClaimReward" style="width: 100%; justify-content: center;">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> XÁC NHẬN NHẬN TIỀN
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

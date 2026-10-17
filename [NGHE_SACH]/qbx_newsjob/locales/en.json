@@ -1,0 +1,28 @@
+{
+    "error": {
+        "cant_spawn_vehicle": "Đã xảy ra lỗi khi tạo phương tiện",
+        "no_access": "Bạn không có quyền sử dụng lệnh này."
+    },
+    "info": {
+        "weazle_overlay": "Lớp phủ Weazel: [E]  \nLớp phủ quay phim: [R]",
+        "weazel_news_vehicles": "Phương tiện Under Star New",
+        "close_menu": "⬅ Đóng Menu",
+        "weazel_news_helicopters": "Trực thăng Under Star New",
+        "store_vehicle": "[E] - Cất phương tiện",
+        "vehicles": "[E] - Phương tiện",
+        "store_helicopters": "[E] - Cất trực thăng",
+        "helicopters": "[E] - Trực thăng",
+        "enter": "[E] - Vào",
+        "go_outside": "[E] - Đi ra ngoài",
+        "roof_enter": "[E] - Lên sân thượng",
+        "roof_exit": "[E] - Rời sân thượng",
+        "breaking_news": "TIN NÓNG",
+        "title_breaking_news": "<FONT FACE='Oswald'>Under Star New - Tin nóng độc quyền</FONT>",
+        "bottom_breaking_news": "<FONT FACE='Oswald'>Chúng tôi mang đến cho bạn những TIN TỨC MỚI NHẤT trực tiếp khi sự việc đang diễn ra</FONT>",
+        "newscam": "Lấy máy quay tin tức",
+        "newsmic": "Lấy micro phóng viên",
+        "newsbmic": "Lấy micro cần",
+        "news_plate": "USNW",
+        "blip_name": "Under Star New" 
+    }
+}

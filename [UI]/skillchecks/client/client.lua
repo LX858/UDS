@@ -1,0 +1,5 @@
+RegisterCommand("jomidar", function ()
+    print("jomidarontop")
+   exports['skillchecks']:startUntangleGame(10000, 10)
+   -- exports["skillchecks"]:startSameGame(30000, 11, 8)
+end)

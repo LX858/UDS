@@ -1,0 +1,35 @@
+{
+    "error": {
+        "failed_notification": "Thất bại!",
+        "not_near_veh": "Bạn không ở gần xe!",
+        "out_range_veh": "Bạn đang quá xa xe!",
+        "inside_veh": "Bạn không thể sửa chữa động cơ xe từ bên trong!",
+        "healthy_veh": "Xe quá khỏe và cần công cụ tốt hơn!",
+        "inside_veh_req": "Bạn phải ở trong xe để sửa chữa nó!",
+        "roadside_avail": "Có dịch vụ hỗ trợ bên đường, hãy gọi qua điện thoại của bạn!",
+        "no_permission": "Bạn không có quyền sửa chữa xe",
+        "fix_message": "%s, và bây giờ hãy đến một gara!",
+        "veh_damaged": "Xe của bạn bị hư hỏng quá nhiều!",
+        "nofix_message_1": "Bạn đã kiểm tra mức dầu, và nó có vẻ bình thường",
+        "nofix_message_2": "Bạn đã kiểm tra xe đạp của bạn, và không có gì có vẻ không ổn",
+        "nofix_message_3": "Bạn đã kiểm tra băng dính trên ống dầu và nó có vẻ ổn",
+        "nofix_message_4": "Bạn đã tăng âm lượng radio. Tiếng động lạ của động cơ đã biến mất",
+        "nofix_message_5": "Chất tẩy gỉ bạn sử dụng không có tác dụng",
+        "nofix_message_6": "Đừng bao giờ cố sửa chữa cái gì đó không bị hỏng, nhưng bạn không nghe"
+    },
+    "success": {
+        "cleaned_veh": "Xe đã được làm sạch!",
+        "repaired_veh": "Xe đã được sửa chữa!",
+        "fix_message_1": "Bạn đã kiểm tra mức dầu",
+        "fix_message_2": "Bạn đã đóng vết rò rỉ dầu bằng kẹo cao su",
+        "fix_message_3": "Bạn đã bọc ống dầu bằng băng dính",
+        "fix_message_4": "Bạn đã tạm thời ngừng rò rỉ dầu",
+        "fix_message_5": "Bạn đã đá xe đạp và nó lại hoạt động",
+        "fix_message_6": "Bạn đã loại bỏ một số gỉ sét",
+        "fix_message_7": "Bạn đã la hét vào xe của bạn, và nó hoạt động trở lại"
+    },
+    "progress": {
+        "clean_veh": "Đang làm sạch xe...",
+        "repair_veh": "Đang sửa chữa xe..."
+    }
+}

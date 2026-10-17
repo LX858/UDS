@@ -1,0 +1,20 @@
+:root {
+    --header-title-shadow: rgba(122, 173, 255, 0.8);
+    --header-title-gradient: #bfd8ff;
+    --header-button-shadow: rgba(122, 173, 255, 0.25);
+    --header-icon-hover: rgba(122, 173, 255, 0.40);
+    --header-title-hover-icon: #121212;
+
+    --player-info-card-background: rgba(122, 173, 255, 0.1);
+
+    --map-gradient-hover: rgba(122, 173, 255, 0.774);
+    --map-gradient-border: #7aadff77;
+
+    --announcement-gradient-hover: rgba(73, 104, 153, 0.10);
+    --announcement-icon-background-hover: rgba(122, 173, 255, 0.10);
+    --announcement-buttons: rgba(122, 173, 255, 0.2);
+
+    --global-surface: #7aadff;
+    --global-dark: #1d1e31;
+    --global-button-hover: rgba(122, 173, 255, 0.20);
+}

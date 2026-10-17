@@ -1,0 +1,241 @@
+body {
+    /* background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d); */
+    /* background-size: 400% 400%; */
+    /* animation: gradientBG 15s ease infinite; */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+@keyframes gradientBG {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+
+#container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    /* 👈 giảm khoảng cách một chút */
+}
+
+
+
+#left-bar {
+    position: relative;
+    width: 120px;
+    height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* background: linear-gradient(180deg, #222, #333); */
+    background: url('rod.png') no-repeat center/contain;
+    /* border: 3px solid #00ffcc;
+        border-radius: 15px; */
+    /* box-shadow: 0 0 15px rgba(0, 255, 204, 0.5); */
+    overflow: hidden;
+}
+
+
+#rod-wrapper {
+    width: 40px;
+    /* gọn gàng tương tự thanh bar */
+    height: 400px;
+    /* 👈 bằng với #bar */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    /* không bị co khi flex */
+    position: relative;
+}
+
+#rod {
+    height: 100%;
+    /* 👈 luôn bằng với wrapper (400px) */
+    width: auto;
+    /* tự co theo tỷ lệ ảnh */
+    object-fit: contain;
+    pointer-events: none;
+    opacity: 0.95;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.15));
+}
+
+
+
+#fish {
+    position: absolute;
+    width: 30px;
+    /* 👈 nhỏ hơn */
+    height: 30px;
+    background: url('fish-cdd1ab3e.png') no-repeat center/contain;
+    left: 5px;
+    /* 👈 căn giữa theo chiều ngang */
+    top: 0;
+    z-index: 10;
+    transition: top 0.1s ease;
+    animation: fishMovement 1s infinite alternate;
+}
+
+@keyframes fishMovement {
+    0% {
+        transform: rotate(-5deg) translateX(-1px);
+    }
+    100% {
+        transform: rotate(5deg) translateX(1px);
+    }
+}
+
+
+
+#bar {
+    position: relative;
+    width: 40px;
+    height: 400px;
+    border: 3px solid #00ffc3;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(220, 220, 220, 0.3);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+
+
+
+
+#floater {
+    position: absolute;
+    width: 100%;
+    height: 60px;
+    background: rgba(34, 130, 255, 0.7);
+    border-radius: 12px;
+    top: 160px;
+    transition: top 0.2s ease-out;
+}
+
+
+
+#progress-container {
+    width: 20px;
+    /* 👈 gọn hơn */
+    height: 400px;
+    border: 1px solid #00ffc3;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+    position: relative;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+
+#progress-bar {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(to top, #ff9800, #ffc107);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    transition: height 0.2s ease, transform 0.1s ease;
+}
+
+
+
+#instruction {
+    color: #ffffff;
+    /* margin-top: 10px; */
+    text-align: center;
+    font-size: 1.1rem;
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    text-shadow: 0 0 8px #00ffc3;
+}
+
+.key-highlight {
+    color: #ffff00;
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 2px 8px;
+    border-radius: 5px;
+    margin: 0 5px;
+    border: 1px solid #00ffc3;
+    box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+    animation: keyPulse 1.5s infinite;
+}
+
+@keyframes keyPulse {
+    0% { transform: scale(1); box-shadow: 0 0 10px rgba(0, 255, 204, 0.5); }
+    50% { transform: scale(1.1); box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); }
+    100% { transform: scale(1); box-shadow: 0 0 10px rgba(0, 255, 204, 0.5); }
+}
+
+#game {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.success-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.success-content {
+    color: #fff;
+    font-size: 32px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #4caf50, #8bc34a);
+    padding: 12px px;
+    border-radius: 16px;
+    box-shadow: 0 0 20px #00ff00;
+    animation: popIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "version": "1.1.0",
+    "name": "XN_STASH",
+    "description": "Hệ thống kho đồ đơn giản cho các công việc",
+    "author": "XuanNuyen",
+    "dependencies": {
+        "qbx_core": "^1.0.0",
+        "ox_lib": "^3.0.0",
+        "ox_inventory": "^2.0.0",
+        "ox_target": "^1.0.0"
+    },
+    "changelog": {
+        "1.1.0": [
+            "Đơn giản hóa code, xóa callback phức tạp",
+            "Sửa lỗi ox_lib callback undefined", 
+            "Thêm commands debug",
+            "Cải thiện stability và performance",
+            "Client-side permission check only"
+        ],
+        "1.0.0": [
+            "Khởi tạo resource",
+            "Hỗ trợ mechanic, police, ambulance",
+            "Tích hợp ox_target và ox_inventory",
+            "Kiểm tra quyền truy cập theo job và grade"
+        ]
+    }
+}

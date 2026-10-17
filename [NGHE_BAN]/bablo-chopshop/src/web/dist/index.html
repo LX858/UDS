@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hợp Đồng Tháo Xe - Chop Shop</title>
+  <!-- Google Fonts: Be Vietnam Pro + Montserrat + JetBrains Mono (100% Full Vietnamese Support) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600;1,700&family=Montserrat:wght@600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="./style.css" />
+
+</head>
+<body>
+  <div id="app" class="app-container" style="display: none;">
+    <div class="contract-wrapper">
+      
+      <!-- Top Decorative Laser Header Line -->
+      <div class="cyber-laser-bar"></div>
+
+      <!-- Main Panel Header -->
+      <header class="panel-header">
+        <div class="header-branding">
+          <div class="brand-badge">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+          </div>
+          <div class="brand-text">
+            <div class="brand-topline">
+              <span class="brand-tag">CHOP NETWORK</span>
+              <div id="difficultyBadge" class="difficulty-chip diff-easy">
+                <span class="pulse-dot"></span>
+                <span id="difficultyLabel">DỄ</span>
+              </div>
+            </div>
+            <h1 class="panel-title">HỢP ĐỒNG RÃ XE</h1>
+            <p class="panel-desc">Xác định vị trí phương tiện mục tiêu và tháo dỡ phụ tùng để nhận thưởng</p>
+          </div>
+        </div>
+
+        <div class="header-stats">
+          <!-- Progress Card -->
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-label"><i class="fa-solid fa-bars-progress"></i> TIẾN ĐỘ</span>
+              <span id="progressPercent" class="stat-value">0%</span>
+            </div>
+            <div class="progress-track">
+              <div id="progressBarFill" class="progress-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Remaining Counter -->
+          <div class="stat-pill">
+            <span class="stat-pill-label">CÒN LẠI</span>
+            <span id="vehiclesRemainingText" class="stat-pill-number">0 XE</span>
+          </div>
+
+          <!-- Close Action -->
+          <button id="closeBtn" class="panel-close-btn" title="Đóng giao diện (ESC)">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Panel Body / Vehicle Cards Grid -->
+      <main class="panel-body">
+        <div class="section-title-row">
+          <span class="section-title"><i class="fa-solid fa-crosshairs"></i> DANH SÁCH PHƯƠNG TIỆN MỤC TIÊU</span>
+          <span class="section-hint">Chọn xe bất kỳ bên dưới để khởi động thiết bị định vị GPS</span>
+        </div>
+
+        <div id="vehiclesGrid" class="vehicles-grid">
+          <!-- Dynamic Vehicle Cards rendered by app.js -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-dossier" style="display: none;">
+          <div class="empty-icon-wrap">
+            <i class="fa-solid fa-clipboard-check"></i>
+          </div>
+          <h3>HỢP ĐỒNG ĐÃ HOÀN TẤT</h3>
+          <p>Tất cả phương tiện trong danh sách đã được xử lý thành công.</p>
+        </div>
+      </main>
+
+      <!-- Panel Footer / Status Bar -->
+      <footer class="panel-footer">
+        <div class="footer-guide">
+          <span>Bấm <strong>"Bắt đầu tìm"</strong> để hệ thống nạp tọa độ và khoanh vùng vị trí xe mục tiêu lên GPS.</span>
+        </div>
+        <div class="footer-ctrls">
+          <button id="footerCloseBtn" class="footer-btn">
+            <i class="fa-solid fa-arrow-right-from-bracket"></i> ĐÓNG [ESC]
+          </button>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ox_target NUI harness</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0d10; font-family: system-ui, sans-serif; }
+    #scene {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 50% 40%, #4a4f57 0%, #2a2e34 45%, #14171b 100%),
+        #14171b;
+    }
+    /* fake "world" shapes so the overlay is judged against something */
+    #scene::after {
+      content: "";
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(180deg, transparent 55%, rgba(20,24,28,0.9) 56%, rgba(12,14,17,1) 100%),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 140px);
+    }
+    #car {
+      position: fixed; left: 50%; top: 52%; width: 620px; height: 230px;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(160deg, #6b727d 0%, #3c4249 55%, #23272c 100%);
+      border-radius: 90px 60px 40px 30px / 60px 50px 40px 40px;
+      box-shadow: 0 40px 60px rgba(0,0,0,0.55);
+      opacity: 0.9;
+    }
+    iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
+    #panel {
+      position: fixed; left: 10px; top: 10px; z-index: 10;
+      background: rgba(10,12,16,0.92); color: #cfd4dd; padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+      font-size: 11px; width: 232px; line-height: 1.5;
+    }
+    #panel.hidden { opacity: 0.08; }
+    #panel h4 { margin: 8px 0 4px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #7e8798; }
+    button {
+      background: #1b2029; color: #dfe4ec; border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 6px; padding: 3px 7px; font-size: 11px; cursor: pointer; margin: 1px;
+    }
+    button:hover { background: #262d3a; }
+    button.on { background: #2d6cdf; border-color: #4b8bff; }
+    .sw { width: 16px; height: 16px; border-radius: 4px; padding: 0; border: 1px solid rgba(255,255,255,0.25); }
+    #log { margin-top: 6px; color: #86f3b0; font-family: ui-monospace, monospace; font-size: 10px; min-height: 14px; }
+  </style>
+</head>
+<body>
+  <div id="scene"></div>
+  <div id="car"></div>
+  <iframe id="ui" src="/web/index.html"></iframe>
+
+  <div id="panel">
+    <h4>state</h4>
+    <button id="show">show</button>
+    <button id="hide">hide</button>
+    <button id="left">leftTarget</button>
+    <button id="lock">lock</button>
+    <button id="unlock">unlock</button>
+    <h4>options</h4>
+    <span id="counts"></span>
+    <h4>kind</h4>
+    <span id="kinds"></span>
+    <h4>extras</h4>
+    <button id="desc">descriptions</button>
+    <button id="zone">zone opts</button>
+    <button id="back">go-back</button>
+    <h4>accent</h4>
+    <span id="swatches"></span>
+    <h4>settings panel</h4>
+    <button id="openset">/target</button>
+    <button id="closeset">close</button>
+    <button id="markereye">marker: eye</button>
+    <button id="markercross">marker: crosshair</button>
+    <h4>capture</h4>
+    <button id="freeze">freeze</button>
+    <button id="thaw">thaw</button>
+    <button id="hidepanel">hide panel</button>
+    <button id="hotkey">hotkey 2</button>
+    <div id="log"></div>
+  </div>
+
+  <script>
+    const frame = document.getElementById('ui');
+    const log = document.getElementById('log');
+    let count = 6, kind = 'vehicle', withDesc = false, withZone = false, withBack = false;
+
+    const LABELS = [
+      ['Open trunk', 'fa-solid fa-box-open', 'Store or grab items'],
+      ['Check engine', 'fa-solid fa-oil-can', 'Requires wrench'],
+      ['Lockpick door', 'fa-solid fa-unlock-keyhole', 'Illegal - 45s'],
+      ['Wash vehicle', 'fa-solid fa-shower', '$25'],
+      ['Steal parts', 'fa-solid fa-screwdriver-wrench', 'Chop shop'],
+      ['Give keys', 'fa-solid fa-key', 'Nearby player'],
+      ['Inspect papers', 'fa-solid fa-file-lines', 'Registration'],
+      ['Attach tow rope', 'fa-solid fa-link', 'Needs tow truck'],
+      ['Search glovebox', 'fa-solid fa-suitcase', ''],
+      ['Repair bodywork', 'fa-solid fa-hammer', 'Repair kit'],
+      ['Plant tracker', 'fa-solid fa-satellite-dish', 'Silent'],
+      ['Flip vehicle', 'fa-solid fa-rotate', ''],
+    ];
+
+    function post(msg) { frame.contentWindow.postMessage(msg, '*'); }
+
+    function send() {
+      const opts = [];
+      for (let i = 0; i < count; i++) {
+        const [label, icon, description] = LABELS[i % LABELS.length];
+        const o = { label, icon };
+        if (withDesc && description) o.description = description;
+        opts.push(o);
+      }
+      const payload = {
+        event: 'setTarget',
+        entityType: kind === 'ped' ? 1 : kind === 'vehicle' ? 2 : kind === 'object' ? 3 : 0,
+        targetKind: kind,
+        options: { __global: withBack ? [{ label: 'Go back', icon: 'fa-solid fa-circle-chevron-left', goBack: true }] : [], globalTarget: opts },
+        zones: withZone ? [[{ label: 'Enter apartment', icon: 'fa-solid fa-door-open', description: 'Weazel Plaza' }, { label: 'Ring doorbell', icon: 'fa-solid fa-bell' }]] : [],
+      };
+      post(payload);
+    }
+
+    function show() {
+      post({ event: 'visible', state: true, vignette: true, tilt: true, cursor: { x: 0.5, y: 0.5 } });
+      send();
+    }
+
+    document.getElementById('show').onclick = show;
+    document.getElementById('hide').onclick = () => post({ event: 'visible', state: false });
+    document.getElementById('left').onclick = () => post({ event: 'leftTarget' });
+    document.getElementById('lock').onclick = () => post({ event: 'lockOptions' });
+    document.getElementById('unlock').onclick = () => post({ event: 'unlockOptions' });
+    document.getElementById('hotkey').onclick = () => post({ event: 'hotkey', index: 2 });
+
+    const counts = document.getElementById('counts');
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12].forEach(n => {
+      const b = document.createElement('button');
+      b.textContent = n;
+      b.onclick = () => { count = n; paint(); send(); };
+      b.dataset.count = n;
+      counts.appendChild(b);
+    });
+
+    const kinds = document.getElementById('kinds');
+    ['ped', 'player', 'vehicle', 'object', 'zone', 'self'].forEach(k => {
+      const b = document.createElement('button');
+      b.textContent = k;
+      b.dataset.kind = k;
+      b.onclick = () => { kind = k; paint(); send(); };
+      kinds.appendChild(b);
+    });
+
+    const swatches = document.getElementById('swatches');
+    [['#ffffff', 255, 255, 255], ['#22d3ee', 34, 211, 238], ['#a855f7', 168, 85, 247], ['#f97316', 249, 115, 22],
+     ['#22c55e', 34, 197, 94], ['#ef4444', 239, 68, 68], ['#eab308', 234, 179, 8]].forEach(([hex, r, g, b]) => {
+      const el = document.createElement('button');
+      el.className = 'sw';
+      el.style.background = hex;
+      el.onclick = () => post({ event: 'updateAccentColor', r, g, b });
+      swatches.appendChild(el);
+    });
+
+    document.getElementById('desc').onclick = () => { withDesc = !withDesc; paint(); send(); };
+    document.getElementById('zone').onclick = () => { withZone = !withZone; paint(); send(); };
+    document.getElementById('back').onclick = () => { withBack = !withBack; paint(); send(); };
+
+    document.getElementById('freeze').onclick = () => {
+      const w = frame.contentWindow;
+      w.__rafBackup = w.requestAnimationFrame.bind(w);
+      w.requestAnimationFrame = () => 0;
+      const s = frame.contentDocument.createElement('style');
+      s.id = 'freeze-style';
+      s.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; }';
+      frame.contentDocument.head.appendChild(s);
+      log.textContent = 'frozen';
+    };
+    document.getElementById('thaw').onclick = () => {
+      const w = frame.contentWindow;
+      if (w.__rafBackup) w.requestAnimationFrame = w.__rafBackup;
+      frame.contentDocument.getElementById('freeze-style')?.remove();
+      log.textContent = 'thawed';
+    };
+    document.getElementById('hidepanel').onclick = () => document.getElementById('panel').classList.toggle('hidden');
+
+    // settings panel: mimics what client/settings.lua sends
+    let mockSettings = { marker: 'eye', accentMode: 'auto', accentColor: '#ffffff', vignette: true, handCursor: false, hotkeys: true };
+    document.getElementById('openset').onclick = () => post({ event: 'openSettings', settings: mockSettings, hud: 'bp_hud' });
+    document.getElementById('closeset').onclick = () => post({ event: 'closeSettings' });
+    document.getElementById('markereye').onclick = () => post({ event: 'updateSettings', settings: { ...mockSettings, marker: 'eye' } });
+    document.getElementById('markercross').onclick = () => post({ event: 'updateSettings', settings: { ...mockSettings, marker: 'crosshair' } });
+
+    function paint() {
+      counts.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.count === count));
+      kinds.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.kind === kind));
+      document.getElementById('desc').classList.toggle('on', withDesc);
+      document.getElementById('zone').classList.toggle('on', withZone);
+      document.getElementById('back').classList.toggle('on', withBack);
+    }
+
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.__devNui) log.textContent = e.data.__devNui + ' ' + JSON.stringify(e.data.data);
+    });
+
+    // The Claude preview pane does not composite hidden panes, which stops rAF
+    // dead. ?ticks=1 swaps in a timer-driven rAF so the UI still animates.
+    function installTickShim() {
+      const w = frame.contentWindow;
+      if (w.__tickShim) return;
+      w.__tickShim = true;
+      w.__realRaf = w.requestAnimationFrame.bind(w);
+      let id = 0;
+      const map = new Map();
+      w.requestAnimationFrame = (cb) => {
+        const key = ++id;
+        map.set(key, setTimeout(() => cb(performance.now()), 16));
+        return key;
+      };
+      w.cancelAnimationFrame = (key) => { clearTimeout(map.get(key)); map.delete(key); };
+      log.textContent = 'tick shim on';
+    }
+
+    frame.addEventListener('load', () => {
+      paint();
+      if (new URLSearchParams(location.search).get('ticks') === '1') installTickShim();
+      setTimeout(show, 100);
+    });
+  </script>
+</body>
+</html>

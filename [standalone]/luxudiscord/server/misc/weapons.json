@@ -1,0 +1,298 @@
+[
+  {
+    "name": "Knife",
+    "value": "weapon_knife"
+  },
+  {
+    "name": "Nightstick",
+    "value": "weapon_nightstick"
+  },
+  {
+    "name": "Hammer",
+    "value": "weapon_hammer"
+  },
+  {
+    "name": "Bat",
+    "value": "weapon_bat"
+  },
+  {
+    "name": "Crowbar",
+    "value": "weapon_crowbar"
+  },
+  {
+    "name": "Golf Club",
+    "value": "weapon_golfclub"
+  },
+  {
+    "name": "Bottle",
+    "value": "weapon_bottle"
+  },
+  {
+    "name": "Dagger",
+    "value": "weapon_dagger"
+  },
+  {
+    "name": "Hatchet",
+    "value": "weapon_hatchet"
+  },
+  {
+    "name": "Brass Knuckles",
+    "value": "weapon_knuckle"
+  },
+  {
+    "name": "Machete",
+    "value": "weapon_machete"
+  },
+  {
+    "name": "Flashlight",
+    "value": "weapon_flashlight"
+  },
+  {
+    "name": "Switchblade",
+    "value": "weapon_switchblade"
+  },
+  {
+    "name": "Pool Cue",
+    "value": "weapon_poolcue"
+  },
+  {
+    "name": "Wrench",
+    "value": "weapon_wrench"
+  },
+  {
+    "name": "Battle Axe",
+    "value": "weapon_battleaxe"
+  },
+  {
+    "name": "Pistol",
+    "value": "weapon_pistol"
+  },
+  {
+    "name": "Combat Pistol",
+    "value": "weapon_combatpistol"
+  },
+  {
+    "name": "AP Pistol",
+    "value": "weapon_appistol"
+  },
+  {
+    "name": "Stun Gun",
+    "value": "weapon_stungun"
+  },
+  {
+    "name": "SNS Pistol",
+    "value": "weapon_snspistol"
+  },
+  {
+    "name": "Heavy Pistol",
+    "value": "weapon_heavypistol"
+  },
+  {
+    "name": "Vintage Pistol",
+    "value": "weapon_vintagepistol"
+  },
+  {
+    "name": "Marksman Pistol",
+    "value": "weapon_marksmanpistol"
+  },
+  {
+    "name": "Revolver",
+    "value": "weapon_revolver"
+  },
+  {
+    "name": "Micro SMG",
+    "value": "weapon_microsmg"
+  },
+  {
+    "name": "SMG",
+    "value": "weapon_smg"
+  },
+  {
+    "name": "Assault SMG",
+    "value": "weapon_assaultsmg"
+  },
+  {
+    "name": "Combat PDW",
+    "value": "weapon_combatpdw"
+  },
+  {
+    "name": "Machine Pistol",
+    "value": "weapon_machinepistol"
+  },
+  {
+    "name": "Mini SMG",
+    "value": "weapon_minismg"
+  },
+  {
+    "name": "Gusenberg Sweeper",
+    "value": "weapon_gusenberg"
+  },
+  {
+    "name": "Pump Shotgun",
+    "value": "weapon_pumpshotgun"
+  },
+  {
+    "name": "Sawed-Off Shotgun",
+    "value": "weapon_sawnoffshotgun"
+  },
+  {
+    "name": "Assault Shotgun",
+    "value": "weapon_assaultshotgun"
+  },
+  {
+    "name": "Bullpup Shotgun",
+    "value": "weapon_bullpupshotgun"
+  },
+  {
+    "name": "Musket",
+    "value": "weapon_musket"
+  },
+  {
+    "name": "Heavy Shotgun",
+    "value": "weapon_heavyshotgun"
+  },
+  {
+    "name": "Double Barrel Shotgun",
+    "value": "weapon_dbshotgun"
+  },
+  {
+    "name": "Sweeper Shotgun",
+    "value": "weapon_sweepershotgun"
+  },
+  {
+    "name": "Assault Rifle",
+    "value": "weapon_assaultrifle"
+  },
+  {
+    "name": "Carbine Rifle",
+    "value": "weapon_carbinerifle"
+  },
+  {
+    "name": "Advanced Rifle",
+    "value": "weapon_advancedrifle"
+  },
+  {
+    "name": "Special Carbine",
+    "value": "weapon_specialcarbine"
+  },
+  {
+    "name": "Bullpup Rifle",
+    "value": "weapon_bullpuprifle"
+  },
+  {
+    "name": "Compact Rifle",
+    "value": "weapon_compactrifle"
+  },
+  {
+    "name": "MG",
+    "value": "weapon_mg"
+  },
+  {
+    "name": "Combat MG",
+    "value": "weapon_combatmg"
+  },
+  {
+    "name": "Gusenberg Sweeper",
+    "value": "weapon_gusenberg"
+  },
+  {
+    "name": "Sniper Rifle",
+    "value": "weapon_sniperrifle"
+  },
+  {
+    "name": "Heavy Sniper",
+    "value": "weapon_heavysniper"
+  },
+  {
+    "name": "Marksman Rifle",
+    "value": "weapon_marksmanrifle"
+  },
+  {
+    "name": "Grenade Launcher",
+    "value": "weapon_grenadelauncher"
+  },
+  {
+    "name": "RPG",
+    "value": "weapon_rpg"
+  },
+  {
+    "name": "Minigun",
+    "value": "weapon_minigun"
+  },
+  {
+    "name": "Firework Launcher",
+    "value": "weapon_firework"
+  },
+  {
+    "name": "Railgun",
+    "value": "weapon_railgun"
+  },
+  {
+    "name": "Homing Launcher",
+    "value": "weapon_hominglauncher"
+  },
+  {
+    "name": "Grenade",
+    "value": "weapon_grenade"
+  },
+  {
+    "name": "Sticky Bomb",
+    "value": "weapon_stickybomb"
+  },
+  {
+    "name": "Proximity Mine",
+    "value": "weapon_proxmine"
+  },
+  {
+    "name": "BZ Gas",
+    "value": "weapon_bzgas"
+  },
+  {
+    "name": "Molotov Cocktail",
+    "value": "weapon_molotov"
+  },
+  {
+    "name": "Fire Extinguisher",
+    "value": "weapon_fireextinguisher"
+  },
+  {
+    "name": "Petrol Can",
+    "value": "weapon_petrolcan"
+  },
+  {
+    "name": "Flare",
+    "value": "weapon_flare"
+  },
+  {
+    "name": "Ball",
+    "value": "weapon_ball"
+  },
+  {
+    "name": "Snowball",
+    "value": "weapon_snowball"
+  },
+  {
+    "name": "Smoke Grenade",
+    "value": "weapon_smokegrenade"
+  },
+  {
+    "name": "Pipe Bomb",
+    "value": "weapon_pipebomb"
+  },
+  {
+    "name": "Tear Gas",
+    "value": "weapon_teargas"
+  },
+  {
+    "name": "Parachute",
+    "value": "gadget_parachute"
+  },
+  {
+    "name": "Jerry Can",
+    "value": "weapon_jerrycan"
+  },
+  {
+    "name": "Hazardous Jerry Can",
+    "value": "weapon_hazardcan"
+  }
+]

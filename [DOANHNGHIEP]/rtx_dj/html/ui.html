@@ -1,0 +1,629 @@
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DJ SYSTEM</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.1.1/howler.min.js" type="text/javascript"></script>
+	<script src="https://s.ytimg.com/yts/jsbin/www-widgetapi-vflJJaNgk/www-widgetapi.js"></script>
+	<script src="https://www.youtube.com/iframe_api"></script>	  
+	<script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css">
+	<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>  
+	<script src="https://code.createjs.com/1.0.0/soundjs.min.js"></script>
+	<script type="module" crossorigin src="gizmoapi.js"></script>
+	<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+	<div class="infonotify-container" id="infonotifyshow">	
+		<div class="infonotifytext">Text</div>
+	</div>	  
+	<div class="djinterface" id="djinterfaceshow">
+	
+	<div class="scale-panel" id="scale-panel">
+	  <div class="scale-header">
+		<span><i class="fas fa-sliders-h"></i> INTERFACE SETTINGS</span>
+		<button class="close-scale" id="close-scale" aria-label="Close settings">
+		  <i class="fas fa-times"></i>
+		</button>
+	  </div>
+
+	  <div class="scale-row">
+		<div class="scale-label">
+		  <i class="fas fa-eye-dropper"></i>
+		  <span>Color</span>
+		</div>
+		<div class="scale-control">
+		  <input type="color" id="primary-color" value="#ff66ff" aria-label="Primary color">
+		</div>
+	  </div>
+
+	  <div class="scale-row">
+		<div class="scale-label">
+		  <i class="fas fa-expand"></i>
+		  <span>Scale</span>
+		</div>
+		<div class="scale-control scale-control--range">
+		  <input type="range" id="scale-range" class="scale-slider" min="0.4" max="1.0" step="0.05" value="1.0" aria-label="Interface scale">
+		  <div class="scale-value" id="scale-value">100%</div>
+		</div>
+	  </div>
+
+	  <div class="scale-actions">
+		<button class="modal-btn cancel" id="reset-position">
+		  <i class="fas fa-undo"></i> Reset
+		</button>
+		<button class="modal-btn confirm" id="save-position">
+		  <i class="fas fa-save"></i> Save
+		</button>
+	  </div>
+	</div>
+
+	<button class="scale-btn" id="scale-btn">
+	  <i class="fas fa-sliders-h"></i>
+	</button>  
+		<button class="close-btn" id="close-btn">
+		  <i class="fas fa-times"></i>
+		</button>
+	  <div class="dj-container" id="dj-interface">
+
+
+		<div class="header">
+		  <h1>NIGHTCLUB DJ</h1>
+		  <p>CONTROL THE MUSIC AND EFFECTS</p>
+		</div>
+
+		<div class="left-column">
+		  <div class="panel now-playing">
+			<div class="panel-title">
+			  <i class="fas fa-music"></i>
+			  <strong>NOW PLAYING</strong>
+			</div>
+			<div class="song-container" id="songcontainershow">
+				<div class="song-info">
+				  <div class="song-cover">
+					<i class="fas fa-compact-disc"></i>
+				  </div>
+				  <div class="song-text">
+					<div class="song-name" id="current-song">No song playing</div>
+					<div class="song-artist" id="current-artist">Now Playing</div>
+				  </div>
+				</div>
+				<div class="progress-container">
+					 <div class="progress-bar" onclick="ChangeDuration(event)">
+					  <div class="progress" id="progress-bar"></div>
+					</div>
+				  <div class="time-display">
+					<span id="current-time">0:00</span>
+					<span id="total-time">0:00</span>
+				  </div>
+				</div>
+				<div class="player-controls">
+				  <button class="control-btn" id="prev-btn">
+					<i class="fas fa-step-backward"></i>
+				  </button>
+				  <button class="control-btn" id="stop-btn">
+					<i class="fas fa-stop"></i>
+				  </button>
+				  <button class="control-btn main" id="play-btn">
+					<i class="fas fa-play"></i>
+				  </button>
+				  <button class="control-btn" id="loop-btn">
+					<i class="fas fa-redo"></i>
+				  </button>
+				  <button class="control-btn" id="next-btn">
+					<i class="fas fa-step-forward"></i>
+				  </button>
+				</div>
+			  </div>
+		  </div>
+
+		  <div class="panel settings">
+			<div class="panel-title">
+			  <i class="fas fa-cog"></i>
+			  <strong>SETTINGS</strong>
+			</div>
+			<div class="setting-group">
+			  <div class="setting-label">
+				<span>Music Volume</span>
+				<span id="volume-value">50%</span>
+			  </div>
+			  <div class="slider-container">
+				<i class="fas fa-volume-down"></i>
+				<input type="range" class="slider" id="volume-slider" min="0" max="100" value="50">
+				<i class="fas fa-volume-up"></i>
+			  </div>
+			</div>
+			<div class="setting-group">
+			  <div class="setting-label">
+				<span>Music Radius</span>
+				<span id="radius-value">50m</span>
+			  </div>
+			  <div class="slider-container">
+				<i class="fas fa-arrows-alt-h"></i>
+				<input type="range" class="slider" id="distance-slider" min="2" max="100" value="50">
+				<i class="fas fa-expand"></i>
+			  </div>
+			</div>
+		  </div>
+	  <div class="panel effects">
+		<div class="panel-title">
+		  <i class="fas fa-magic"></i>
+		  <strong>CLUB EFFECTS</strong>
+		</div>
+		<div class="effect-grid">
+		  <div class="effect" id="fog-effect">
+			<div class="effect-header">
+			  <div class="effect-title">
+				<i class="fas fa-smog"></i>
+				Fog
+			  </div>
+			  <i class="fas fa-chevron-down effect-chevron"></i>
+			</div>
+			<div class="effect-options">
+			  <div class="effect-option">
+				<div class="option-label">Toggle</div>
+				<label class="toggle">
+				  <input type="checkbox" id="fog-toggle">
+				  <span class="toggle-slider"></span>
+				</label>
+			  </div>
+			  <div class="effect-option">
+				<div class="option-label">Color</div>
+				<div class="color-option">
+				  <div class="color-preview" style="color: #ffffff;">
+					<input type="color" class="color-input" id="fog-color" value="#ffffff">
+				  </div>
+				</div>
+			  </div>
+			</div>
+		  </div>
+
+		  <div class="effect" id="particles-effect">
+			<div class="effect-header">
+			  <div class="effect-title">
+				<i class="fas fa-fire"></i>
+				Particles
+			  </div>
+			  <i class="fas fa-chevron-down effect-chevron"></i>
+			</div>
+			<div class="effect-options">
+			  <div class="effect-option">
+				<div class="option-label">Toggle</div>
+				<label class="toggle">
+				  <input type="checkbox" id="particles-toggle">
+				  <span class="toggle-slider"></span>
+				</label>
+			  </div>
+			</div>
+		  </div>
+
+		  <div class="effect" id="lights-effect">
+			<div class="effect-header">
+			  <div class="effect-title">
+				<i class="fas fa-lightbulb"></i>
+				Lights
+			  </div>
+			  <i class="fas fa-chevron-down effect-chevron"></i>
+			</div>
+			<div class="effect-options">
+			  <div class="effect-option">
+				<div class="option-label">Toggle</div>
+				<label class="toggle">
+				  <input type="checkbox" id="lights-toggle" checked>
+				  <span class="toggle-slider"></span>
+				</label>
+			  </div>
+			  <div class="effect-option">
+				<div class="option-label">Move</div>
+				<label class="toggle">
+				  <input type="checkbox" id="lights-move" checked>
+				  <span class="toggle-slider"></span>
+				</label>
+			  </div>
+			  <div class="effect-option">
+				<div class="option-label">Color</div>
+				<div class="color-option">
+				  <div class="color-preview" style="color: #ff00ff;">
+					<input type="color" class="color-input" id="lights-color" value="#ff00ff">
+				  </div>
+				</div>
+			  </div>
+			</div>
+		  </div>
+
+		  <div class="effect" id="lasers-effect">
+			<div class="effect-header">
+			  <div class="effect-title">
+				<i class="fas fa-bolt"></i>
+				Lasers
+			  </div>
+			  <i class="fas fa-chevron-down effect-chevron"></i>
+			</div>
+			<div class="effect-options">
+			  <div class="effect-option">
+				<div class="option-label">Toggle</div>
+				<label class="toggle">
+				  <input type="checkbox" id="lasers-toggle">
+				  <span class="toggle-slider"></span>
+				</label>
+			  </div>
+			  <div class="effect-option">
+				<div class="option-label">Move</div>
+				<label class="toggle">
+				  <input type="checkbox" id="lasers-move" checked>
+				  <span class="toggle-slider"></span>
+				</label>
+			  </div>
+			  <div class="effect-option">
+				<div class="option-label">Color</div>
+				<div class="color-option">
+				  <div class="color-preview" style="color: #00ffff;">
+					<input type="color" class="color-input" id="lasers-color" value="#00ffff">
+				  </div>
+				</div>
+			  </div>
+			</div>
+		  </div>
+		</div>
+	  </div>
+
+
+
+		</div>
+		<div class="right-column">
+		  <div class="panel queue">
+			<div class="panel-title">
+			  <i class="fas fa-list-ol"></i>
+			  <strong>QUEUE</strong>
+			</div>
+			<div class="queue-list" id="queue-list">
+			  <div class="queue-item active">
+				<div class="queue-cover">
+				  <i class="fas fa-music"></i>
+				</div>
+				<div class="queue-details">
+				  <div class="queue-name">Current Song</div>
+				  <div class="queue-artist">Now Playing</div>
+				</div>
+				<div class="queue-duration">3:18</div>
+			  </div>
+			  <div class="queue-item">
+				<div class="queue-cover">
+				  <i class="fas fa-music"></i>
+				</div>
+				<div class="queue-details">
+				  <div class="queue-name">Next Track</div>
+				  <div class="queue-artist">Up Next</div>
+				</div>
+				<div class="queue-duration">4:05</div>
+			  </div>
+			</div>
+			<button class="clear-btn" id="clear-queue">
+			  <i class="fas fa-trash"></i>
+			  Clear Queue
+			</button>
+	  <button class="add-to-queue">
+		<i class="fas fa-plus"></i>
+		Add Song
+	  </button>	
+		  </div>
+		  <div class="panel playlists">
+			<div class="panel-title">
+			  <i class="fas fa-list"></i>
+			  <strong>PLAYLISTS</strong>
+			</div>
+			<div class="playlist-actions">
+			  <button class="action-btn" id="new-playlist">
+				<i class="fas fa-plus"></i>
+				New Playlist
+			  </button>
+			</div>
+			<div class="playlist-list" id="playlist-list">
+			</div>
+		  </div>
+		  <div class="panel soundboard">
+			<div class="panel-title">
+			  <i class="fas fa-sliders-h"></i>
+			  <strong>SOUNDBOARD</strong>
+			</div>
+			<div class="sound-grid" id="sound-grid">
+			  <button class="sound-btn" id="sound-horn">
+				<i class="fas fa-bullhorn"></i>
+				<span>Horn</span>
+			  </button>
+			  <button class="sound-btn" id="sound-airhorn">
+				<i class="fas fa-bell"></i>
+				<span>Airhorn</span>
+			  </button>
+			  <button class="sound-btn" id="sound-siren">
+				<i class="fas fa-ambulance"></i>
+				<span>Siren</span>
+			  </button>
+			  <button class="sound-btn" id="sound-applause">
+				<i class="fas fa-hands-clapping"></i>
+				<span>Applause</span>
+			  </button>
+			  <button class="sound-btn" id="sound-laugh">
+				<i class="fas fa-face-laugh-squint"></i>
+				<span>Laugh</span>
+			  </button>
+			  <button class="sound-btn" id="sound-drop">
+				<i class="fas fa-bomb"></i>
+				<span>Bass Drop</span>
+			  </button>
+			  <button class="sound-btn" id="sound-crowd">
+				<i class="fas fa-users"></i>
+				<span>Crowd</span>
+			  </button>
+			  <button class="sound-btn" id="sound-snap">
+				<i class="fas fa-fingerprint"></i>
+				<span>Snap</span>
+			  </button>
+			</div>
+		  </div>
+
+	<div class="modal-overlay" id="queue-modal">
+	  <div class="modal">
+		<div class="modal-header">
+		  <div class="modal-title">Add Song to Queue</div>
+		</div>
+		<div class="modal-body">
+		  <input type="text" class="modal-input" id="queue-song-url" placeholder="Enter song URL">
+		</div>
+		<div class="modal-actions">
+		  <button class="modal-btn cancel" id="cancel-queue-song">
+			<i class="fas fa-times"></i>
+			Cancel
+		  </button>
+		  <button class="modal-btn confirm" id="save-queue-song">
+			<i class="fas fa-plus"></i>
+			Add
+		  </button>
+		</div>
+	  </div>
+	</div>
+	  <div class="modal-overlay" id="playlist-modal">
+		<div class="modal">
+		  <div class="modal-header">
+			<div class="modal-title">Create Playlist</div>
+		  </div>
+		  <div class="modal-body">
+			<input type="text" class="modal-input" id="playlist-name" placeholder="Playlist name">
+			<textarea class="modal-input" id="playlist-urls" placeholder="Enter song URLs (one per line)" rows="5"></textarea>
+		  </div>
+		  <div class="modal-actions">
+			<button class="modal-btn cancel" id="cancel-playlist">
+			  <i class="fas fa-times"></i>
+			  Cancel
+			</button>
+			<button class="modal-btn confirm" id="save-playlist">
+			  <i class="fas fa-save"></i>
+			  Save
+			</button>
+		  </div>
+		</div>
+	  </div>
+
+		</div>
+	 
+	  </div>
+	</div>  
+  <div class="djc-wrap">
+<!-- DJC HOME (landing screen) -->
+<div class="djc-app" id="djc-home" style="display:none;">
+  <button class="djc-close-btn" id="djc-home-close"><i class="fa-solid fa-xmark"></i></button>
+
+  <div class="djc-header">
+    <div class="djc-title">
+      <i class="fa-solid fa-vinyl-record" style="color:var(--primary)"></i>
+      <div>
+        <h1>DJ LOCATION CREATOR</h1>
+        <div class="djc-subtitle">EDIT • REMOVE • CREATE</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:var(--gap)">
+    <div class="djc-card">
+      <h3><i class="fa-solid fa-map-location-dot"></i> Saved Locations</h3>
+      <div class="djc-list" id="djc-home-list"></div>
+
+      <div class="djc-actions-bar" style="justify-content:space-between">
+        <div></div>
+        <button class="djc-btn djc-btn-cta" id="djc-home-create">
+          <i class="fa-solid fa-plus"></i> CREATE NEW LOCATION
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+  
+    <div class="djc-app" id="djc-app">
+      <button class="djc-close-btn" id="djc-close"><i class="fa-solid fa-xmark"></i></button>
+
+      <div class="djc-header">
+        <div class="djc-title">
+          <i class="fa-solid fa-vinyl-record" style="color:var(--primary)"></i>
+          <div>
+            <h1>DJ LOCATION CREATOR</h1>
+            <div class="djc-subtitle">CONFIGURE NAME, LOCATION, ACCESS, EFFECTS</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="djc-grid">
+        <section class="djc-card">
+          <h3><i class="fa-solid fa-sliders"></i>BASIC SETTINGS</h3>
+
+          <div class="djc-row">
+            <label>Location Name</label>
+            <input id="djc-input-name" class="djc-input" placeholder="e.g. Bahama Mamas" />
+          </div>
+
+          <div class="djc-row">
+            <label>Coordinates</label>
+            <div class="djc-grow" style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+              <div id="djc-coord-status" class="djc-subtitle">Not set</div>
+              <button class="djc-btn djc-btn-primary" id="djc-btn-set-loc"><i class="fa-solid fa-location-crosshairs"></i> Set Location</button>
+            </div>
+          </div>
+
+          <div class="djc-row" style="align-items:flex-start">
+            <label>Max Sound Distance</label>
+            <div class="djc-grow">
+              <div class="djc-range">
+                <input id="djc-range-maxdist" type="range" min="1" max="1000" value="500">
+                <div id="djc-range-bubble" class="djc-bubble">500</div>
+              </div>
+              <div class="djc-minmax"><span>1</span><span>1000</span></div>
+            </div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0">
+
+          <h3><i class="fa-solid fa-user-shield"></i>ACCESS CONTROL</h3>
+          <div class="djc-row">
+            <label>Everyone can use</label>
+            <div class="djc-grow" style="display:flex;align-items:center;gap:10px">
+              <div class="djc-toggle">
+                <input id="djc-toggle-everyone" type="checkbox" />
+                <div class="djc-toggle-track"></div>
+                <div class="djc-toggle-knob"></div>
+              </div>
+              <button class="djc-btn" id="djc-btn-perms-manage"><i class="fa-solid fa-list"></i> Manage Permissions</button>
+            </div>
+          </div>
+
+          <div class="djc-row" style="align-items:flex-start">
+            <label>Set Permissions</label>
+            <div class="djc-grow" style="display:grid;grid-template-columns:200px 1fr 160px;gap:10px">
+              <select id="djc-select-permtype" class="djc-select">
+                <option value="ace">ACE</option>
+                <option value="job">Job</option>
+                <option value="identifier">Identifier</option>
+              </select>
+              <input id="djc-input-permvalue" class="djc-input" placeholder="Enter ACE / Job / Identifier" />
+              <button class="djc-btn djc-btn-primary" id="djc-btn-perm-add"><i class="fa-solid fa-plus"></i> Add</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="djc-card">
+          <h3><i class="fa-solid fa-wand-magic-sparkles"></i>EFFECTS & LOCATIONS</h3>
+
+          <div class="djc-effect-row">
+            <div class="djc-left">
+              <div class="djc-label">Enable Smoke</div>
+              <div class="djc-toggle"><input id="djc-toggle-smoke" type="checkbox" /><div class="djc-toggle-track"></div><div class="djc-toggle-knob"></div></div>
+            </div>
+            <div class="djc-actions">
+              <button class="djc-btn" id="djc-btn-add-smoke"><i class="fa-solid fa-smog"></i> Add Smoke Location</button>
+              <button class="djc-btn" id="djc-btn-list-smoke"><i class="fa-solid fa-map"></i> Current Locations</button>
+            </div>
+          </div>
+
+          <div class="djc-effect-row">
+            <div class="djc-left">
+              <div class="djc-label">Enable Lights</div>
+              <div class="djc-toggle"><input id="djc-toggle-lights" type="checkbox" /><div class="djc-toggle-track"></div><div class="djc-toggle-knob"></div></div>
+            </div>
+            <div class="djc-actions">
+              <button class="djc-btn" id="djc-btn-add-lights"><i class="fa-solid fa-lightbulb"></i> Add Light Location</button>
+              <button class="djc-btn" id="djc-btn-list-lights"><i class="fa-solid fa-map"></i> Current Locations</button>
+            </div>
+          </div>
+
+          <div class="djc-effect-row">
+            <div class="djc-left">
+              <div class="djc-label">Enable Lasers</div>
+              <div class="djc-toggle"><input id="djc-toggle-lasers" type="checkbox" /><div class="djc-toggle-track"></div><div class="djc-toggle-knob"></div></div>
+            </div>
+            <div class="djc-actions">
+              <button class="djc-btn" id="djc-btn-add-lasers"><i class="fa-solid fa-bolt"></i> Add Laser Location</button>
+              <button class="djc-btn" id="djc-btn-list-lasers"><i class="fa-solid fa-map"></i> Current Locations</button>
+            </div>
+          </div>
+
+          <div class="djc-effect-row">
+            <div class="djc-left">
+              <div class="djc-label">Enable Particles</div>
+              <div class="djc-toggle"><input id="djc-toggle-particles" type="checkbox" /><div class="djc-toggle-track"></div><div class="djc-toggle-knob"></div></div>
+            </div>
+            <div class="djc-actions">
+              <button class="djc-btn" id="djc-btn-add-particles"><i class="fa-solid fa-fire"></i> Add Particle Location</button>
+              <button class="djc-btn" id="djc-btn-list-particles"><i class="fa-solid fa-map"></i> Current Locations</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="djc-footer">
+        <button class="djc-btn djc-btn-cta" id="djc-btn-create"><i class="fa-solid fa-check"></i> CREATE</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="djc-overlay" id="djc-overlay-add">
+    <div class="djc-modal">
+      <h4 id="djc-add-title">Set Coordinates</h4>
+		<div id="djc-list-row"> Press <b>G</b> to toggle between <b>Move</b> and <b>Rotate</b>.<br> Hold the <b>Right Mouse Button</b> to move the camera.</div>
+
+      <div style="margin-top:10px;font-weight:800">Position</div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <input id="djc-pos-x" class="djc-input" type="number" step="0.01" placeholder="x" />
+        <input id="djc-pos-y" class="djc-input" type="number" step="0.01" placeholder="y" />
+        <input id="djc-pos-z" class="djc-input" type="number" step="0.01" placeholder="z" />
+        <button class="djc-btn" id="djc-btn-use-pos" title="Use last sent position"><i class="fa-solid fa-crosshairs"></i></button>
+      </div>
+
+      <div id="djc-particle-extra" style="display:none;margin-top:12px">
+        <div style="font-weight:800">Particle Setup</div>
+        <input id="djc-particle-name" class="djc-input" placeholder="Particle Name" style="margin-top:6px" />
+        <input id="djc-particle-dict" class="djc-input" placeholder="Particle Dictionary" style="margin-top:8px" />
+      </div>
+
+      <div id="djc-rotation-extra" style="margin-top:12px">
+        <div style="font-weight:800">Rotation</div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <input id="djc-rot-x" class="djc-input" type="number" step="0.01" placeholder="rot x" />
+          <input id="djc-rot-y" class="djc-input" type="number" step="0.01" placeholder="rot y" />
+          <input id="djc-rot-z" class="djc-input" type="number" step="0.01" placeholder="rot z" />
+          <button class="djc-btn" id="djc-btn-use-rot" title="Use last sent rotation"><i class="fa-solid fa-compass-drafting"></i></button>
+        </div>
+      </div>
+
+      <div class="djc-actions-bar">
+        <button class="djc-btn" id="djc-add-cancel">Cancel</button>
+        <button class="djc-btn djc-btn-primary" id="djc-add-confirm">Add</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="djc-overlay" id="djc-overlay-perms">
+    <div class="djc-modal">
+      <h4>Permissions</h4>
+      <div class="djc-list" id="djc-perm-list"></div>
+      <div class="djc-actions-bar">
+        <button class="djc-btn" id="djc-perms-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="djc-overlay" id="djc-overlay-list">
+    <div class="djc-modal">
+      <h4 id="djc-list-title">Current Locations</h4>
+      <div class="djc-list" id="djc-list-content"></div>
+      <div class="djc-actions-bar">
+        <button class="djc-btn djc-btn-danger" id="djc-list-clear"><i class="fa-solid fa-trash"></i> Clear All</button>
+        <button class="djc-btn" id="djc-list-close">Close</button>
+      </div>
+    </div>
+  </div>	
+	<div class="gizmoshow-container" id="gizmoshow">
+		<div id="root"></div>
+	</div>	  
+	<script src="scripts.js"></script>
+</body>
+</html>

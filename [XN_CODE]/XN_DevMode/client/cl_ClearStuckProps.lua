@@ -1,0 +1,41 @@
+-- local PROP_DELETE_WHITELIST = {
+--     [GetHashKey('prop_money_bag_01')] = true,
+--     [GetHashKey('VALENTINEMODEL50')] = true,
+--     [GetHashKey('notz_chibi_f_anim')] = true,
+--     [GetHashKey('seacity_ahrimoonwhite')] = true,
+--     [GetHashKey('p_defilied_ragdoll_01_s')] = true,
+--     [GetHashKey('prop_toilet_01')] = true,
+--     [GetHashKey('prop_microwave_1')] = true,
+--     [GetHashKey('prop_tv_flat_02b')] = true,
+--     -- [GetHashKey('w_me_machette_lr')] = true,
+--     -- [GetHashKey('prop_w_me_knife_01')] = true,
+--     -- [GetHashKey('w_me_bat')] = true,
+--     -- [GetHashKey('w_me_crowbar')] = true,
+--     -- [GetHashKey('w_me_hammer')] = true,
+--     -- [GetHashKey('w_me_hatchet')] = true,
+--     -- [GetHashKey('w_me_dagger')] = true,
+--     -- [GetHashKey('w_me_gclub')] = true,
+--     -- [GetHashKey('w_me_wrench')] = true,
+--     -- [GetHashKey('w_me_stonehatchet')] = true,
+-- }
+
+-- RegisterNetEvent('QBCore:Client:VehicleInfo', function(data)
+--     print(LocalPlayer.state.isLoggedIn, data.event)
+--     if not LocalPlayer.state.isLoggedIn or data.event == 'Entering' then 
+--         return 
+--     end
+--     Wait(100)
+--     local driver = GetPedInVehicleSeat(data.vehicle, -1)
+--     if driver ~= 0 then 
+--         for _, v in pairs(GetGamePool("CObject")) do
+--             if IsEntityAttachedToEntity(cache.ped, v) then
+--                 local model = GetEntityModel(v) 
+--                 if not PROP_DELETE_WHITELIST[model] then 
+--                     SetEntityAsMissionEntity(v, true, true)
+--                     DeleteObject(v)
+--                     DeleteEntity(v)
+--                 end
+--             end
+--         end
+--     end
+-- end)

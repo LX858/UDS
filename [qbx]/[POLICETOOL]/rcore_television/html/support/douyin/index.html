@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<script src="/html/js/jquery.min.js"></script>
+<link rel="stylesheet" href="./css.css">
+<script src="/html/js/functions.js"></script>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: black;
+    }
+    iframe {
+        position: absolute;
+        top: 0;
+        left: 1.5%;
+        width: 96.79%;
+        height: 100%;
+        border: none;
+    }
+</style>
+<head>
+    <meta charset="utf-8">
+    <title>rcore_television douyin support</title>
+</head>
+<body>
+<iframe id ="frame" frameborder="0" referrerpolicy="unsafe-url" allowfullscreen></iframe>
+</body>
+</html>
+
+<script>
+    function getQueryParams() {
+        var qs = window.location.search;
+        qs = qs.split('+').join(' ');
+
+        var params = {},
+            tokens,
+            re = /[?&]?([^=]+)=([^&]*)/g;
+
+        while (tokens = re.exec(qs)) {
+            params[decodeURIComponent(tokens[1])] = decodeURIComponent(tokens[2]);
+        }
+        return params;
+    }
+
+    var result = getQueryParams();
+
+    var vol = Number(result.volume);
+    var time = Number(result.time);
+
+    $("#frame").attr("src", "https://open.douyin.com/player/video?vid="+ result.url.split("/").pop() +"&autoplay=1")
+
+    $('#frame').on("load", function() {
+        const iframe = document.getElementById("frame");
+        const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+
+        const interval = setInterval(() => {
+            const video = iframeDocument.querySelector("video");
+            if (video !== null) {
+                clearInterval(interval);
+                setInterval(() => {
+                    video.volume = GetNewVolume();
+                }, 100);
+
+                video.addEventListener("loadedmetadata", () => {
+                    video.play();
+                    video.currentTime = time;
+                    $.post('http://rcore_television/updatePos', JSON.stringify({
+                        identifier: result.identifier,
+                    }));
+                });
+            }
+        }, 50);
+    });
+</script>

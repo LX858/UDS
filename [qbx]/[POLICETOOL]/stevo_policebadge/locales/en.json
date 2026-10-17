@@ -1,0 +1,11 @@
+{
+    "department_name": "Cảnh Sát Victoria",
+    "progress_label": "Đang hiển thị huy hiệu",
+    "not_police": "Bạn không phải là cảnh sát!",
+    "not_now": "Bạn không thể sử dụng điều này ngay bây giờ!",
+    "input_title": "Ảnh huy hiệu",
+    "input_text": "URL ảnh huy hiệu",
+    "no_photo": "Bạn chưa nhập ảnh",
+    "update_badge_photo_success": "Cập nhật ảnh huy hiệu thành công!",
+    "update_badge_photo_fail": "Không thể đặt ảnh huy hiệu mới, vui lòng thử lại!"
+}

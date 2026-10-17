@@ -1,0 +1,24 @@
+-- Citizen.CreateThread(function()
+--     AddTextEntry('PM_SCR_MAP', '<FONT FACE="Oswald">~g~BẢN ĐỒ</font>')
+--     AddTextEntry('PM_SCR_STA', '<FONT FACE="Oswald">~o~TRẠNG THÁI</font>')
+--     AddTextEntry('PM_SCR_GAM', '<FONT FACE="Oswald">~r~TRÒ CHƠI</font>')
+--     AddTextEntry('PM_SCR_INF', '<FONT FACE="Oswald">~y~THÔNG TIN</font>')
+--     AddTextEntry('PM_SCR_SET', '<FONT FACE="Oswald">~g~CÀI ĐẶT</font>')
+--     AddTextEntry('PM_SCR_GAL', '<FONT FACE="Oswald">~p~THƯ VIỆN</font>')
+-- end)
+
+-- Citizen.CreateThread(function()
+--     while true do
+--         sleep = 3000
+--         N_0xb9449845f73f5e9c("SHIFT_CORONA_DESC")
+--         PushScaleformMovieFunctionParameterBool(true)
+--         PopScaleformMovieFunction()
+--         N_0xb9449845f73f5e9c("SET_HEADER_TITLE")
+--         PushScaleformMovieFunctionParameterString("~o~ ALL STARS VIET NAM")
+--         PushScaleformMovieFunctionParameterBool(true)
+--         PushScaleformMovieFunctionParameterString("<FONT FACE='Oswald'>Tham gia cộng đồng tại discord.gg/37GFJNPbWM</font>")
+--         PushScaleformMovieFunctionParameterBool(true)
+--         PopScaleformMovieFunctionVoid()
+--         Citizen.Wait(sleep)
+--     end
+-- end)

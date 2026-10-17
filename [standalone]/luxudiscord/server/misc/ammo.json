@@ -1,0 +1,90 @@
+[
+  {
+    "name": "Pistol Ammo",
+    "value": "pistol_ammo"
+  },
+  {
+    "name": "SMG Ammo",
+    "value": "smg_ammo"
+  },
+  {
+    "name": "Shotgun Ammo",
+    "value": "shotgun_ammo"
+  },
+  {
+    "name": "Rifle Ammo",
+    "value": "rifle_ammo"
+  },
+  {
+    "name": "MG Ammo",
+    "value": "mg_ammo"
+  },
+  {
+    "name": "Sniper Ammo",
+    "value": "sniper_ammo"
+  },
+  {
+    "name": "Firework Ammo",
+    "value": "firework_ammo"
+  },
+  {
+    "name": "Minigun Ammo",
+    "value": "minigun_ammo"
+  },
+  {
+    "name": "Grenade Launcher Ammo",
+    "value": "grenadelauncher_ammo"
+  },
+  {
+    "name": "RPG Ammo",
+    "value": "rpg_ammo"
+  },
+  {
+    "name": "Railgun Ammo",
+    "value": "railgun_ammo"
+  },
+  {
+    "name": "Homing Launcher Ammo",
+    "value": "hominglauncher_ammo"
+  },
+  {
+    "name": "Stun Gun Ammo",
+    "value": "stungun_ammo"
+  },
+  {
+    "name": "Flare Gun Ammo",
+    "value": "flaregun_ammo"
+  },
+  {
+    "name": "Grenade",
+    "value": "grenade_ammo"
+  },
+  {
+    "name": "Sticky Bomb",
+    "value": "stickybomb_ammo"
+  },
+  {
+    "name": "Proximity Mine",
+    "value": "proxmine_ammo"
+  },
+  {
+    "name": "Pipe Bomb",
+    "value": "pipebomb_ammo"
+  },
+  {
+    "name": "Molotov Cocktail",
+    "value": "molotov_ammo"
+  },
+  {
+    "name": "Smoke Grenade",
+    "value": "smokegrenade_ammo"
+  },
+  {
+    "name": "BZ Gas",
+    "value": "bzgas_ammo"
+  },
+  {
+    "name": "Tear Gas",
+    "value": "teargas_ammo"
+  }
+]

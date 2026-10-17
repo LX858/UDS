@@ -1,0 +1,5186 @@
+[
+    {
+        "class": "Planes",
+        "hash": -2122757008,
+        "spawnName": "stunt",
+        "displayName": "Stunt"
+    },
+    {
+        "class": "Boats",
+        "hash": -1706603682,
+        "spawnName": "avisa",
+        "displayName": "Avisa"
+    },
+    {
+        "class": "Sports",
+        "hash": 1032823388,
+        "spawnName": "ninef",
+        "displayName": "Ninef"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 710198397,
+        "spawnName": "supervolito",
+        "displayName": "Svolito"
+    },
+    {
+        "class": "Super",
+        "hash": 1044193113,
+        "spawnName": "thrax",
+        "displayName": "Thrax"
+    },
+    {
+        "class": "Sports",
+        "hash": 736902334,
+        "spawnName": "buffalo2",
+        "displayName": "Buffalo02"
+    },
+    {
+        "class": "Utility",
+        "hash": -1637149482,
+        "spawnName": "armytrailer2",
+        "displayName": "Armytrailer"
+    },
+    {
+        "class": "Sports",
+        "hash": -1461482751,
+        "spawnName": "ninef2",
+        "displayName": "Ninef2"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1205689942,
+        "spawnName": "riot",
+        "displayName": "Riot"
+    },
+    {
+        "class": "Sports",
+        "hash": -1763273939,
+        "spawnName": "driftjester",
+        "displayName": "Driftjester"
+    },
+    {
+        "class": "Off-road",
+        "hash": -48031959,
+        "spawnName": "blazer2",
+        "displayName": "Blazer2"
+    },
+    {
+        "class": "Compacts",
+        "hash": -344943009,
+        "spawnName": "blista",
+        "displayName": "Blista"
+    },
+    {
+        "class": "Sports",
+        "hash": -1297672541,
+        "spawnName": "jester",
+        "displayName": "Jester"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1809822327,
+        "spawnName": "asea",
+        "displayName": "Asea"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1807623979,
+        "spawnName": "asea2",
+        "displayName": "Asea"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -2033222435,
+        "spawnName": "tornado4",
+        "displayName": "Tornado"
+    },
+    {
+        "class": "Utility",
+        "hash": -1207431159,
+        "spawnName": "armytanker",
+        "displayName": "Armytrailer"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 838982985,
+        "spawnName": "z190",
+        "displayName": "Z190"
+    },
+    {
+        "class": "Military",
+        "hash": 630371791,
+        "spawnName": "barracks3",
+        "displayName": "Barracks"
+    },
+    {
+        "class": "Off-road",
+        "hash": 298565713,
+        "spawnName": "verus",
+        "displayName": "Verus"
+    },
+    {
+        "class": "Compacts",
+        "hash": 1682114128,
+        "spawnName": "dilettante2",
+        "displayName": "Dilettan"
+    },
+    {
+        "class": "Compacts",
+        "hash": 1239571361,
+        "spawnName": "issi6",
+        "displayName": "Issi6"
+    },
+    {
+        "class": "Coupes",
+        "hash": 330661258,
+        "spawnName": "cogcabrio",
+        "displayName": "Cogcabri"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 223240013,
+        "spawnName": "cheetah2",
+        "displayName": "Cheetah2"
+    },
+    {
+        "class": "Super",
+        "hash": 408192225,
+        "spawnName": "turismor",
+        "displayName": "Turismor"
+    },
+    {
+        "class": "Sports",
+        "hash": -410205223,
+        "spawnName": "revolter",
+        "displayName": "Revolter"
+    },
+    {
+        "class": "Service",
+        "hash": -713569950,
+        "spawnName": "bus",
+        "displayName": "Bus"
+    },
+    {
+        "class": "Utility",
+        "hash": 524108981,
+        "spawnName": "boattrailer",
+        "displayName": "Boattrailer"
+    },
+    {
+        "class": "Industrial",
+        "hash": 1353720154,
+        "spawnName": "flatbed",
+        "displayName": "Flatbed"
+    },
+    {
+        "class": "Sports",
+        "hash": -304802106,
+        "spawnName": "buffalo",
+        "displayName": "Buffalo"
+    },
+    {
+        "class": "Emergency",
+        "hash": 1171614426,
+        "spawnName": "ambulance",
+        "displayName": "Ambulan"
+    },
+    {
+        "class": "Commercial",
+        "hash": 2053223216,
+        "spawnName": "benson",
+        "displayName": "Benson"
+    },
+    {
+        "class": "Utility",
+        "hash": -1476447243,
+        "spawnName": "armytrailer",
+        "displayName": "Armytrailer"
+    },
+    {
+        "class": "Utility",
+        "hash": -777275802,
+        "spawnName": "freighttrailer",
+        "displayName": "Freighttrai"
+    },
+    {
+        "class": "Super",
+        "hash": -1696146015,
+        "spawnName": "bullet",
+        "displayName": "Bullet"
+    },
+    {
+        "class": "Vans",
+        "hash": -233098306,
+        "spawnName": "boxville2",
+        "displayName": "Boxville"
+    },
+    {
+        "class": "Service",
+        "hash": -2072933068,
+        "spawnName": "coach",
+        "displayName": "Coach"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -114291515,
+        "spawnName": "bati",
+        "displayName": "Bati"
+    },
+    {
+        "class": "Off-road",
+        "hash": 996383885,
+        "spawnName": "boor",
+        "displayName": "Boor"
+    },
+    {
+        "class": "Off-road",
+        "hash": -2128233223,
+        "spawnName": "blazer",
+        "displayName": "Blazer"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -602287871,
+        "spawnName": "btype3",
+        "displayName": "Roosevelt2"
+    },
+    {
+        "class": "Sedans",
+        "hash": 1723137093,
+        "spawnName": "stratum",
+        "displayName": "Stratum"
+    },
+    {
+        "class": "Service",
+        "hash": 1283517198,
+        "spawnName": "airbus",
+        "displayName": "Airbus"
+    },
+    {
+        "class": "Muscle",
+        "hash": 833469436,
+        "spawnName": "slamvan2",
+        "displayName": "Slamvan2"
+    },
+    {
+        "class": "Sports",
+        "hash": -142942670,
+        "spawnName": "massacro",
+        "displayName": "Massacro"
+    },
+    {
+        "class": "Planes",
+        "hash": -644710429,
+        "spawnName": "cuban800",
+        "displayName": "Cuban800"
+    },
+    {
+        "class": "Boats",
+        "hash": 908897389,
+        "spawnName": "toro2",
+        "displayName": "Toro"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1829436850,
+        "spawnName": "Novak",
+        "displayName": "Novak"
+    },
+    {
+        "class": "Vans",
+        "hash": 893081117,
+        "spawnName": "burrito4",
+        "displayName": "Burrito"
+    },
+    {
+        "class": "Utility",
+        "hash": 1956216962,
+        "spawnName": "tanker2",
+        "displayName": "Tanker"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1903012613,
+        "spawnName": "asterope",
+        "displayName": "Astrope"
+    },
+    {
+        "class": "Utility",
+        "hash": 1560980623,
+        "spawnName": "airtug",
+        "displayName": "Airtug"
+    },
+    {
+        "class": "Sedans",
+        "hash": 75131841,
+        "spawnName": "glendale",
+        "displayName": "Glendale"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1349095620,
+        "spawnName": "caracara2",
+        "displayName": "Caracara2"
+    },
+    {
+        "class": "Military",
+        "hash": -823509173,
+        "spawnName": "barracks",
+        "displayName": "Barracks"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1543762099,
+        "spawnName": "gresley",
+        "displayName": "Gresley"
+    },
+    {
+        "class": "SUVs",
+        "hash": 2006918058,
+        "spawnName": "cavalcade",
+        "displayName": "Cavcade"
+    },
+    {
+        "class": "Industrial",
+        "hash": 444583674,
+        "spawnName": "handler",
+        "displayName": "Handler"
+    },
+    {
+        "class": "Military",
+        "hash": 1074326203,
+        "spawnName": "barracks2",
+        "displayName": "Barracks2"
+    },
+    {
+        "class": "Utility",
+        "hash": -442313018,
+        "spawnName": "towtruck2",
+        "displayName": "Towtruck"
+    },
+    {
+        "class": "Sedans",
+        "hash": 627094268,
+        "spawnName": "romero",
+        "displayName": "Romero"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -159126838,
+        "spawnName": "innovation",
+        "displayName": "Innovation"
+    },
+    {
+        "class": "Sedans",
+        "hash": -741120335,
+        "spawnName": "asterope2",
+        "displayName": "Asterope2"
+    },
+    {
+        "class": "SUVs",
+        "hash": 850565707,
+        "spawnName": "bjxl",
+        "displayName": "Bjxl"
+    },
+    {
+        "class": "SUVs",
+        "hash": -808831384,
+        "spawnName": "baller",
+        "displayName": "Baller"
+    },
+    {
+        "class": "Vans",
+        "hash": -119658072,
+        "spawnName": "pony",
+        "displayName": "Pony"
+    },
+    {
+        "class": "Super",
+        "hash": -1622444098,
+        "spawnName": "voltic",
+        "displayName": "Voltic"
+    },
+    {
+        "class": "SUVs",
+        "hash": 142944341,
+        "spawnName": "baller2",
+        "displayName": "Baller2"
+    },
+    {
+        "class": "Utility",
+        "hash": -884690486,
+        "spawnName": "docktug",
+        "displayName": "Docktug"
+    },
+    {
+        "class": "Sports",
+        "hash": -1041692462,
+        "spawnName": "banshee",
+        "displayName": "Banshee"
+    },
+    {
+        "class": "Sports",
+        "hash": -1624083468,
+        "spawnName": "driftremus",
+        "displayName": "Driftremus"
+    },
+    {
+        "class": "Off-road",
+        "hash": -210308634,
+        "spawnName": "winky",
+        "displayName": "Winky"
+    },
+    {
+        "class": "Boats",
+        "hash": 1861786828,
+        "spawnName": "longfin",
+        "displayName": "Longfin"
+    },
+    {
+        "class": "Planes",
+        "hash": 368211810,
+        "spawnName": "cargoplane",
+        "displayName": "Cargopl"
+    },
+    {
+        "class": "Service",
+        "hash": -305727417,
+        "spawnName": "brickade",
+        "displayName": "Brickade"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1126868326,
+        "spawnName": "bfinjection",
+        "displayName": "Bfinject"
+    },
+    {
+        "class": "Coupes",
+        "hash": -89291282,
+        "spawnName": "felon2",
+        "displayName": "Felon2"
+    },
+    {
+        "class": "Commercial",
+        "hash": 850991848,
+        "spawnName": "biff",
+        "displayName": "Biff"
+    },
+    {
+        "class": "Off-road",
+        "hash": 433954513,
+        "spawnName": "nightshark",
+        "displayName": "Nightshark"
+    },
+    {
+        "class": "Super",
+        "hash": 989294410,
+        "spawnName": "voltic2",
+        "displayName": "Voltic2"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1269889662,
+        "spawnName": "blazer3",
+        "displayName": "Blazer03"
+    },
+    {
+        "class": "Military",
+        "hash": -212993243,
+        "spawnName": "barrage",
+        "displayName": "Barrage"
+    },
+    {
+        "class": "Vans",
+        "hash": -907477130,
+        "spawnName": "burrito2",
+        "displayName": "Burrito2"
+    },
+    {
+        "class": "Planes",
+        "hash": 1077420264,
+        "spawnName": "velum2",
+        "displayName": "Velum2"
+    },
+    {
+        "class": "Vans",
+        "hash": -16948145,
+        "spawnName": "bison",
+        "displayName": "Bison"
+    },
+    {
+        "class": "Vans",
+        "hash": 2072156101,
+        "spawnName": "bison2",
+        "displayName": "Bison"
+    },
+    {
+        "class": "Super",
+        "hash": -376434238,
+        "spawnName": "tyrant",
+        "displayName": "Tyrant"
+    },
+    {
+        "class": "Vans",
+        "hash": 1739845664,
+        "spawnName": "bison3",
+        "displayName": "Bison"
+    },
+    {
+        "class": "Utility",
+        "hash": -537896628,
+        "spawnName": "caddy2",
+        "displayName": "Caddy"
+    },
+    {
+        "class": "Utility",
+        "hash": 1147287684,
+        "spawnName": "caddy",
+        "displayName": "Caddy"
+    },
+    {
+        "class": "SUVs",
+        "hash": -789894171,
+        "spawnName": "cavalcade2",
+        "displayName": "Cavcade"
+    },
+    {
+        "class": "Vans",
+        "hash": -1987130134,
+        "spawnName": "boxville",
+        "displayName": "Boxville"
+    },
+    {
+        "class": "SUVs",
+        "hash": 1221512915,
+        "spawnName": "seminole",
+        "displayName": "Seminole"
+    },
+    {
+        "class": "Vans",
+        "hash": 121658888,
+        "spawnName": "boxville3",
+        "displayName": "Boxville"
+    },
+    {
+        "class": "Super",
+        "hash": 655665811,
+        "spawnName": "zeno",
+        "displayName": "Zeno"
+    },
+    {
+        "class": "Vans",
+        "hash": 1069929536,
+        "spawnName": "bobcatxl",
+        "displayName": "Bobcatxl"
+    },
+    {
+        "class": "Sports",
+        "hash": -1045541610,
+        "spawnName": "comet2",
+        "displayName": "Comet"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1435919434,
+        "spawnName": "bodhi2",
+        "displayName": "Bodhi2"
+    },
+    {
+        "class": "Planes",
+        "hash": -613725916,
+        "spawnName": "blimp2",
+        "displayName": "Blimp2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -682211828,
+        "spawnName": "buccaneer",
+        "displayName": "Buccanee"
+    },
+    {
+        "class": "Industrial",
+        "hash": 1886712733,
+        "spawnName": "bulldozer",
+        "displayName": "Bulldoze"
+    },
+    {
+        "class": "Commercial",
+        "hash": 387748548,
+        "spawnName": "hauler2",
+        "displayName": "Hauler2"
+    },
+    {
+        "class": "Super",
+        "hash": -1242608589,
+        "spawnName": "vigilante",
+        "displayName": "Vigilante"
+    },
+    {
+        "class": "Planes",
+        "hash": -150975354,
+        "spawnName": "blimp",
+        "displayName": "Blimp"
+    },
+    {
+        "class": "Super",
+        "hash": -1403128555,
+        "spawnName": "zentorno",
+        "displayName": "Zentorno"
+    },
+    {
+        "class": "Commercial",
+        "hash": -129283887,
+        "spawnName": "phantom4",
+        "displayName": "Phantom"
+    },
+    {
+        "class": "Vans",
+        "hash": -1346687836,
+        "spawnName": "burrito",
+        "displayName": "Burrito"
+    },
+    {
+        "class": "Vans",
+        "hash": 1876516712,
+        "spawnName": "camper",
+        "displayName": "Camper"
+    },
+    {
+        "class": "Super",
+        "hash": -1311154784,
+        "spawnName": "cheetah",
+        "displayName": "Cheetah"
+    },
+    {
+        "class": "Boats",
+        "hash": 437538602,
+        "spawnName": "speeder2",
+        "displayName": "Speeder"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1566607184,
+        "spawnName": "clique",
+        "displayName": "Clique"
+    },
+    {
+        "class": "Vans",
+        "hash": -1743316013,
+        "spawnName": "burrito3",
+        "displayName": "Burrito"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -618617997,
+        "spawnName": "wolfsbane",
+        "displayName": "Wolfsbane"
+    },
+    {
+        "class": "Compacts",
+        "hash": -1130810103,
+        "spawnName": "dilettante",
+        "displayName": "Dilettan"
+    },
+    {
+        "class": "Coupes",
+        "hash": -5153954,
+        "spawnName": "exemplar",
+        "displayName": "Exemplar"
+    },
+    {
+        "class": "Utility",
+        "hash": -1700801569,
+        "spawnName": "scrap",
+        "displayName": "Scrap"
+    },
+    {
+        "class": "Sports",
+        "hash": -834353991,
+        "spawnName": "komoda",
+        "displayName": "Komoda"
+    },
+    {
+        "class": "Vans",
+        "hash": 1132262048,
+        "spawnName": "burrito5",
+        "displayName": "Burrito"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -2124201592,
+        "spawnName": "manana",
+        "displayName": "Manana"
+    },
+    {
+        "class": "Emergency",
+        "hash": 456714581,
+        "spawnName": "policet",
+        "displayName": "Policet"
+    },
+    {
+        "class": "Commercial",
+        "hash": -2052737935,
+        "spawnName": "mule3",
+        "displayName": "Mule"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 464687292,
+        "spawnName": "tornado",
+        "displayName": "Tornado"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 301427732,
+        "spawnName": "hexer",
+        "displayName": "Hexer"
+    },
+    {
+        "class": "Super",
+        "hash": 2067820283,
+        "spawnName": "tyrus",
+        "displayName": "Tyrus"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1210451983,
+        "spawnName": "tampa3",
+        "displayName": "Tampa3"
+    },
+    {
+        "class": "Vans",
+        "hash": -1745203402,
+        "spawnName": "gburrito",
+        "displayName": "Gburrito"
+    },
+    {
+        "class": "Trains",
+        "hash": -960289747,
+        "spawnName": "cablecar",
+        "displayName": "Cablecar"
+    },
+    {
+        "class": "Super",
+        "hash": -223461503,
+        "spawnName": "pipistrello",
+        "displayName": "Pipistrello"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -893578776,
+        "spawnName": "ruffian",
+        "displayName": "Ruffian"
+    },
+    {
+        "class": "Sports",
+        "hash": 1881415402,
+        "spawnName": "niobe",
+        "displayName": "Niobe"
+    },
+    {
+        "class": "Sports",
+        "hash": -505223465,
+        "spawnName": "omnisegt",
+        "displayName": "Omnisegt"
+    },
+    {
+        "class": "Sports",
+        "hash": 2072687711,
+        "spawnName": "carbonizzare",
+        "displayName": "Carboniz"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1137532101,
+        "spawnName": "fq2",
+        "displayName": "Fq2"
+    },
+    {
+        "class": "Sports",
+        "hash": 108773431,
+        "spawnName": "coquette",
+        "displayName": "Coquette"
+    },
+    {
+        "class": "Industrial",
+        "hash": 48339065,
+        "spawnName": "tiptruck",
+        "displayName": "Tiptruck"
+    },
+    {
+        "class": "Utility",
+        "hash": -2140210194,
+        "spawnName": "docktrailer",
+        "displayName": "Docktrailer"
+    },
+    {
+        "class": "Industrial",
+        "hash": -1006919392,
+        "spawnName": "cutter",
+        "displayName": "Cutter"
+    },
+    {
+        "class": "Commercial",
+        "hash": -2137348917,
+        "spawnName": "phantom",
+        "displayName": "Phantom"
+    },
+    {
+        "class": "Sports",
+        "hash": 2016857647,
+        "spawnName": "futo",
+        "displayName": "Futo"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1661854193,
+        "spawnName": "dune",
+        "displayName": "Dune"
+    },
+    {
+        "class": "Off-road",
+        "hash": 534258863,
+        "spawnName": "dune2",
+        "displayName": "Dune2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1289178744,
+        "spawnName": "faggio3",
+        "displayName": "Faggio3"
+    },
+    {
+        "class": "Sports",
+        "hash": 499169875,
+        "spawnName": "fusilade",
+        "displayName": "Fusilade"
+    },
+    {
+        "class": "Boats",
+        "hash": -488123221,
+        "spawnName": "predator",
+        "displayName": "Predator"
+    },
+    {
+        "class": "Off-road",
+        "hash": 167522317,
+        "spawnName": "terminus",
+        "displayName": "Terminus"
+    },
+    {
+        "class": "Muscle",
+        "hash": 37348240,
+        "spawnName": "hotknife",
+        "displayName": "Hotknife"
+    },
+    {
+        "class": "Muscle",
+        "hash": 600450546,
+        "spawnName": "hustler",
+        "displayName": "Hustler"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1770332643,
+        "spawnName": "dloader",
+        "displayName": "Dloader"
+    },
+    {
+        "class": "Cycles",
+        "hash": -400295096,
+        "spawnName": "tribike3",
+        "displayName": "Tribike3"
+    },
+    {
+        "class": "SUVs",
+        "hash": 1177543287,
+        "spawnName": "dubsta",
+        "displayName": "Dubsta"
+    },
+    {
+        "class": "Muscle",
+        "hash": -825837129,
+        "spawnName": "vigero",
+        "displayName": "Vigero"
+    },
+    {
+        "class": "Muscle",
+        "hash": 941494461,
+        "spawnName": "ruiner2",
+        "displayName": "Ruiner2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1758379524,
+        "spawnName": "vigero2",
+        "displayName": "Vigero2"
+    },
+    {
+        "class": "SUVs",
+        "hash": -394074634,
+        "spawnName": "dubsta2",
+        "displayName": "Dubsta"
+    },
+    {
+        "class": "Off-road",
+        "hash": -768236378,
+        "spawnName": "draugur",
+        "displayName": "Draugur"
+    },
+    {
+        "class": "Industrial",
+        "hash": -2130482718,
+        "spawnName": "dump",
+        "displayName": "Dump"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1119641113,
+        "spawnName": "slamvan3",
+        "displayName": "Slamvan3"
+    },
+    {
+        "class": "Sports",
+        "hash": -131348178,
+        "spawnName": "everon2",
+        "displayName": "Everon2"
+    },
+    {
+        "class": "Planes",
+        "hash": -1523619738,
+        "spawnName": "alphaz1",
+        "displayName": "Alphaz1"
+    },
+    {
+        "class": "Industrial",
+        "hash": -1705304628,
+        "spawnName": "rubble",
+        "displayName": "Rubble"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1742022738,
+        "spawnName": "slamvan6",
+        "displayName": "Slamvan6"
+    },
+    {
+        "class": "Muscle",
+        "hash": 80636076,
+        "spawnName": "dominator",
+        "displayName": "Dominator"
+    },
+    {
+        "class": "Cycles",
+        "hash": -836512833,
+        "spawnName": "fixter",
+        "displayName": "Fixter"
+    },
+    {
+        "class": "Sports",
+        "hash": -857356038,
+        "spawnName": "veto",
+        "displayName": "Veto"
+    },
+    {
+        "class": "Sedans",
+        "hash": -685276541,
+        "spawnName": "emperor",
+        "displayName": "Emperor"
+    },
+    {
+        "class": "SUVs",
+        "hash": 884422927,
+        "spawnName": "habanero",
+        "displayName": "Habanero"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1883002148,
+        "spawnName": "emperor2",
+        "displayName": "Emperor"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1241712818,
+        "spawnName": "emperor3",
+        "displayName": "Emperor"
+    },
+    {
+        "class": "Off-road",
+        "hash": 2038858402,
+        "spawnName": "brutus3",
+        "displayName": "Brutus3"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1762279763,
+        "spawnName": "tornado3",
+        "displayName": "Tornado3"
+    },
+    {
+        "class": "Planes",
+        "hash": -1214505995,
+        "spawnName": "shamal",
+        "displayName": "Shamal"
+    },
+    {
+        "class": "Super",
+        "hash": -1291952903,
+        "spawnName": "entityxf",
+        "displayName": "Entityxf"
+    },
+    {
+        "class": "Sports",
+        "hash": -566387422,
+        "spawnName": "elegy2",
+        "displayName": "Elegy2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1830407356,
+        "spawnName": "peyote",
+        "displayName": "Peyote"
+    },
+    {
+        "class": "Utility",
+        "hash": -1770643266,
+        "spawnName": "tvtrailer",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Sports",
+        "hash": -452604007,
+        "spawnName": "rt3000",
+        "displayName": "Rt3000"
+    },
+    {
+        "class": "Coupes",
+        "hash": -591610296,
+        "spawnName": "f620",
+        "displayName": "F620"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1507916787,
+        "spawnName": "picador",
+        "displayName": "Picador"
+    },
+    {
+        "class": "Emergency",
+        "hash": 1127131465,
+        "spawnName": "fbi",
+        "displayName": "Fbi"
+    },
+    {
+        "class": "Muscle",
+        "hash": 972671128,
+        "spawnName": "tampa",
+        "displayName": "Tampa"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1647941228,
+        "spawnName": "fbi2",
+        "displayName": "Fbi2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1836027715,
+        "spawnName": "thrust",
+        "displayName": "Thrust"
+    },
+    {
+        "class": "Sports",
+        "hash": 237764926,
+        "spawnName": "buffalo3",
+        "displayName": "Buffalo3"
+    },
+    {
+        "class": "Coupes",
+        "hash": -391594584,
+        "spawnName": "felon",
+        "displayName": "Felon"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1189015600,
+        "spawnName": "sandking",
+        "displayName": "Sandking XL"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -2098947590,
+        "spawnName": "stingergt",
+        "displayName": "Stingerg"
+    },
+    {
+        "class": "Boats",
+        "hash": -311022263,
+        "spawnName": "seashark3",
+        "displayName": "Seashark"
+    },
+    {
+        "class": "Sports",
+        "hash": -1995326987,
+        "spawnName": "feltzer2",
+        "displayName": "Feltzer"
+    },
+    {
+        "class": "Emergency",
+        "hash": 1938952078,
+        "spawnName": "firetruk",
+        "displayName": "Firetruk"
+    },
+    {
+        "class": "Utility",
+        "hash": 1491375716,
+        "spawnName": "forklift",
+        "displayName": "Fork"
+    },
+    {
+        "class": "Sedans",
+        "hash": 1909141499,
+        "spawnName": "fugitive",
+        "displayName": "Fugitive"
+    },
+    {
+        "class": "Utility",
+        "hash": 2091594960,
+        "spawnName": "tr4",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1353120668,
+        "spawnName": "shinobi",
+        "displayName": "Shinobi"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1775728740,
+        "spawnName": "granger",
+        "displayName": "Granger"
+    },
+    {
+        "class": "Super",
+        "hash": -1216765807,
+        "spawnName": "adder",
+        "displayName": "Adder"
+    },
+    {
+        "class": "Sports",
+        "hash": -754687673,
+        "spawnName": "corsita",
+        "displayName": "Corsita"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1800170043,
+        "spawnName": "gauntlet",
+        "displayName": "Gauntlet"
+    },
+    {
+        "class": "Commercial",
+        "hash": 1518533038,
+        "spawnName": "hauler",
+        "displayName": "Hauler"
+    },
+    {
+        "class": "Utility",
+        "hash": -769147461,
+        "spawnName": "caddy3",
+        "displayName": "Caddy3"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 2031587082,
+        "spawnName": "retinue2",
+        "displayName": "Retinue2"
+    },
+    {
+        "class": "Super",
+        "hash": 418536135,
+        "spawnName": "infernus",
+        "displayName": "Infernus"
+    },
+    {
+        "class": "Trains",
+        "hash": 920453016,
+        "spawnName": "freightcont1",
+        "displayName": "Freight"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1289722222,
+        "spawnName": "ingot",
+        "displayName": "Ingot"
+    },
+    {
+        "class": "Utility",
+        "hash": 2078290630,
+        "spawnName": "tr2",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Cycles",
+        "hash": -186537451,
+        "spawnName": "scorcher",
+        "displayName": "Scorcher"
+    },
+    {
+        "class": "Sedans",
+        "hash": 886934177,
+        "spawnName": "intruder",
+        "displayName": "Intruder"
+    },
+    {
+        "class": "Compacts",
+        "hash": -1177863319,
+        "spawnName": "issi2",
+        "displayName": "Issi"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1894894188,
+        "spawnName": "surge",
+        "displayName": "Surge"
+    },
+    {
+        "class": "Super",
+        "hash": -998177792,
+        "spawnName": "visione",
+        "displayName": "Visione"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1961627517,
+        "spawnName": "stretch",
+        "displayName": "Stretch"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 758895617,
+        "spawnName": "ztype",
+        "displayName": "Ztype"
+    },
+    {
+        "class": "Coupes",
+        "hash": -624529134,
+        "spawnName": "jackal",
+        "displayName": "Jackal"
+    },
+    {
+        "class": "Sports",
+        "hash": 2100457220,
+        "spawnName": "panthere",
+        "displayName": "Panthere"
+    },
+    {
+        "class": "Vans",
+        "hash": -120287622,
+        "spawnName": "journey",
+        "displayName": "Journey"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1051415893,
+        "spawnName": "jb700",
+        "displayName": "Jb700"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 11251904,
+        "spawnName": "carbonrs",
+        "displayName": "Carbon"
+    },
+    {
+        "class": "Sports",
+        "hash": 544021352,
+        "spawnName": "khamelion",
+        "displayName": "Khamel"
+    },
+    {
+        "class": "Sports",
+        "hash": -1582061455,
+        "spawnName": "jester4",
+        "displayName": "Jester4"
+    },
+    {
+        "class": "Compacts",
+        "hash": 628003514,
+        "spawnName": "issi4",
+        "displayName": "Issi4"
+    },
+    {
+        "class": "Commercial",
+        "hash": 177270108,
+        "spawnName": "phantom3",
+        "displayName": "Phantom3"
+    },
+    {
+        "class": "SUVs",
+        "hash": 1269098716,
+        "spawnName": "landstalker",
+        "displayName": "Landstal"
+    },
+    {
+        "class": "Boats",
+        "hash": -282946103,
+        "spawnName": "suntrap",
+        "displayName": "Suntrap"
+    },
+    {
+        "class": "Sports",
+        "hash": -1529242755,
+        "spawnName": "raiden",
+        "displayName": "Raiden"
+    },
+    {
+        "class": "Emergency",
+        "hash": 469291905,
+        "spawnName": "lguard",
+        "displayName": "Lguard"
+    },
+    {
+        "class": "SUVs",
+        "hash": 914654722,
+        "spawnName": "mesa",
+        "displayName": "Mesa"
+    },
+    {
+        "class": "Planes",
+        "hash": 621481054,
+        "spawnName": "luxor",
+        "displayName": "Luxor"
+    },
+    {
+        "class": "Compacts",
+        "hash": 1537277726,
+        "spawnName": "issi5",
+        "displayName": "Issi5"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -339587598,
+        "spawnName": "swift",
+        "displayName": "Swift"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1444856003,
+        "spawnName": "policet3",
+        "displayName": "Policet3"
+    },
+    {
+        "class": "SUVs",
+        "hash": -748008636,
+        "spawnName": "mesa2",
+        "displayName": "Mesa"
+    },
+    {
+        "class": "Off-road",
+        "hash": -2064372143,
+        "spawnName": "mesa3",
+        "displayName": "Mesa"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1717532765,
+        "spawnName": "manana2",
+        "displayName": "Manana2"
+    },
+    {
+        "class": "Military",
+        "hash": 321739290,
+        "spawnName": "crusader",
+        "displayName": "Crusader"
+    },
+    {
+        "class": "Vans",
+        "hash": -310465116,
+        "spawnName": "minivan",
+        "displayName": "Minivan"
+    },
+    {
+        "class": "Industrial",
+        "hash": -784816453,
+        "spawnName": "mixer",
+        "displayName": "Mixer"
+    },
+    {
+        "class": "Industrial",
+        "hash": 475220373,
+        "spawnName": "mixer2",
+        "displayName": "Mixer2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -433375717,
+        "spawnName": "monroe",
+        "displayName": "Monroe"
+    },
+    {
+        "class": "Utility",
+        "hash": 1783355638,
+        "spawnName": "mower",
+        "displayName": "Mower"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1207771834,
+        "spawnName": "rebel",
+        "displayName": "Rebel01"
+    },
+    {
+        "class": "Commercial",
+        "hash": 904750859,
+        "spawnName": "mule",
+        "displayName": "Mule"
+    },
+    {
+        "class": "Commercial",
+        "hash": 1653666139,
+        "spawnName": "pounder2",
+        "displayName": "Pounder2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -2119578145,
+        "spawnName": "faction",
+        "displayName": "Faction"
+    },
+    {
+        "class": "Commercial",
+        "hash": -1050465301,
+        "spawnName": "mule2",
+        "displayName": "Mule"
+    },
+    {
+        "class": "Off-road",
+        "hash": -845961253,
+        "spawnName": "monster",
+        "displayName": "Monster"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 788045382,
+        "spawnName": "sanchez",
+        "displayName": "Sanchez"
+    },
+    {
+        "class": "Coupes",
+        "hash": 1348744438,
+        "spawnName": "oracle",
+        "displayName": "Oracle"
+    },
+    {
+        "class": "Coupes",
+        "hash": -511601230,
+        "spawnName": "oracle2",
+        "displayName": "Oracle"
+    },
+    {
+        "class": "Commercial",
+        "hash": 569305213,
+        "spawnName": "packer",
+        "displayName": "Packer"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1590337689,
+        "spawnName": "blazer5",
+        "displayName": "Blazer5"
+    },
+    {
+        "class": "SUVs",
+        "hash": -808457413,
+        "spawnName": "patriot",
+        "displayName": "Patriot"
+    },
+    {
+        "class": "Compacts",
+        "hash": 1429622905,
+        "spawnName": "brioso2",
+        "displayName": "Brioso2"
+    },
+    {
+        "class": "Muscle",
+        "hash": 223258115,
+        "spawnName": "sabregt2",
+        "displayName": "Sabregt2"
+    },
+    {
+        "class": "Boats",
+        "hash": -276744698,
+        "spawnName": "patrolboat",
+        "displayName": "Patrolboat"
+    },
+    {
+        "class": "Emergency",
+        "hash": -2007026063,
+        "spawnName": "pbus",
+        "displayName": "Pbus"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1531094468,
+        "spawnName": "tornado2",
+        "displayName": "Tornado2"
+    },
+    {
+        "class": "Utility",
+        "hash": 734217681,
+        "spawnName": "sadler2",
+        "displayName": "Sadler"
+    },
+    {
+        "class": "Cycles",
+        "hash": 448402357,
+        "spawnName": "cruiser",
+        "displayName": "Cruiser"
+    },
+    {
+        "class": "Sports",
+        "hash": -377465520,
+        "spawnName": "penumbra",
+        "displayName": "Penumbra"
+    },
+    {
+        "class": "Commercial",
+        "hash": 728350375,
+        "spawnName": "benson2",
+        "displayName": "Benson2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -2095439403,
+        "spawnName": "phoenix",
+        "displayName": "Phoenix"
+    },
+    {
+        "class": "Commercial",
+        "hash": 2112052861,
+        "spawnName": "pounder",
+        "displayName": "Pounder"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -82626025,
+        "spawnName": "savage",
+        "displayName": "Savage"
+    },
+    {
+        "class": "Trains",
+        "hash": 642617954,
+        "spawnName": "freightgrain",
+        "displayName": "Freight"
+    },
+    {
+        "class": "Utility",
+        "hash": -1352468814,
+        "spawnName": "trflat",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Sports",
+        "hash": 1102544804,
+        "spawnName": "verlierer2",
+        "displayName": "Verlier"
+    },
+    {
+        "class": "Emergency",
+        "hash": 2046537925,
+        "spawnName": "police",
+        "displayName": "Police"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -1660661558,
+        "spawnName": "maverick",
+        "displayName": "Maverick"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1973172295,
+        "spawnName": "police4",
+        "displayName": "Police4"
+    },
+    {
+        "class": "Super",
+        "hash": -295689028,
+        "spawnName": "sultanrs",
+        "displayName": "Sultanrs"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1627000575,
+        "spawnName": "police2",
+        "displayName": "Police2"
+    },
+    {
+        "class": "Emergency",
+        "hash": 1912215274,
+        "spawnName": "police3",
+        "displayName": "Police"
+    },
+    {
+        "class": "Super",
+        "hash": 819197656,
+        "spawnName": "sheava",
+        "displayName": "Sheava"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1536924937,
+        "spawnName": "policeold1",
+        "displayName": "Policeo1"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1504306544,
+        "spawnName": "torero",
+        "displayName": "Torero"
+    },
+    {
+        "class": "Super",
+        "hash": -1358197432,
+        "spawnName": "tigon",
+        "displayName": "Tigon"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1779120616,
+        "spawnName": "policeold2",
+        "displayName": "Policeo2"
+    },
+    {
+        "class": "Vans",
+        "hash": 943752001,
+        "spawnName": "pony2",
+        "displayName": "Pony"
+    },
+    {
+        "class": "Compacts",
+        "hash": -1450650718,
+        "spawnName": "prairie",
+        "displayName": "Prairie"
+    },
+    {
+        "class": "Muscle",
+        "hash": 16646064,
+        "spawnName": "virgo3",
+        "displayName": "Virgo3"
+    },
+    {
+        "class": "Muscle",
+        "hash": -589178377,
+        "spawnName": "ratloader2",
+        "displayName": "Rloader2"
+    },
+    {
+        "class": "Emergency",
+        "hash": 741586030,
+        "spawnName": "pranger",
+        "displayName": "Pranger"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1883869285,
+        "spawnName": "premier",
+        "displayName": "Premier"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1593933419,
+        "spawnName": "seasparrow3",
+        "displayName": "Sparrow3"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1150599089,
+        "spawnName": "primo",
+        "displayName": "Primo"
+    },
+    {
+        "class": "Sedans",
+        "hash": -14495224,
+        "spawnName": "regina",
+        "displayName": "Regina"
+    },
+    {
+        "class": "Utility",
+        "hash": 356391690,
+        "spawnName": "proptrailer",
+        "displayName": "Proptrailer"
+    },
+    {
+        "class": "Super",
+        "hash": 1034187331,
+        "spawnName": "nero",
+        "displayName": "Nero"
+    },
+    {
+        "class": "Utility",
+        "hash": -877478386,
+        "spawnName": "trailers",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1645267888,
+        "spawnName": "rancherxl",
+        "displayName": "Rancherx"
+    },
+    {
+        "class": "SUVs",
+        "hash": 683047626,
+        "spawnName": "contender",
+        "displayName": "Contender"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1933662059,
+        "spawnName": "rancherxl2",
+        "displayName": "Rancherx"
+    },
+    {
+        "class": "Sports",
+        "hash": -1259134696,
+        "spawnName": "flashgt",
+        "displayName": "Flashgt"
+    },
+    {
+        "class": "Sports",
+        "hash": -1934452204,
+        "spawnName": "rapidgt",
+        "displayName": "Rapidgt"
+    },
+    {
+        "class": "Utility",
+        "hash": -1323100960,
+        "spawnName": "towtruck",
+        "displayName": "Towtruck"
+    },
+    {
+        "class": "Sports",
+        "hash": 1737773231,
+        "spawnName": "rapidgt2",
+        "displayName": "Rapidgt"
+    },
+    {
+        "class": "Utility",
+        "hash": -399841706,
+        "spawnName": "baletrailer",
+        "displayName": "Baletrailer"
+    },
+    {
+        "class": "Utility",
+        "hash": 2016027501,
+        "spawnName": "trailerlogs",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1651067813,
+        "spawnName": "radi",
+        "displayName": "Radi"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1394036463,
+        "spawnName": "cargobob3",
+        "displayName": "Cargobob"
+    },
+    {
+        "class": "Super",
+        "hash": 1591739866,
+        "spawnName": "deveste",
+        "displayName": "Deveste"
+    },
+    {
+        "class": "Super",
+        "hash": -1134706562,
+        "spawnName": "taipan",
+        "displayName": "Taipan"
+    },
+    {
+        "class": "Muscle",
+        "hash": -667151410,
+        "spawnName": "ratloader",
+        "displayName": "Rloader"
+    },
+    {
+        "class": "Off-road",
+        "hash": -2045594037,
+        "spawnName": "rebel2",
+        "displayName": "Rebel02"
+    },
+    {
+        "class": "Planes",
+        "hash": 165154707,
+        "spawnName": "miljet",
+        "displayName": "Miljet"
+    },
+    {
+        "class": "Service",
+        "hash": -1098802077,
+        "spawnName": "rentalbus",
+        "displayName": "Rentbus"
+    },
+    {
+        "class": "Commercial",
+        "hash": 679453769,
+        "spawnName": "cerberus2",
+        "displayName": "Cerberus2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -227741703,
+        "spawnName": "ruiner",
+        "displayName": "Ruiner"
+    },
+    {
+        "class": "Vans",
+        "hash": 1162065741,
+        "spawnName": "rumpo",
+        "displayName": "Rumpo"
+    },
+    {
+        "class": "Vans",
+        "hash": -1776615689,
+        "spawnName": "rumpo2",
+        "displayName": "Rumpo"
+    },
+    {
+        "class": "Military",
+        "hash": 782665360,
+        "spawnName": "rhino",
+        "displayName": "Rhino"
+    },
+    {
+        "class": "Sports",
+        "hash": 767087018,
+        "spawnName": "alpha",
+        "displayName": "Alpha"
+    },
+    {
+        "class": "Vans",
+        "hash": 1026149675,
+        "spawnName": "youga2",
+        "displayName": "Youga2"
+    },
+    {
+        "class": "Utility",
+        "hash": -845979911,
+        "spawnName": "ripley",
+        "displayName": "Ripley"
+    },
+    {
+        "class": "Sports",
+        "hash": 1489967196,
+        "spawnName": "schafter4",
+        "displayName": "Schafter4"
+    },
+    {
+        "class": "Muscle",
+        "hash": 523724515,
+        "spawnName": "voodoo2",
+        "displayName": "Voodoo"
+    },
+    {
+        "class": "SUVs",
+        "hash": 2136773105,
+        "spawnName": "rocoto",
+        "displayName": "Rocoto"
+    },
+    {
+        "class": "Sports",
+        "hash": -507495760,
+        "spawnName": "schlagen",
+        "displayName": "Schlagen"
+    },
+    {
+        "class": "Boats",
+        "hash": 771711535,
+        "spawnName": "submersible",
+        "displayName": "Submers"
+    },
+    {
+        "class": "Off-road",
+        "hash": -2042350822,
+        "spawnName": "bruiser3",
+        "displayName": "Bruiser3"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1685021548,
+        "spawnName": "sabregt",
+        "displayName": "Sabre Turbo"
+    },
+    {
+        "class": "Utility",
+        "hash": -599568815,
+        "spawnName": "sadler",
+        "displayName": "Sadler"
+    },
+    {
+        "class": "Commercial",
+        "hash": 1909700336,
+        "spawnName": "cerberus3",
+        "displayName": "Cerberus3"
+    },
+    {
+        "class": "Off-road",
+        "hash": 989381445,
+        "spawnName": "sandking2",
+        "displayName": "Sandking SWB"
+    },
+    {
+        "class": "Off-road",
+        "hash": 740289177,
+        "spawnName": "vagrant",
+        "displayName": "Vagrant"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1255452397,
+        "spawnName": "schafter2",
+        "displayName": "Schafter"
+    },
+    {
+        "class": "Trains",
+        "hash": 1030400667,
+        "spawnName": "freight",
+        "displayName": "Freight"
+    },
+    {
+        "class": "Muscle",
+        "hash": 784565758,
+        "spawnName": "coquette3",
+        "displayName": "Coquette3"
+    },
+    {
+        "class": "Sports",
+        "hash": -746882698,
+        "spawnName": "schwarzer",
+        "displayName": "Schwarze"
+    },
+    {
+        "class": "Sports",
+        "hash": 482197771,
+        "spawnName": "lynx",
+        "displayName": "Lynx"
+    },
+    {
+        "class": "Coupes",
+        "hash": 1349725314,
+        "spawnName": "sentinel",
+        "displayName": "Sentinel"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 788747387,
+        "spawnName": "buzzard",
+        "displayName": "Buzzard"
+    },
+    {
+        "class": "Off-road",
+        "hash": -670086588,
+        "spawnName": "patriot3",
+        "displayName": "Patriot3"
+    },
+    {
+        "class": "Coupes",
+        "hash": 873639469,
+        "spawnName": "sentinel2",
+        "displayName": "Sentinel XS"
+    },
+    {
+        "class": "Coupes",
+        "hash": -1122289213,
+        "spawnName": "zion",
+        "displayName": "Zion"
+    },
+    {
+        "class": "Service",
+        "hash": -956048545,
+        "spawnName": "taxi",
+        "displayName": "Taxi"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1674384553,
+        "spawnName": "police5",
+        "displayName": "Police5"
+    },
+    {
+        "class": "Off-road",
+        "hash": 408825843,
+        "spawnName": "outlaw",
+        "displayName": "Outlaw"
+    },
+    {
+        "class": "Utility",
+        "hash": -2076478498,
+        "spawnName": "tractor2",
+        "displayName": "Tractor2"
+    },
+    {
+        "class": "Coupes",
+        "hash": -1193103848,
+        "spawnName": "zion2",
+        "displayName": "Zion2"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 295054921,
+        "spawnName": "annihilator2",
+        "displayName": "Annihlator2"
+    },
+    {
+        "class": "SUVs",
+        "hash": 1337041428,
+        "spawnName": "serrano",
+        "displayName": "Serrano"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1683328900,
+        "spawnName": "sheriff",
+        "displayName": "Sheriff"
+    },
+    {
+        "class": "Super",
+        "hash": 1352136073,
+        "spawnName": "sc1",
+        "displayName": "Sc1"
+    },
+    {
+        "class": "Emergency",
+        "hash": 1922257928,
+        "spawnName": "sheriff2",
+        "displayName": "Sheriff2"
+    },
+    {
+        "class": "Sports",
+        "hash": 1141395928,
+        "spawnName": "comet7",
+        "displayName": "Comet7"
+    },
+    {
+        "class": "Vans",
+        "hash": -810318068,
+        "spawnName": "speedo",
+        "displayName": "Speedo"
+    },
+    {
+        "class": "Vans",
+        "hash": 728614474,
+        "spawnName": "speedo2",
+        "displayName": "Speedo2"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1477580979,
+        "spawnName": "stanier",
+        "displayName": "Stanier"
+    },
+    {
+        "class": "Trains",
+        "hash": -442229240,
+        "spawnName": "freight2",
+        "displayName": "Freight2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1545842587,
+        "spawnName": "stinger",
+        "displayName": "Stinger"
+    },
+    {
+        "class": "Sedans",
+        "hash": 1123216662,
+        "spawnName": "superd",
+        "displayName": "Superd"
+    },
+    {
+        "class": "Commercial",
+        "hash": 1747439474,
+        "spawnName": "stockade",
+        "displayName": "Stockade"
+    },
+    {
+        "class": "Utility",
+        "hash": 471034616,
+        "spawnName": "tvtrailer2",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1009171724,
+        "spawnName": "impaler2",
+        "displayName": "Impaler2"
+    },
+    {
+        "class": "Commercial",
+        "hash": -214455498,
+        "spawnName": "stockade3",
+        "displayName": "Stockade"
+    },
+    {
+        "class": "Off-road",
+        "hash": -2096818938,
+        "spawnName": "technical",
+        "displayName": "Technical"
+    },
+    {
+        "class": "Sports",
+        "hash": 196747873,
+        "spawnName": "elegy",
+        "displayName": "Elegy"
+    },
+    {
+        "class": "Sports",
+        "hash": 970598228,
+        "spawnName": "sultan",
+        "displayName": "Sultan"
+    },
+    {
+        "class": "Sports",
+        "hash": 384071873,
+        "spawnName": "surano",
+        "displayName": "Surano"
+    },
+    {
+        "class": "Vans",
+        "hash": 699456151,
+        "spawnName": "surfer",
+        "displayName": "Surfer"
+    },
+    {
+        "class": "Vans",
+        "hash": -1311240698,
+        "spawnName": "surfer2",
+        "displayName": "Surfer2"
+    },
+    {
+        "class": "Vans",
+        "hash": 1951180813,
+        "spawnName": "taco",
+        "displayName": "Taco"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1008861746,
+        "spawnName": "tailgater",
+        "displayName": "Tailgate"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 741090084,
+        "spawnName": "gargoyle",
+        "displayName": "Gargoyle"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1086534307,
+        "spawnName": "manchez2",
+        "displayName": "Manchez2"
+    },
+    {
+        "class": "Utility",
+        "hash": 1784254509,
+        "spawnName": "tr3",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Service",
+        "hash": 1917016601,
+        "spawnName": "trash",
+        "displayName": "Trash"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 2049897956,
+        "spawnName": "rapidgt3",
+        "displayName": "Rapidgt3"
+    },
+    {
+        "class": "Utility",
+        "hash": 1641462412,
+        "spawnName": "tractor",
+        "displayName": "Tractor"
+    },
+    {
+        "class": "Utility",
+        "hash": 1445631933,
+        "spawnName": "tractor3",
+        "displayName": "Tractor2"
+    },
+    {
+        "class": "Utility",
+        "hash": 1019737494,
+        "spawnName": "graintrailer",
+        "displayName": "Graintraile"
+    },
+    {
+        "class": "Muscle",
+        "hash": 268758436,
+        "spawnName": "tulip2",
+        "displayName": "Tulip2"
+    },
+    {
+        "class": "Industrial",
+        "hash": -947761570,
+        "spawnName": "tiptruck2",
+        "displayName": "Tiptruck2"
+    },
+    {
+        "class": "Service",
+        "hash": 1941029835,
+        "spawnName": "tourbus",
+        "displayName": "Tourbus"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 884483972,
+        "spawnName": "oppressor",
+        "displayName": "Oppressor"
+    },
+    {
+        "class": "Utility",
+        "hash": 516990260,
+        "spawnName": "utillitruck",
+        "displayName": "Utiltruc"
+    },
+    {
+        "class": "Boats",
+        "hash": -1030275036,
+        "spawnName": "seashark",
+        "displayName": "Seashark"
+    },
+    {
+        "class": "Utility",
+        "hash": 887537515,
+        "spawnName": "utillitruck2",
+        "displayName": "Utiltruc"
+    },
+    {
+        "class": "Military",
+        "hash": -692292317,
+        "spawnName": "chernobog",
+        "displayName": "Chernobog"
+    },
+    {
+        "class": "Utility",
+        "hash": 2132890591,
+        "spawnName": "utillitruck3",
+        "displayName": "Utiltruc"
+    },
+    {
+        "class": "Muscle",
+        "hash": 729783779,
+        "spawnName": "slamvan",
+        "displayName": "Slamvan"
+    },
+    {
+        "class": "Cycles",
+        "hash": 1131912276,
+        "spawnName": "BMX",
+        "displayName": "Bmx"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1617472902,
+        "spawnName": "fagaloa",
+        "displayName": "Fagaloa"
+    },
+    {
+        "class": "Emergency",
+        "hash": -34623805,
+        "spawnName": "policeb",
+        "displayName": "Policeb"
+    },
+    {
+        "class": "Sedans",
+        "hash": 1777363799,
+        "spawnName": "washington",
+        "displayName": "Washington"
+    },
+    {
+        "class": "Vans",
+        "hash": 65402552,
+        "spawnName": "youga",
+        "displayName": "Youga"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -2115793025,
+        "spawnName": "avarus",
+        "displayName": "Avarus"
+    },
+    {
+        "class": "Compacts",
+        "hash": -431692672,
+        "spawnName": "panto",
+        "displayName": "Panto"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1890996696,
+        "spawnName": "brutus2",
+        "displayName": "Brutus2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1453280962,
+        "spawnName": "sanchez2",
+        "displayName": "Sanchez02"
+    },
+    {
+        "class": "Cycles",
+        "hash": 1127861609,
+        "spawnName": "tribike",
+        "displayName": "Tribike"
+    },
+    {
+        "class": "Planes",
+        "hash": 970385471,
+        "spawnName": "hydra",
+        "displayName": "Hydra"
+    },
+    {
+        "class": "Muscle",
+        "hash": 349605904,
+        "spawnName": "chino",
+        "displayName": "Chino"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 2025593404,
+        "spawnName": "cargobob4",
+        "displayName": "Cargobob"
+    },
+    {
+        "class": "Cycles",
+        "hash": -1233807380,
+        "spawnName": "tribike2",
+        "displayName": "Tribike2"
+    },
+    {
+        "class": "Super",
+        "hash": -1758137366,
+        "spawnName": "penetrator",
+        "displayName": "Penetrator"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1871995513,
+        "spawnName": "yosemite",
+        "displayName": "Yosemite"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1672195559,
+        "spawnName": "akuma",
+        "displayName": "Akuma"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -909201658,
+        "spawnName": "pcj",
+        "displayName": "Pcj"
+    },
+    {
+        "class": "Super",
+        "hash": 338562499,
+        "spawnName": "vacca",
+        "displayName": "Vacca"
+    },
+    {
+        "class": "Vans",
+        "hash": 1488164764,
+        "spawnName": "paradise",
+        "displayName": "Paradise"
+    },
+    {
+        "class": "Sports",
+        "hash": 610429990,
+        "spawnName": "coureur",
+        "displayName": "Coureur"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -2140431165,
+        "spawnName": "bagger",
+        "displayName": "Bagger"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -891462355,
+        "spawnName": "bati2",
+        "displayName": "Bati2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 2006142190,
+        "spawnName": "daemon",
+        "displayName": "Daemon"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 837858166,
+        "spawnName": "annihilator",
+        "displayName": "Annihl"
+    },
+    {
+        "class": "Commercial",
+        "hash": -1649536104,
+        "spawnName": "phantom2",
+        "displayName": "Phantom2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1670998136,
+        "spawnName": "double",
+        "displayName": "Double"
+    },
+    {
+        "class": "Trains",
+        "hash": 586013744,
+        "spawnName": "tankercar",
+        "displayName": "Freight"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -140902153,
+        "spawnName": "vader",
+        "displayName": "Vader"
+    },
+    {
+        "class": "Utility",
+        "hash": 712162987,
+        "spawnName": "trailersmall",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1168952148,
+        "spawnName": "toros",
+        "displayName": "Toros"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 55628203,
+        "spawnName": "faggio2",
+        "displayName": "Faggio"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 745926877,
+        "spawnName": "buzzard2",
+        "displayName": "Buzzard2"
+    },
+    {
+        "class": "Super",
+        "hash": 1663218586,
+        "spawnName": "t20",
+        "displayName": "T20"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1356124575,
+        "spawnName": "technical3",
+        "displayName": "Technical3"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -50547061,
+        "spawnName": "cargobob",
+        "displayName": "Cargobob"
+    },
+    {
+        "class": "Military",
+        "hash": -1881846085,
+        "spawnName": "trailersmall2",
+        "displayName": "Trsmall2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 310284501,
+        "spawnName": "Dynasty",
+        "displayName": "Dynasty"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1621617168,
+        "spawnName": "cargobob2",
+        "displayName": "Cargobob"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1044954915,
+        "spawnName": "skylift",
+        "displayName": "Skylift"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 353883353,
+        "spawnName": "polmav",
+        "displayName": "Polmav"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -634879114,
+        "spawnName": "nemesis",
+        "displayName": "Nemesis"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 744705981,
+        "spawnName": "frogger",
+        "displayName": "Frogger"
+    },
+    {
+        "class": "Boats",
+        "hash": 1033245328,
+        "spawnName": "dinghy",
+        "displayName": "Dinghy"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1237253773,
+        "spawnName": "dubsta3",
+        "displayName": "Dubsta3"
+    },
+    {
+        "class": "SUVs",
+        "hash": 461465043,
+        "spawnName": "jubilee",
+        "displayName": "Jubilee"
+    },
+    {
+        "class": "Sports",
+        "hash": -291021213,
+        "spawnName": "sultan3",
+        "displayName": "Sultan3"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1949211328,
+        "spawnName": "frogger2",
+        "displayName": "Frogger"
+    },
+    {
+        "class": "Sports",
+        "hash": 1274868363,
+        "spawnName": "bestiagts",
+        "displayName": "Bestiagts"
+    },
+    {
+        "class": "SUVs",
+        "hash": 486987393,
+        "spawnName": "huntley",
+        "displayName": "Huntley"
+    },
+    {
+        "class": "Planes",
+        "hash": 970356638,
+        "spawnName": "duster",
+        "displayName": "Duster"
+    },
+    {
+        "class": "Planes",
+        "hash": -1746576111,
+        "spawnName": "mammatus",
+        "displayName": "Mammatus"
+    },
+    {
+        "class": "Off-road",
+        "hash": 67753863,
+        "spawnName": "yosemite3",
+        "displayName": "Yosemite3"
+    },
+    {
+        "class": "Planes",
+        "hash": 1058115860,
+        "spawnName": "jet",
+        "displayName": "Jet"
+    },
+    {
+        "class": "Super",
+        "hash": 1987142870,
+        "spawnName": "osiris",
+        "displayName": "Osiris"
+    },
+    {
+        "class": "Super",
+        "hash": 1748565021,
+        "spawnName": "entity3",
+        "displayName": "Entity3"
+    },
+    {
+        "class": "Planes",
+        "hash": 1981688531,
+        "spawnName": "titan",
+        "displayName": "Titan"
+    },
+    {
+        "class": "Off-road",
+        "hash": 2071877360,
+        "spawnName": "insurgent2",
+        "displayName": "Insurgent2"
+    },
+    {
+        "class": "Planes",
+        "hash": -1281684762,
+        "spawnName": "lazer",
+        "displayName": "Lazer"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1404136503,
+        "spawnName": "daemon2",
+        "displayName": "Daemon2"
+    },
+    {
+        "class": "Boats",
+        "hash": 400514754,
+        "spawnName": "squalo",
+        "displayName": "Squalo"
+    },
+    {
+        "class": "Boats",
+        "hash": -1043459709,
+        "spawnName": "marquis",
+        "displayName": "Marquis"
+    },
+    {
+        "class": "Boats",
+        "hash": 276773164,
+        "spawnName": "dinghy2",
+        "displayName": "Dinghy"
+    },
+    {
+        "class": "Muscle",
+        "hash": 2068293287,
+        "spawnName": "Lurcher",
+        "displayName": "Lurcher"
+    },
+    {
+        "class": "Boats",
+        "hash": 861409633,
+        "spawnName": "jetmax",
+        "displayName": "Jetmax"
+    },
+    {
+        "class": "Boats",
+        "hash": 290013743,
+        "spawnName": "tropic",
+        "displayName": "Tropic"
+    },
+    {
+        "class": "Sports",
+        "hash": 258105345,
+        "spawnName": "driftcypher",
+        "displayName": "Driftcypher"
+    },
+    {
+        "class": "Vans",
+        "hash": 1486521356,
+        "spawnName": "youga4",
+        "displayName": "Youga4"
+    },
+    {
+        "class": "Boats",
+        "hash": -616331036,
+        "spawnName": "seashark2",
+        "displayName": "Seashark"
+    },
+    {
+        "class": "Muscle",
+        "hash": -326143852,
+        "spawnName": "dukes2",
+        "displayName": "Dukes2"
+    },
+    {
+        "class": "Trains",
+        "hash": 184361638,
+        "spawnName": "freightcar",
+        "displayName": "Freight"
+    },
+    {
+        "class": "Trains",
+        "hash": 240201337,
+        "spawnName": "freightcont2",
+        "displayName": "Freight"
+    },
+    {
+        "class": "Trains",
+        "hash": 868868440,
+        "spawnName": "metrotrain",
+        "displayName": "Freight"
+    },
+    {
+        "class": "Utility",
+        "hash": -1579533167,
+        "spawnName": "trailers2",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Utility",
+        "hash": -2058878099,
+        "spawnName": "trailers3",
+        "displayName": "Trailers3"
+    },
+    {
+        "class": "Utility",
+        "hash": 390902130,
+        "spawnName": "raketrailer",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 627535535,
+        "spawnName": "fcr",
+        "displayName": "Fcr"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -757735410,
+        "spawnName": "fcr2",
+        "displayName": "Fcr2"
+    },
+    {
+        "class": "Utility",
+        "hash": -730904777,
+        "spawnName": "tanker",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Industrial",
+        "hash": -2107990196,
+        "spawnName": "guardian",
+        "displayName": "Guardian"
+    },
+    {
+        "class": "Planes",
+        "hash": -1673356438,
+        "spawnName": "velum",
+        "displayName": "Velum"
+    },
+    {
+        "class": "Super",
+        "hash": -482719877,
+        "spawnName": "italigtb2",
+        "displayName": "Italigtb2"
+    },
+    {
+        "class": "SUVs",
+        "hash": 83136452,
+        "spawnName": "rebla",
+        "displayName": "Rebla"
+    },
+    {
+        "class": "Off-road",
+        "hash": -349601129,
+        "spawnName": "bifta",
+        "displayName": "Bifta"
+    },
+    {
+        "class": "Boats",
+        "hash": 231083307,
+        "spawnName": "speeder",
+        "displayName": "Speeder"
+    },
+    {
+        "class": "Off-road",
+        "hash": -312295511,
+        "spawnName": "dune5",
+        "displayName": "Dune5"
+    },
+    {
+        "class": "Muscle",
+        "hash": -478639183,
+        "spawnName": "impaler5",
+        "displayName": "Impaler5"
+    },
+    {
+        "class": "Sports",
+        "hash": 1416466158,
+        "spawnName": "paragon2",
+        "displayName": "Paragon2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1361687965,
+        "spawnName": "chino2",
+        "displayName": "Chino2"
+    },
+    {
+        "class": "Sedans",
+        "hash": 1373123368,
+        "spawnName": "warrener",
+        "displayName": "Warrener"
+    },
+    {
+        "class": "Off-road",
+        "hash": 92612664,
+        "spawnName": "kalahari",
+        "displayName": "Kalahari"
+    },
+    {
+        "class": "Muscle",
+        "hash": 373261600,
+        "spawnName": "slamvan5",
+        "displayName": "Slamvan5"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 117401876,
+        "spawnName": "btype",
+        "displayName": "Roosevelt"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -255678177,
+        "spawnName": "hakuchou2",
+        "displayName": "Hakuchou2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -2079788230,
+        "spawnName": "gt500",
+        "displayName": "Gt500"
+    },
+    {
+        "class": "Planes",
+        "hash": 1341619767,
+        "spawnName": "vestra",
+        "displayName": "Vestra"
+    },
+    {
+        "class": "Super",
+        "hash": 2123327359,
+        "spawnName": "prototipo",
+        "displayName": "Prototipo"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1790834270,
+        "spawnName": "diablous2",
+        "displayName": "Diablous2"
+    },
+    {
+        "class": "Compacts",
+        "hash": 841808271,
+        "spawnName": "rhapsody",
+        "displayName": "Rhapsody"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1205801634,
+        "spawnName": "blade",
+        "displayName": "Blade"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1078682497,
+        "spawnName": "pigalle",
+        "displayName": "Pigalle"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 743478836,
+        "spawnName": "sovereign",
+        "displayName": "Sovereign"
+    },
+    {
+        "class": "Planes",
+        "hash": -1295027632,
+        "spawnName": "nimbus",
+        "displayName": "Nimbus"
+    },
+    {
+        "class": "Super",
+        "hash": -1829802492,
+        "spawnName": "pfister811",
+        "displayName": "Pfister811"
+    },
+    {
+        "class": "Planes",
+        "hash": 1824333165,
+        "spawnName": "besra",
+        "displayName": "Besra"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1527436269,
+        "spawnName": "cinquemila",
+        "displayName": "Cinquemila"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1011753235,
+        "spawnName": "coquette2",
+        "displayName": "Coquette2"
+    },
+    {
+        "class": "Off-road",
+        "hash": 101905590,
+        "spawnName": "trophytruck",
+        "displayName": "Trophy"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1265391242,
+        "spawnName": "hakuchou",
+        "displayName": "Hakuchou"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1842748181,
+        "spawnName": "faggio",
+        "displayName": "Faggion"
+    },
+    {
+        "class": "Coupes",
+        "hash": -1479935577,
+        "spawnName": "driftfr36",
+        "displayName": "Driftfr36"
+    },
+    {
+        "class": "Sports",
+        "hash": -1089039904,
+        "spawnName": "furoregt",
+        "displayName": "Furore"
+    },
+    {
+        "class": "Sports",
+        "hash": -1106353882,
+        "spawnName": "jester2",
+        "displayName": "Jester2"
+    },
+    {
+        "class": "Sports",
+        "hash": -631760477,
+        "spawnName": "massacro2",
+        "displayName": "Massacro2"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -477831899,
+        "spawnName": "conada",
+        "displayName": "Conada"
+    },
+    {
+        "class": "Vans",
+        "hash": 1802742206,
+        "spawnName": "youga3",
+        "displayName": "Youga3"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 941800958,
+        "spawnName": "casco",
+        "displayName": "Casco"
+    },
+    {
+        "class": "Vans",
+        "hash": 444171386,
+        "spawnName": "boxville4",
+        "displayName": "Boxville"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1860900134,
+        "spawnName": "insurgent",
+        "displayName": "Insurgent"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1180875963,
+        "spawnName": "technical2",
+        "displayName": "Technical2"
+    },
+    {
+        "class": "Military",
+        "hash": -32236122,
+        "spawnName": "halftrack",
+        "displayName": "Halftrack"
+    },
+    {
+        "class": "Off-road",
+        "hash": -362150785,
+        "spawnName": "hellion",
+        "displayName": "Hellion"
+    },
+    {
+        "class": "Vans",
+        "hash": 296357396,
+        "spawnName": "gburrito2",
+        "displayName": "Gburrito2"
+    },
+    {
+        "class": "Boats",
+        "hash": 509498602,
+        "spawnName": "dinghy3",
+        "displayName": "Dinghy"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1753414259,
+        "spawnName": "enduro",
+        "displayName": "Enduro"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 640818791,
+        "spawnName": "lectro",
+        "displayName": "Lectro"
+    },
+    {
+        "class": "Super",
+        "hash": -915234475,
+        "spawnName": "champion",
+        "displayName": "Champion"
+    },
+    {
+        "class": "Super",
+        "hash": -664141241,
+        "spawnName": "krieger",
+        "displayName": "Krieger"
+    },
+    {
+        "class": "Sports",
+        "hash": -1372848492,
+        "spawnName": "kuruma",
+        "displayName": "Kuruma"
+    },
+    {
+        "class": "Sports",
+        "hash": 410882957,
+        "spawnName": "kuruma2",
+        "displayName": "Kuruma2"
+    },
+    {
+        "class": "Off-road",
+        "hash": -663299102,
+        "spawnName": "trophytruck2",
+        "displayName": "Trophy2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1293924613,
+        "spawnName": "dominator6",
+        "displayName": "Dominator6"
+    },
+    {
+        "class": "Service",
+        "hash": -1255698084,
+        "spawnName": "trash2",
+        "displayName": "Trash"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1756021720,
+        "spawnName": "everon",
+        "displayName": "Everon"
+    },
+    {
+        "class": "Sedans",
+        "hash": -114627507,
+        "spawnName": "limo2",
+        "displayName": "Limo2"
+    },
+    {
+        "class": "Sports",
+        "hash": -1478704292,
+        "spawnName": "zr3803",
+        "displayName": "Zr3803"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -1600252419,
+        "spawnName": "valkyrie",
+        "displayName": "Valkyrie"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1075432268,
+        "spawnName": "swift2",
+        "displayName": "Swift2"
+    },
+    {
+        "class": "Planes",
+        "hash": -1214293858,
+        "spawnName": "luxor2",
+        "displayName": "Luxor2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -1566741232,
+        "spawnName": "feltzer3",
+        "displayName": "Feltzer3"
+    },
+    {
+        "class": "Vans",
+        "hash": 682434785,
+        "spawnName": "boxville5",
+        "displayName": "Boxville5"
+    },
+    {
+        "class": "Muscle",
+        "hash": -498054846,
+        "spawnName": "virgo",
+        "displayName": "Virgo"
+    },
+    {
+        "class": "Muscle",
+        "hash": 165968051,
+        "spawnName": "buffalo5",
+        "displayName": "Buffalo5"
+    },
+    {
+        "class": "Muscle",
+        "hash": -654498607,
+        "spawnName": "brigham",
+        "displayName": "Brigham"
+    },
+    {
+        "class": "Coupes",
+        "hash": 1581459400,
+        "spawnName": "windsor",
+        "displayName": "Windsor"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1353081087,
+        "spawnName": "vindicator",
+        "displayName": "Vindicator"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 86520421,
+        "spawnName": "bf400",
+        "displayName": "Bf400"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1479664699,
+        "spawnName": "brawler",
+        "displayName": "Brawler"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1923400478,
+        "spawnName": "stalion",
+        "displayName": "Stalion"
+    },
+    {
+        "class": "Coupes",
+        "hash": 1416471345,
+        "spawnName": "previon",
+        "displayName": "Previon"
+    },
+    {
+        "class": "Boats",
+        "hash": 1070967343,
+        "spawnName": "toro",
+        "displayName": "Toro"
+    },
+    {
+        "class": "Sports",
+        "hash": -1071380347,
+        "spawnName": "tampa2",
+        "displayName": "Tampa2"
+    },
+    {
+        "class": "Super",
+        "hash": -122993285,
+        "spawnName": "turismo3",
+        "displayName": "Turismo3"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1790546981,
+        "spawnName": "faction2",
+        "displayName": "Faction2"
+    },
+    {
+        "class": "Muscle",
+        "hash": 525509695,
+        "spawnName": "moonbeam",
+        "displayName": "Moonbeam"
+    },
+    {
+        "class": "Sports",
+        "hash": -631322662,
+        "spawnName": "penumbra2",
+        "displayName": "Penumbra2"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1896491931,
+        "spawnName": "moonbeam2",
+        "displayName": "Moonbeam2"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1934384720,
+        "spawnName": "gauntlet4",
+        "displayName": "Gauntlet4"
+    },
+    {
+        "class": "Sports",
+        "hash": -2022483795,
+        "spawnName": "comet3",
+        "displayName": "Comet3"
+    },
+    {
+        "class": "Service",
+        "hash": -1576586413,
+        "spawnName": "brickade2",
+        "displayName": "Brickade2"
+    },
+    {
+        "class": "Sports",
+        "hash": -1507230520,
+        "spawnName": "futo2",
+        "displayName": "Futo2"
+    },
+    {
+        "class": "Sedans",
+        "hash": -2040426790,
+        "spawnName": "primo2",
+        "displayName": "Primo2"
+    },
+    {
+        "class": "Sports",
+        "hash": 1074745671,
+        "spawnName": "specter2",
+        "displayName": "Specter2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1013450936,
+        "spawnName": "buccaneer2",
+        "displayName": "Buccanee2"
+    },
+    {
+        "class": "Muscle",
+        "hash": 2006667053,
+        "spawnName": "voodoo",
+        "displayName": "Voodoo2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -831834716,
+        "spawnName": "btype2",
+        "displayName": "Btype2"
+    },
+    {
+        "class": "Utility",
+        "hash": 1502869817,
+        "spawnName": "trailerlarge",
+        "displayName": "Trlarge"
+    },
+    {
+        "class": "Sedans",
+        "hash": 906642318,
+        "spawnName": "cog55",
+        "displayName": "Cog55"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1943285540,
+        "spawnName": "nightshade",
+        "displayName": "Niteshad"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1933242328,
+        "spawnName": "broadway",
+        "displayName": "Broadway"
+    },
+    {
+        "class": "Sports",
+        "hash": -1757836725,
+        "spawnName": "seven70",
+        "displayName": "Seven70"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -1660945322,
+        "spawnName": "mamba",
+        "displayName": "Mamba"
+    },
+    {
+        "class": "Sports",
+        "hash": -1485523546,
+        "spawnName": "schafter3",
+        "displayName": "Schafter3"
+    },
+    {
+        "class": "Coupes",
+        "hash": -1930048799,
+        "spawnName": "windsor2",
+        "displayName": "Windsor2"
+    },
+    {
+        "class": "Sports",
+        "hash": -1193912403,
+        "spawnName": "calico",
+        "displayName": "Calico"
+    },
+    {
+        "class": "Compacts",
+        "hash": 1118611807,
+        "spawnName": "asbo",
+        "displayName": "Asbo"
+    },
+    {
+        "class": "Sedans",
+        "hash": -888242983,
+        "spawnName": "schafter5",
+        "displayName": "Schafter5"
+    },
+    {
+        "class": "Sedans",
+        "hash": 1922255844,
+        "spawnName": "schafter6",
+        "displayName": "Schafter6"
+    },
+    {
+        "class": "Sedans",
+        "hash": 704435172,
+        "spawnName": "cog552",
+        "displayName": "Cog552"
+    },
+    {
+        "class": "Sedans",
+        "hash": -2030171296,
+        "spawnName": "cognoscenti",
+        "displayName": "Cognosc"
+    },
+    {
+        "class": "Muscle",
+        "hash": -2122646867,
+        "spawnName": "gauntlet5",
+        "displayName": "Gauntlet5"
+    },
+    {
+        "class": "Sedans",
+        "hash": -604842630,
+        "spawnName": "cognoscenti2",
+        "displayName": "Cognosc2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 2035069708,
+        "spawnName": "esskey",
+        "displayName": "Esskey"
+    },
+    {
+        "class": "Sports",
+        "hash": -1540373595,
+        "spawnName": "vectre",
+        "displayName": "Vectre"
+    },
+    {
+        "class": "SUVs",
+        "hash": 1878062887,
+        "spawnName": "baller3",
+        "displayName": "Baller3"
+    },
+    {
+        "class": "SUVs",
+        "hash": -102335483,
+        "spawnName": "squaddie",
+        "displayName": "Squaddie"
+    },
+    {
+        "class": "SUVs",
+        "hash": 634118882,
+        "spawnName": "baller4",
+        "displayName": "Baller4"
+    },
+    {
+        "class": "Planes",
+        "hash": -32878452,
+        "spawnName": "bombushka",
+        "displayName": "Bombushka"
+    },
+    {
+        "class": "Sports",
+        "hash": -214906006,
+        "spawnName": "jester3",
+        "displayName": "Jester3"
+    },
+    {
+        "class": "SUVs",
+        "hash": 470404958,
+        "spawnName": "baller5",
+        "displayName": "Baller5"
+    },
+    {
+        "class": "SUVs",
+        "hash": 666166960,
+        "spawnName": "baller6",
+        "displayName": "Baller6"
+    },
+    {
+        "class": "Boats",
+        "hash": 867467158,
+        "spawnName": "dinghy4",
+        "displayName": "Dinghy"
+    },
+    {
+        "class": "Sports",
+        "hash": 719660200,
+        "spawnName": "ruston",
+        "displayName": "Ruston"
+    },
+    {
+        "class": "Boats",
+        "hash": 1448677353,
+        "spawnName": "tropic2",
+        "displayName": "Tropic"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -1671539132,
+        "spawnName": "supervolito2",
+        "displayName": "Svolito2"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1543134283,
+        "spawnName": "valkyrie2",
+        "displayName": "Valkyri2"
+    },
+    {
+        "class": "Super",
+        "hash": 633712403,
+        "spawnName": "banshee2",
+        "displayName": "Banshee2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -2039755226,
+        "spawnName": "faction3",
+        "displayName": "Faction3"
+    },
+    {
+        "class": "Vans",
+        "hash": -1126264336,
+        "spawnName": "minivan2",
+        "displayName": "Minivan2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -1797613329,
+        "spawnName": "tornado5",
+        "displayName": "Tornado5"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1763675285,
+        "spawnName": "l35",
+        "displayName": "L35"
+    },
+    {
+        "class": "Muscle",
+        "hash": -899509638,
+        "spawnName": "virgo2",
+        "displayName": "Virgo2"
+    },
+    {
+        "class": "SUVs",
+        "hash": 1203490606,
+        "spawnName": "xls",
+        "displayName": "Xls"
+    },
+    {
+        "class": "SUVs",
+        "hash": -432008408,
+        "spawnName": "xls2",
+        "displayName": "Xls2"
+    },
+    {
+        "class": "Super",
+        "hash": 1426219628,
+        "spawnName": "fmj",
+        "displayName": "Fmj"
+    },
+    {
+        "class": "Vans",
+        "hash": 1475773103,
+        "spawnName": "rumpo3",
+        "displayName": "Rumpo3"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1267543371,
+        "spawnName": "ellie",
+        "displayName": "Ellie"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -1845487887,
+        "spawnName": "volatus",
+        "displayName": "Volatus"
+    },
+    {
+        "class": "Super",
+        "hash": 234062309,
+        "spawnName": "reaper",
+        "displayName": "Reaper"
+    },
+    {
+        "class": "Boats",
+        "hash": -2100640717,
+        "spawnName": "tug",
+        "displayName": "Tug"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -239841468,
+        "spawnName": "diablous",
+        "displayName": "Diablous"
+    },
+    {
+        "class": "Sports",
+        "hash": -777172681,
+        "spawnName": "omnis",
+        "displayName": "Omnis"
+    },
+    {
+        "class": "Super",
+        "hash": -1232836011,
+        "spawnName": "le7b",
+        "displayName": "Le7b"
+    },
+    {
+        "class": "Service",
+        "hash": -2103821244,
+        "spawnName": "rallytruck",
+        "displayName": "Rallytruck"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 390201602,
+        "spawnName": "cliffhanger",
+        "displayName": "Cliffhanger"
+    },
+    {
+        "class": "Sports",
+        "hash": 1887331236,
+        "spawnName": "tropos",
+        "displayName": "Tropos"
+    },
+    {
+        "class": "Compacts",
+        "hash": 1549126457,
+        "spawnName": "brioso",
+        "displayName": "Brioso"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1694081890,
+        "spawnName": "bruiser2",
+        "displayName": "Bruiser2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -1558399629,
+        "spawnName": "tornado6",
+        "displayName": "Tornado6"
+    },
+    {
+        "class": "Military",
+        "hash": 1542143200,
+        "spawnName": "scarab2",
+        "displayName": "Scarab2"
+    },
+    {
+        "class": "Sports",
+        "hash": -674927303,
+        "spawnName": "raptor",
+        "displayName": "Raptor"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 6774487,
+        "spawnName": "chimera",
+        "displayName": "Chimera"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -609625092,
+        "spawnName": "vortex",
+        "displayName": "Vortex"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1491277511,
+        "spawnName": "sanctus",
+        "displayName": "Sanctus"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1606187161,
+        "spawnName": "nightblade",
+        "displayName": "Nightblade"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1009268949,
+        "spawnName": "zombiea",
+        "displayName": "Zombiea"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -570033273,
+        "spawnName": "zombieb",
+        "displayName": "Zombieb"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 822018448,
+        "spawnName": "defiler",
+        "displayName": "Defiler"
+    },
+    {
+        "class": "Sports",
+        "hash": -1726022652,
+        "spawnName": "comet6",
+        "displayName": "Comet6"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1873600305,
+        "spawnName": "ratbike",
+        "displayName": "Ratbike"
+    },
+    {
+        "class": "Sedans",
+        "hash": 321186144,
+        "spawnName": "stafford",
+        "displayName": "Stafford"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -405626514,
+        "spawnName": "shotaro",
+        "displayName": "Shotaro"
+    },
+    {
+        "class": "Sports",
+        "hash": 1076201208,
+        "spawnName": "r300",
+        "displayName": "R300"
+    },
+    {
+        "class": "Muscle",
+        "hash": 15219735,
+        "spawnName": "hermes",
+        "displayName": "Hermes"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1523428744,
+        "spawnName": "manchez",
+        "displayName": "Manchez"
+    },
+    {
+        "class": "Sports",
+        "hash": 1755697647,
+        "spawnName": "cypher",
+        "displayName": "Cypher"
+    },
+    {
+        "class": "Off-road",
+        "hash": -440768424,
+        "spawnName": "blazer4",
+        "displayName": "Blazer4"
+    },
+    {
+        "class": "Boats",
+        "hash": -980573366,
+        "spawnName": "dinghy5",
+        "displayName": "Dinghy5"
+    },
+    {
+        "class": "Super",
+        "hash": 272929391,
+        "spawnName": "tempesta",
+        "displayName": "Tempesta"
+    },
+    {
+        "class": "Super",
+        "hash": -2048333973,
+        "spawnName": "italigtb",
+        "displayName": "Italigtb"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1968807591,
+        "spawnName": "pizzaboy",
+        "displayName": "Pizzaboy"
+    },
+    {
+        "class": "Super",
+        "hash": 1093792632,
+        "spawnName": "nero2",
+        "displayName": "Nero2"
+    },
+    {
+        "class": "Sports",
+        "hash": 1886268224,
+        "spawnName": "specter",
+        "displayName": "Specter"
+    },
+    {
+        "class": "Off-road",
+        "hash": 840387324,
+        "spawnName": "monster4",
+        "displayName": "Monster4"
+    },
+    {
+        "class": "Off-road",
+        "hash": -827162039,
+        "spawnName": "dune4",
+        "displayName": "Dune4"
+    },
+    {
+        "class": "Service",
+        "hash": -1912017790,
+        "spawnName": "wastelander",
+        "displayName": "Wastlndr"
+    },
+    {
+        "class": "Muscle",
+        "hash": 777714999,
+        "spawnName": "ruiner3",
+        "displayName": "Ruiner"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -982130927,
+        "spawnName": "turismo2",
+        "displayName": "Turismo2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -1405937764,
+        "spawnName": "infernus2",
+        "displayName": "Infernus2"
+    },
+    {
+        "class": "Sports",
+        "hash": -1620126302,
+        "spawnName": "neo",
+        "displayName": "Neo"
+    },
+    {
+        "class": "Super",
+        "hash": 1234311532,
+        "spawnName": "gp1",
+        "displayName": "Gp1"
+    },
+    {
+        "class": "Utility",
+        "hash": -1100548694,
+        "spawnName": "trailers4",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "Sports",
+        "hash": 274946574,
+        "spawnName": "tenf2",
+        "displayName": "Tenf2"
+    },
+    {
+        "class": "Super",
+        "hash": 917809321,
+        "spawnName": "xa21",
+        "displayName": "Xa21"
+    },
+    {
+        "class": "Muscle",
+        "hash": -994371320,
+        "spawnName": "weevil2",
+        "displayName": "Weevil2"
+    },
+    {
+        "class": "Super",
+        "hash": 1939284556,
+        "spawnName": "vagner",
+        "displayName": "Vagner"
+    },
+    {
+        "class": "Military",
+        "hash": -579747861,
+        "spawnName": "scarab3",
+        "displayName": "Scarab3"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1924433270,
+        "spawnName": "insurgent3",
+        "displayName": "Insurgent3"
+    },
+    {
+        "class": "Military",
+        "hash": 562680400,
+        "spawnName": "apc",
+        "displayName": "Apc"
+    },
+    {
+        "class": "Sports",
+        "hash": -591651781,
+        "spawnName": "blista3",
+        "displayName": "Blista3"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1897744184,
+        "spawnName": "dune3",
+        "displayName": "Dune3"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 159274291,
+        "spawnName": "ardent",
+        "displayName": "Ardent"
+    },
+    {
+        "class": "Planes",
+        "hash": -392675425,
+        "spawnName": "seabreeze",
+        "displayName": "Seabreeze"
+    },
+    {
+        "class": "Planes",
+        "hash": 1043222410,
+        "spawnName": "tula",
+        "displayName": "Tula"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -1984275979,
+        "spawnName": "havok",
+        "displayName": "Havok"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -42959138,
+        "spawnName": "hunter",
+        "displayName": "Hunter"
+    },
+    {
+        "class": "Open Wheel",
+        "hash": 1492612435,
+        "spawnName": "openwheel1",
+        "displayName": "Openwheel1"
+    },
+    {
+        "class": "Planes",
+        "hash": -1763555241,
+        "spawnName": "microlight",
+        "displayName": "Microlight"
+    },
+    {
+        "class": "Sports",
+        "hash": 1909189272,
+        "spawnName": "gb200",
+        "displayName": "Gb200"
+    },
+    {
+        "class": "Planes",
+        "hash": -975345305,
+        "spawnName": "rogue",
+        "displayName": "Rogue"
+    },
+    {
+        "class": "Military",
+        "hash": 2014313426,
+        "spawnName": "vetir",
+        "displayName": "Vetir"
+    },
+    {
+        "class": "Planes",
+        "hash": -1386191424,
+        "spawnName": "pyro",
+        "displayName": "Pyro"
+    },
+    {
+        "class": "Planes",
+        "hash": -1007528109,
+        "spawnName": "howard",
+        "displayName": "Howard"
+    },
+    {
+        "class": "Muscle",
+        "hash": -401643538,
+        "spawnName": "stalion2",
+        "displayName": "Stalion2"
+    },
+    {
+        "class": "Planes",
+        "hash": -749299473,
+        "spawnName": "mogul",
+        "displayName": "Mogul"
+    },
+    {
+        "class": "Planes",
+        "hash": -1700874274,
+        "spawnName": "starling",
+        "displayName": "Starling"
+    },
+    {
+        "class": "Planes",
+        "hash": 1036591958,
+        "spawnName": "nokota",
+        "displayName": "Nokota"
+    },
+    {
+        "class": "Planes",
+        "hash": 1565978651,
+        "spawnName": "molotok",
+        "displayName": "Molotok"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1841130506,
+        "spawnName": "retinue",
+        "displayName": "Retinue"
+    },
+    {
+        "class": "Super",
+        "hash": 1392481335,
+        "spawnName": "cyclone",
+        "displayName": "Cyclone"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -391595372,
+        "spawnName": "viseris",
+        "displayName": "Viseris"
+    },
+    {
+        "class": "Sports",
+        "hash": 661493923,
+        "spawnName": "comet5",
+        "displayName": "Comet5"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1532697517,
+        "spawnName": "riata",
+        "displayName": "Riata"
+    },
+    {
+        "class": "Super",
+        "hash": -313185164,
+        "spawnName": "autarch",
+        "displayName": "Autarch"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 903794909,
+        "spawnName": "savestra",
+        "displayName": "Savestra"
+    },
+    {
+        "class": "Sports",
+        "hash": 1561920505,
+        "spawnName": "comet4",
+        "displayName": "Comet4"
+    },
+    {
+        "class": "Sports",
+        "hash": -1848994066,
+        "spawnName": "neon",
+        "displayName": "Neon"
+    },
+    {
+        "class": "Sports",
+        "hash": 1104234922,
+        "spawnName": "sentinel3",
+        "displayName": "Sentinel3"
+    },
+    {
+        "class": "Military",
+        "hash": -1435527158,
+        "spawnName": "khanjali",
+        "displayName": "Khanjali"
+    },
+    {
+        "class": "Planes",
+        "hash": 447548909,
+        "spawnName": "volatol",
+        "displayName": "Volatol"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1181327175,
+        "spawnName": "akula",
+        "displayName": "Akula"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1483171323,
+        "spawnName": "deluxo",
+        "displayName": "Deluxo"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 886810209,
+        "spawnName": "stromberg",
+        "displayName": "Stromberg"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1693015116,
+        "spawnName": "riot2",
+        "displayName": "Riot2"
+    },
+    {
+        "class": "Planes",
+        "hash": -2118308144,
+        "spawnName": "avenger",
+        "displayName": "Avenger"
+    },
+    {
+        "class": "Planes",
+        "hash": 408970549,
+        "spawnName": "avenger2",
+        "displayName": "Avenger"
+    },
+    {
+        "class": "Open Wheel",
+        "hash": -1960756985,
+        "spawnName": "formula2",
+        "displayName": "Formula2"
+    },
+    {
+        "class": "Military",
+        "hash": 1489874736,
+        "spawnName": "thruster",
+        "displayName": "Thruster"
+    },
+    {
+        "class": "Emergency",
+        "hash": 1737348074,
+        "spawnName": "polgreenwood",
+        "displayName": "Polgreenw"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1374500452,
+        "spawnName": "deathbike3",
+        "displayName": "Deathbike3"
+    },
+    {
+        "class": "Sports",
+        "hash": 1741861769,
+        "spawnName": "streiter",
+        "displayName": "Streiter"
+    },
+    {
+        "class": "Sports",
+        "hash": 867799010,
+        "spawnName": "pariah",
+        "displayName": "Pariah"
+    },
+    {
+        "class": "Off-road",
+        "hash": -121446169,
+        "spawnName": "kamacho",
+        "displayName": "Kamacho"
+    },
+    {
+        "class": "Super",
+        "hash": -2120700196,
+        "spawnName": "entity2",
+        "displayName": "Entity2"
+    },
+    {
+        "class": "Sports",
+        "hash": 1377217886,
+        "spawnName": "remus",
+        "displayName": "Remus"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -988501280,
+        "spawnName": "cheburek",
+        "displayName": "Cheburek"
+    },
+    {
+        "class": "SUVs",
+        "hash": 629969764,
+        "spawnName": "astron",
+        "displayName": "Astron"
+    },
+    {
+        "class": "Sports",
+        "hash": 540101442,
+        "spawnName": "zr380",
+        "displayName": "Zr380"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1924800695,
+        "spawnName": "impaler3",
+        "displayName": "Impaler3"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1254014755,
+        "spawnName": "caracara",
+        "displayName": "Caracara"
+    },
+    {
+        "class": "Sports",
+        "hash": 1115909093,
+        "spawnName": "hotring",
+        "displayName": "Hotring"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -726768679,
+        "spawnName": "seasparrow",
+        "displayName": "Sparrow"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1046206681,
+        "spawnName": "michelli",
+        "displayName": "Michelli"
+    },
+    {
+        "class": "Muscle",
+        "hash": -986944621,
+        "spawnName": "dominator3",
+        "displayName": "Dominator3"
+    },
+    {
+        "class": "Super",
+        "hash": 1031562256,
+        "spawnName": "tezeract",
+        "displayName": "Tezeract"
+    },
+    {
+        "class": "Compacts",
+        "hash": 931280609,
+        "spawnName": "issi3",
+        "displayName": "Issi3"
+    },
+    {
+        "class": "Sedans",
+        "hash": 1532171089,
+        "spawnName": "deity",
+        "displayName": "Deity"
+    },
+    {
+        "class": "Super",
+        "hash": -638562243,
+        "spawnName": "scramjet",
+        "displayName": "Scramjet"
+    },
+    {
+        "class": "Planes",
+        "hash": 1692272545,
+        "spawnName": "strikeforce",
+        "displayName": "Strikeforce"
+    },
+    {
+        "class": "Commercial",
+        "hash": -1988428699,
+        "spawnName": "terbyte",
+        "displayName": "Terbyte"
+    },
+    {
+        "class": "Service",
+        "hash": 345756458,
+        "spawnName": "pbus2",
+        "displayName": "Pbus2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 2069146067,
+        "spawnName": "oppressor2",
+        "displayName": "Oppressor2"
+    },
+    {
+        "class": "Utility",
+        "hash": -671564942,
+        "spawnName": "towtruck3",
+        "displayName": "Towtruck"
+    },
+    {
+        "class": "Vans",
+        "hash": 219613597,
+        "spawnName": "speedo4",
+        "displayName": "Speedo4"
+    },
+    {
+        "class": "Off-road",
+        "hash": -54332285,
+        "spawnName": "freecrawler",
+        "displayName": "Freecrawler"
+    },
+    {
+        "class": "Off-road",
+        "hash": 802856453,
+        "spawnName": "monstrociti",
+        "displayName": "Monstrociti"
+    },
+    {
+        "class": "Commercial",
+        "hash": 1945374990,
+        "spawnName": "mule4",
+        "displayName": "Mule4"
+    },
+    {
+        "class": "Off-road",
+        "hash": 2044532910,
+        "spawnName": "menacer",
+        "displayName": "Menacer"
+    },
+    {
+        "class": "Planes",
+        "hash": -307958377,
+        "spawnName": "blimp3",
+        "displayName": "Blimp3"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 500482303,
+        "spawnName": "swinger",
+        "displayName": "Swinger"
+    },
+    {
+        "class": "Sports",
+        "hash": -331467772,
+        "spawnName": "italigto",
+        "displayName": "Italigto"
+    },
+    {
+        "class": "SUVs",
+        "hash": -420911112,
+        "spawnName": "patriot2",
+        "displayName": "Patriot2"
+    },
+    {
+        "class": "Off-road",
+        "hash": -715746948,
+        "spawnName": "monster5",
+        "displayName": "Monster5"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1812949672,
+        "spawnName": "deathbike2",
+        "displayName": "Deathbike2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1744505657,
+        "spawnName": "impaler4",
+        "displayName": "Impaler4"
+    },
+    {
+        "class": "Muscle",
+        "hash": -2061049099,
+        "spawnName": "slamvan4",
+        "displayName": "Slamvan4"
+    },
+    {
+        "class": "Off-road",
+        "hash": 2139203625,
+        "spawnName": "brutus",
+        "displayName": "Brutus"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -27326686,
+        "spawnName": "deathbike",
+        "displayName": "Deathbike"
+    },
+    {
+        "class": "Muscle",
+        "hash": -688189648,
+        "spawnName": "dominator4",
+        "displayName": "Dominator4"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1810806490,
+        "spawnName": "seminole2",
+        "displayName": "Seminole2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1375060657,
+        "spawnName": "dominator5",
+        "displayName": "Dominator5"
+    },
+    {
+        "class": "Commercial",
+        "hash": 1343932732,
+        "spawnName": "mule5",
+        "displayName": "Mule5"
+    },
+    {
+        "class": "Off-road",
+        "hash": 668439077,
+        "spawnName": "bruiser",
+        "displayName": "Bruiser"
+    },
+    {
+        "class": "Off-road",
+        "hash": -286046740,
+        "spawnName": "rcbandito",
+        "displayName": "Rcbandito"
+    },
+    {
+        "class": "Sports",
+        "hash": 1039032026,
+        "spawnName": "blista2",
+        "displayName": "Blista2"
+    },
+    {
+        "class": "Commercial",
+        "hash": -801550069,
+        "spawnName": "cerberus",
+        "displayName": "Cerberus"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1721676810,
+        "spawnName": "monster3",
+        "displayName": "Monster3"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1456744817,
+        "spawnName": "tulip",
+        "displayName": "Tulip"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1284356689,
+        "spawnName": "zhaba",
+        "displayName": "Zhaba"
+    },
+    {
+        "class": "Military",
+        "hash": -1146969353,
+        "spawnName": "scarab",
+        "displayName": "Scarab"
+    },
+    {
+        "class": "Muscle",
+        "hash": -49115651,
+        "spawnName": "vamos",
+        "displayName": "Vamos"
+    },
+    {
+        "class": "Muscle",
+        "hash": 444994115,
+        "spawnName": "imperator",
+        "displayName": "Imperator"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1637620610,
+        "spawnName": "imperator2",
+        "displayName": "Imperator2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -755532233,
+        "spawnName": "imperator3",
+        "displayName": "Imperator3"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1279262537,
+        "spawnName": "deviant",
+        "displayName": "Deviant"
+    },
+    {
+        "class": "Muscle",
+        "hash": -2096690334,
+        "spawnName": "impaler",
+        "displayName": "Impaler"
+    },
+    {
+        "class": "Sports",
+        "hash": -1106120762,
+        "spawnName": "zr3802",
+        "displayName": "Zr3802"
+    },
+    {
+        "class": "Sports",
+        "hash": -447711397,
+        "spawnName": "paragon",
+        "displayName": "Paragon"
+    },
+    {
+        "class": "Sports",
+        "hash": -208911803,
+        "spawnName": "jugular",
+        "displayName": "Jugular"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 916547552,
+        "spawnName": "rrocket",
+        "displayName": "Rrocket"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1804415708,
+        "spawnName": "peyote2",
+        "displayName": "Peyote2"
+    },
+    {
+        "class": "Super",
+        "hash": -324618589,
+        "spawnName": "s80",
+        "displayName": "S80"
+    },
+    {
+        "class": "Super",
+        "hash": -682108547,
+        "spawnName": "zorrusso",
+        "displayName": "Zorrusso"
+    },
+    {
+        "class": "Sedans",
+        "hash": -913589546,
+        "spawnName": "glendale2",
+        "displayName": "Glendale2"
+    },
+    {
+        "class": "Sports",
+        "hash": 1854776567,
+        "spawnName": "issi7",
+        "displayName": "Issi7"
+    },
+    {
+        "class": "Sports",
+        "hash": -941272559,
+        "spawnName": "locust",
+        "displayName": "Locust"
+    },
+    {
+        "class": "Super",
+        "hash": 1323778901,
+        "spawnName": "emerus",
+        "displayName": "Emerus"
+    },
+    {
+        "class": "Muscle",
+        "hash": 722226637,
+        "spawnName": "gauntlet3",
+        "displayName": "Gauntlet3"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -882629065,
+        "spawnName": "nebula",
+        "displayName": "Nebula"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1862507111,
+        "spawnName": "zion3",
+        "displayName": "Zion3"
+    },
+    {
+        "class": "Sports",
+        "hash": 686471183,
+        "spawnName": "drafter",
+        "displayName": "Drafter"
+    },
+    {
+        "class": "Military",
+        "hash": -1254331310,
+        "spawnName": "minitank",
+        "displayName": "Minitank"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1693751655,
+        "spawnName": "yosemite2",
+        "displayName": "Yosemite2"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1681653521,
+        "spawnName": "driftyosemite",
+        "displayName": "Driftyosem"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 301304410,
+        "spawnName": "Stryder",
+        "displayName": "Stryder"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 394110044,
+        "spawnName": "jb7002",
+        "displayName": "Jb7002"
+    },
+    {
+        "class": "Sports",
+        "hash": 872704284,
+        "spawnName": "sultan2",
+        "displayName": "Sultan2"
+    },
+    {
+        "class": "Sports",
+        "hash": 987469656,
+        "spawnName": "Sugoi",
+        "displayName": "Sugoi"
+    },
+    {
+        "class": "Open Wheel",
+        "hash": 340154634,
+        "spawnName": "formula",
+        "displayName": "Formula"
+    },
+    {
+        "class": "Super",
+        "hash": 960812448,
+        "spawnName": "furia",
+        "displayName": "Furia"
+    },
+    {
+        "class": "Sports",
+        "hash": 1456336509,
+        "spawnName": "vstr",
+        "displayName": "Vstr"
+    },
+    {
+        "class": "Sports",
+        "hash": 1336514315,
+        "spawnName": "gauntlet6",
+        "displayName": "Gauntlet6"
+    },
+    {
+        "class": "Compacts",
+        "hash": 409049982,
+        "spawnName": "kanjo",
+        "displayName": "Kanjo"
+    },
+    {
+        "class": "Sports",
+        "hash": -1132721664,
+        "spawnName": "imorgon",
+        "displayName": "Imorgon"
+    },
+    {
+        "class": "Sports",
+        "hash": -1728685474,
+        "spawnName": "coquette4",
+        "displayName": "Coquette4"
+    },
+    {
+        "class": "SUVs",
+        "hash": -838099166,
+        "spawnName": "landstalker2",
+        "displayName": "Landstlkr2"
+    },
+    {
+        "class": "Compacts",
+        "hash": -2098954619,
+        "spawnName": "club",
+        "displayName": "Club"
+    },
+    {
+        "class": "Muscle",
+        "hash": 2134119907,
+        "spawnName": "dukes3",
+        "displayName": "Dukes3"
+    },
+    {
+        "class": "Open Wheel",
+        "hash": 1181339704,
+        "spawnName": "openwheel2",
+        "displayName": "Openwheel2"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1107404867,
+        "spawnName": "peyote3",
+        "displayName": "Peyote3"
+    },
+    {
+        "class": "Sports",
+        "hash": -1492917079,
+        "spawnName": "veto2",
+        "displayName": "Veto2"
+    },
+    {
+        "class": "Sports",
+        "hash": -1149725334,
+        "spawnName": "italirsx",
+        "displayName": "Italirsx"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1455990255,
+        "spawnName": "toreador",
+        "displayName": "Toreador"
+    },
+    {
+        "class": "Utility",
+        "hash": -1045911276,
+        "spawnName": "slamtruck",
+        "displayName": "Slamtruck"
+    },
+    {
+        "class": "Compacts",
+        "hash": 1644055914,
+        "spawnName": "weevil",
+        "displayName": "Weevil"
+    },
+    {
+        "class": "Emergency",
+        "hash": 1452003510,
+        "spawnName": "polimpaler6",
+        "displayName": "Polimpaler6"
+    },
+    {
+        "class": "Planes",
+        "hash": -365873403,
+        "spawnName": "alkonost",
+        "displayName": "Alkonost"
+    },
+    {
+        "class": "Helicopters",
+        "hash": 1229411063,
+        "spawnName": "seasparrow2",
+        "displayName": "Sparrow2"
+    },
+    {
+        "class": "Boats",
+        "hash": 1336872304,
+        "spawnName": "kosatka",
+        "displayName": "Kosatka"
+    },
+    {
+        "class": "Trains",
+        "hash": -1108591207,
+        "spawnName": "freightcar2",
+        "displayName": "Freight"
+    },
+    {
+        "class": "Muscle",
+        "hash": 426742808,
+        "spawnName": "dominator7",
+        "displayName": "Dominator7"
+    },
+    {
+        "class": "Muscle",
+        "hash": 736672010,
+        "spawnName": "dominator8",
+        "displayName": "Dominator8"
+    },
+    {
+        "class": "Sports",
+        "hash": 2038480341,
+        "spawnName": "euros",
+        "displayName": "Euros"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1244461404,
+        "spawnName": "tailgater2",
+        "displayName": "Tailgater2"
+    },
+    {
+        "class": "Off-road",
+        "hash": -536105557,
+        "spawnName": "ratel",
+        "displayName": "Ratel"
+    },
+    {
+        "class": "Sports",
+        "hash": 1304459735,
+        "spawnName": "growler",
+        "displayName": "Growler"
+    },
+    {
+        "class": "Sports",
+        "hash": -1858654120,
+        "spawnName": "zr350",
+        "displayName": "Zr350"
+    },
+    {
+        "class": "Sedans",
+        "hash": 579912970,
+        "spawnName": "warrener2",
+        "displayName": "Warrener2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1993851908,
+        "spawnName": "reever",
+        "displayName": "Reever"
+    },
+    {
+        "class": "SUVs",
+        "hash": 662793086,
+        "spawnName": "iwagen",
+        "displayName": "Iwagen"
+    },
+    {
+        "class": "Sports",
+        "hash": -1356880839,
+        "spawnName": "sentinel4",
+        "displayName": "Sentinel4"
+    },
+    {
+        "class": "SUVs",
+        "hash": 359875117,
+        "spawnName": "baller7",
+        "displayName": "Baller7"
+    },
+    {
+        "class": "Muscle",
+        "hash": -619930876,
+        "spawnName": "buffalo4",
+        "displayName": "Buffalo4"
+    },
+    {
+        "class": "Super",
+        "hash": -1444114309,
+        "spawnName": "ignus",
+        "displayName": "Ignus"
+    },
+    {
+        "class": "SUVs",
+        "hash": -261346873,
+        "spawnName": "granger2",
+        "displayName": "Granger2"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1706945532,
+        "spawnName": "ruiner4",
+        "displayName": "Ruiner4"
+    },
+    {
+        "class": "Compacts",
+        "hash": 15214558,
+        "spawnName": "brioso3",
+        "displayName": "Brioso3"
+    },
+    {
+        "class": "Coupes",
+        "hash": -64075878,
+        "spawnName": "kanjosj",
+        "displayName": "Kanjosj"
+    },
+    {
+        "class": "Coupes",
+        "hash": -294678663,
+        "spawnName": "postlude",
+        "displayName": "Postlude"
+    },
+    {
+        "class": "Super",
+        "hash": -165394758,
+        "spawnName": "torero2",
+        "displayName": "Torero2"
+    },
+    {
+        "class": "Super",
+        "hash": -10917683,
+        "spawnName": "lm87",
+        "displayName": "Lm87"
+    },
+    {
+        "class": "Sports",
+        "hash": -893984159,
+        "spawnName": "tenf",
+        "displayName": "Tenf"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1855505138,
+        "spawnName": "rhinehart",
+        "displayName": "Rhinehart"
+    },
+    {
+        "class": "Muscle",
+        "hash": 40817712,
+        "spawnName": "greenwood",
+        "displayName": "Greenwood"
+    },
+    {
+        "class": "Sports",
+        "hash": 775514032,
+        "spawnName": "sm722",
+        "displayName": "Sm722"
+    },
+    {
+        "class": "Muscle",
+        "hash": -461850249,
+        "spawnName": "tahoma",
+        "displayName": "Tahoma"
+    },
+    {
+        "class": "SUVs",
+        "hash": 1550581940,
+        "spawnName": "issi8",
+        "displayName": "Issi8"
+    },
+    {
+        "class": "Super",
+        "hash": 669204833,
+        "spawnName": "virtue",
+        "displayName": "Virtue"
+    },
+    {
+        "class": "Muscle",
+        "hash": -1249788006,
+        "spawnName": "eudora",
+        "displayName": "Eudora"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": -1386336041,
+        "spawnName": "powersurge",
+        "displayName": "Powersurge"
+    },
+    {
+        "class": "Vans",
+        "hash": -1627077503,
+        "spawnName": "journey2",
+        "displayName": "Journey2"
+    },
+    {
+        "class": "Motorcycles",
+        "hash": 1384502824,
+        "spawnName": "manchez3",
+        "displayName": "Manchez3"
+    },
+    {
+        "class": "Vans",
+        "hash": -1035489563,
+        "spawnName": "surfer3",
+        "displayName": "Surfer3"
+    },
+    {
+        "class": "Planes",
+        "hash": -1958189855,
+        "spawnName": "cargoplane2",
+        "displayName": "Cargopl"
+    },
+    {
+        "class": "Cycles",
+        "hash": -1983622024,
+        "spawnName": "inductor2",
+        "displayName": "Inductor2"
+    },
+    {
+        "class": "Cycles",
+        "hash": -897824023,
+        "spawnName": "inductor",
+        "displayName": "Inductor"
+    },
+    {
+        "class": "Planes",
+        "hash": 239897677,
+        "spawnName": "raiju",
+        "displayName": "Raiju"
+    },
+    {
+        "class": "Sports",
+        "hash": 1447690049,
+        "spawnName": "stingertt",
+        "displayName": "Stingertt"
+    },
+    {
+        "class": "Muscle",
+        "hash": -979292575,
+        "spawnName": "clique2",
+        "displayName": "Clique2"
+    },
+    {
+        "class": "Planes",
+        "hash": 191916658,
+        "spawnName": "streamer216",
+        "displayName": "Streamer216"
+    },
+    {
+        "class": "Planes",
+        "hash": -426933872,
+        "spawnName": "avenger3",
+        "displayName": "Avenger3"
+    },
+    {
+        "class": "Planes",
+        "hash": -69293006,
+        "spawnName": "avenger4",
+        "displayName": "Avenger3"
+    },
+    {
+        "class": "Vans",
+        "hash": -44799464,
+        "spawnName": "speedo5",
+        "displayName": "Speedo4"
+    },
+    {
+        "class": "Helicopters",
+        "hash": -1659004814,
+        "spawnName": "conada2",
+        "displayName": "Conada2"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1372798934,
+        "spawnName": "vivanite",
+        "displayName": "Vivanite"
+    },
+    {
+        "class": "Muscle",
+        "hash": -178442374,
+        "spawnName": "impaler6",
+        "displayName": "Impaler6"
+    },
+    {
+        "class": "SUVs",
+        "hash": -768044142,
+        "spawnName": "dorado",
+        "displayName": "Dorado"
+    },
+    {
+        "class": "Utility",
+        "hash": -902029319,
+        "spawnName": "towtruck4",
+        "displayName": "Towtruck"
+    },
+    {
+        "class": "Muscle",
+        "hash": 349315417,
+        "spawnName": "gauntlet2",
+        "displayName": "Gauntlet2"
+    },
+    {
+        "class": "Muscle",
+        "hash": 372621319,
+        "spawnName": "Vigero3",
+        "displayName": "Vigero3"
+    },
+    {
+        "class": "SUVs",
+        "hash": -1029730482,
+        "spawnName": "cavalcade3",
+        "displayName": "Cavalcade3"
+    },
+    {
+        "class": "Sports",
+        "hash": 1121330119,
+        "spawnName": "envisage",
+        "displayName": "Envisage"
+    },
+    {
+        "class": "Sports",
+        "hash": -181562642,
+        "spawnName": "driftfuto",
+        "displayName": "Driftfuto"
+    },
+    {
+        "class": "Sports",
+        "hash": 821121576,
+        "spawnName": "drifteuros",
+        "displayName": "Drifteuros"
+    },
+    {
+        "class": "Sports",
+        "hash": -1696319096,
+        "spawnName": "drifttampa",
+        "displayName": "Drifttampa"
+    },
+    {
+        "class": "Sports",
+        "hash": 1923534526,
+        "spawnName": "driftzr350",
+        "displayName": "Driftzr350"
+    },
+    {
+        "class": "SUVs",
+        "hash": -38879449,
+        "spawnName": "aleutian",
+        "displayName": "Aleutian"
+    },
+    {
+        "class": "Muscle",
+        "hash": -441209695,
+        "spawnName": "dominator9",
+        "displayName": "Dominator9"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1233767450,
+        "spawnName": "polgauntlet",
+        "displayName": "Polgauntlet"
+    },
+    {
+        "class": "Vans",
+        "hash": -842765535,
+        "spawnName": "boxville6",
+        "displayName": "Boxville6"
+    },
+    {
+        "class": "Coupes",
+        "hash": -465825307,
+        "spawnName": "fr36",
+        "displayName": "Fr36"
+    },
+    {
+        "class": "Utility",
+        "hash": -1334453816,
+        "spawnName": "trailers5",
+        "displayName": "Trailer"
+    },
+    {
+        "class": "SUVs",
+        "hash": -863358884,
+        "spawnName": "baller8",
+        "displayName": "Baller8"
+    },
+    {
+        "class": "Utility",
+        "hash": 1835260592,
+        "spawnName": "boattrailer2",
+        "displayName": "Boattrailer"
+    },
+    {
+        "class": "Utility",
+        "hash": 1539159908,
+        "spawnName": "boattrailer3",
+        "displayName": "Boattrailer"
+    },
+    {
+        "class": "Emergency",
+        "hash": -773802025,
+        "spawnName": "poldominator10",
+        "displayName": "Poldom10"
+    },
+    {
+        "class": "Off-road",
+        "hash": -1896488056,
+        "spawnName": "yosemite1500",
+        "displayName": "Yosemite4"
+    },
+    {
+        "class": "Emergency",
+        "hash": -1628000569,
+        "spawnName": "poldorado",
+        "displayName": "Poldorado"
+    },
+    {
+        "class": "Sports",
+        "hash": -946047670,
+        "spawnName": "paragon3",
+        "displayName": "Paragon3"
+    },
+    {
+        "class": "Coupes",
+        "hash": -999594302,
+        "spawnName": "eurosX32",
+        "displayName": "Eurosx32"
+    },
+    {
+        "class": "SUVs",
+        "hash": 1307736079,
+        "spawnName": "castigator",
+        "displayName": "Castigator"
+    },
+    {
+        "class": "Muscle",
+        "hash": 1579902654,
+        "spawnName": "dominator10",
+        "displayName": "Dominator10"
+    },
+    {
+        "class": "Emergency",
+        "hash": 1249425552,
+        "spawnName": "polimpaler5",
+        "displayName": "Polimpaler5"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": 1690421418,
+        "spawnName": "driftnebula",
+        "displayName": "Driftnebula"
+    },
+    {
+        "class": "Sports",
+        "hash": -986656474,
+        "spawnName": "driftsentinel",
+        "displayName": "Driftsent"
+    },
+    {
+        "class": "Sedans",
+        "hash": -1240172147,
+        "spawnName": "vorschlaghammer",
+        "displayName": "Vorschlag"
+    },
+    {
+        "class": "Sports Classics",
+        "hash": -1958428933,
+        "spawnName": "coquette5",
+        "displayName": "Coquette5"
+    },
+    {
+        "class": "Sedans",
+        "hash": -143587026,
+        "spawnName": "driftvorschlag",
+        "displayName": "Driftvorsch"
+    },
+    {
+        "class": "Boats",
+        "hash": -1066334226,
+        "spawnName": "submersible2",
+        "displayName": "Submers2"
+    },
+    {
+        "class": "Muscle",
+        "hash": 723973206,
+        "spawnName": "dukes",
+        "displayName": "Dukes"
+    },
+    {
+        "class": "Muscle",
+        "hash": -915704871,
+        "spawnName": "dominator2",
+        "displayName": "Dominato2"
+    },
+    {
+        "class": "Planes",
+        "hash": -901163259,
+        "spawnName": "dodo",
+        "displayName": "Dodo"
+    },
+    {
+        "class": "Off-road",
+        "hash": 1233534620,
+        "spawnName": "marshall",
+        "displayName": "Marshall"
+    }
+]

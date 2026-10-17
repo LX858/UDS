@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Housing Admin Panel</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <div id="adminContainer" style="display: none;">
+        <!-- TABS -->
+        <div class="admin-tabs">
+            <button class="tab-button active" data-tab="create">Tạo Nhà Mới</button>
+            <button class="tab-button" data-tab="manage">Quản Lý Nhà</button>
+            <button class="close-btn" id="closeAdmin">✕</button>
+        </div>
+
+        <!-- TAB 1: TẠO NHÀ MỚI -->
+        <div id="createTab" class="tab-content active">
+            <div class="admin-panel">
+                <h2>Tạo Nhà Mới</h2>
+                
+                <div class="form-group">
+                    <label>House ID</label>
+                    <input type="text" id="houseId" placeholder="vd: slum_11, regular_11">
+                    <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                        💡 Nhập coords theo format: <code style="color: #4a90e2;">vec3(x, y, z)</code> hoặc <code style="color: #4a90e2;">vec4(x, y, z, heading)</code>
+                    </small>
+                    <small>ID duy nhất cho nhà</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Loại Nhà</label>
+                    <select id="houseType">
+                        <option value="slum">Nhà Ổ Chuột ($50,000 - 2 xe)</option>
+                        <option value="regular">Nhà Thường ($150,000 - 6 xe)</option>
+                        <option value="apartment">Nhà Chung Cư ($300,000 - 10 xe)</option>
+                        <option value="homestay">Homestay ($500,000 - 10 xe)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Giá Bán Nhà (Tùy Chỉnh)</label>
+                    <input type="number" id="housePrice" placeholder="Để trống = giá mặc định theo loại nhà" min="0" step="1000">
+                    <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                        💡 Để trống để dùng giá mặc định từ Config.HouseTypes
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label>Mã Xã Đoàn Sở Hữu (Tùy Chọn - Gang House)</label>
+                    <input type="text" id="houseGang" placeholder="vd: ballas, families, vagos... (để trống nếu là nhà dân thường)">
+                    <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                        🛡️ Chỉ thành viên thuộc Xã Đoàn (qbx_core gang) mới có quyền vào nhà này
+                    </small>
+                </div>
+
+                <div class="coords-grid">
+                    <div class="coord-section">
+                        <h3>Door (Cửa Nhà)</h3>
+                        <button class="get-coords-btn" data-target="door">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="door" placeholder="vec3(x, y, z)" class="vec-input" title="Nhập: vec3(100.5, -200.3, 30.2)">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Interior (Bên Trong)</h3>
+                        <button class="get-coords-btn" data-target="interior">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="interior" placeholder="vec3(x, y, z)" class="vec-input" title="Nhập: vec3(100.5, -200.3, 30.2)">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Storage Point (Kho Đồ)</h3>
+                        <button class="get-coords-btn" data-target="storage">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="storage" placeholder="vec3(x, y, z)" class="vec-input" title="Nhập: vec3(100.5, -200.3, 30.2)">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>🍹 Juicer Point (Máy Xay Sinh Tố)</h3>
+                        <button class="get-coords-btn" data-target="juicer">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="juicer" placeholder="vec3(x, y, z)" class="vec-input" title="Nhập: vec3(100.5, -200.3, 30.2)">
+                        </div>
+                        <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                            💡 Vị trí máy xay sinh tố - chỉ chủ nhà mới thấy
+                        </small>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>📦 Packaging Point (Đóng Thùng Hàng)</h3>
+                        <button class="get-coords-btn" data-target="packaging">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="packaging" placeholder="vec3(x, y, z)" class="vec-input" title="Nhập: vec3(100.5, -200.3, 30.2)">
+                        </div>
+                        <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                            💡 Vị trí đóng thùng trái đu đủ - chỉ chủ nhà mới thấy
+                        </small>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Exit Point (Lối Ra)</h3>
+                        <button class="get-coords-btn" data-target="exit">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="exit" placeholder="vec3(x, y, z)" class="vec-input" title="Nhập: vec3(100.5, -200.3, 30.2)">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Garage Point (Cất Xe)</h3>
+                        <button class="get-coords-btn" data-target="garage">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="garage" placeholder="vec3(x, y, z)" class="vec-input" title="Nhập: vec3(100.5, -200.3, 30.2)">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Garage Spawn (Lấy Xe)</h3>
+                        <button class="get-coords-btn" data-target="spawn">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="spawn" placeholder="vec4(x, y, z, heading)" class="vec-input" title="Nhập: vec4(100.5, -200.3, 30.2, 45.0)">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>🛏️ Bed (Giường Ngủ - Tùy Chọn)</h3>
+                        <button class="get-coords-btn" data-target="bed">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="bed" placeholder="vec3(x, y, z) hoặc để trống" class="vec-input" title="Nhập: vec3(100.5, -200.3, 30.2) hoặc để trống nếu không có giường">
+                        </div>
+                        <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                            💡 Để trống nếu không có giường
+                        </small>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button id="createHouseBtn" class="btn-primary">Tạo Nhà</button>
+                    <button id="resetFormBtn" class="btn-secondary">Reset</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: QUẢN LÝ NHÀ -->
+        <div id="manageTab" class="tab-content">
+            <div class="admin-panel">
+                <h2>Quản Lý Nhà</h2>
+                
+                <div class="search-bar">
+                    <input type="text" id="searchHouse" placeholder="Tìm kiếm nhà (ID, type)...">
+                    <button id="refreshList" class="btn-secondary">Làm Mới</button>
+                </div>
+
+                <div id="housesList" class="houses-list">
+                    <!-- Houses will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- EDIT HOUSE MODAL -->
+        <div id="editModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2>Chỉnh Sửa Nhà: <span id="editHouseId"></span></h2>
+                
+                <div class="form-group">
+                    <label>Loại Nhà</label>
+                    <select id="editHouseType">
+                        <option value="slum">Nhà Ổ Chuột</option>
+                        <option value="regular">Nhà Thường</option>
+                        <option value="apartment">Nhà Chung Cư</option>
+                        <option value="homestay">Homestay</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Giá Bán Nhà (Tùy Chỉnh)</label>
+                    <input type="number" id="editHousePrice" placeholder="Để trống = giá mặc định" min="0" step="1000">
+                    <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                        💡 Để trống để dùng giá mặc định từ Config
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label>Mã Xã Đoàn Sở Hữu (Tùy Chọn - Gang House)</label>
+                    <input type="text" id="editHouseGang" placeholder="vd: ballas, families... (để trống nếu là nhà dân)">
+                    <small style="color: rgba(255,255,255,0.5); display: block; margin-top: 5px;">
+                        🛡️ Chỉ thành viên thuộc Xã Đoàn (qbx_core gang) mới có quyền vào nhà này
+                    </small>
+                </div>
+
+                <div class="coords-grid">
+                    <div class="coord-section">
+                        <h3>Door (Cửa Nhà)</h3>
+                        <button class="get-coords-btn" data-target="edit_door">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_door" placeholder="vec3(x, y, z)" class="vec-input">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Interior (Bên Trong)</h3>
+                        <button class="get-coords-btn" data-target="edit_interior">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_interior" placeholder="vec3(x, y, z)" class="vec-input">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Storage (Kho Đồ)</h3>
+                        <button class="get-coords-btn" data-target="edit_storage">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_storage" placeholder="vec3(x, y, z)" class="vec-input">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>🍹 Juicer (Máy Xay - Chủ Nhà)</h3>
+                        <button class="get-coords-btn" data-target="edit_juicer">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_juicer" placeholder="vec3(x, y, z)" class="vec-input">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>📦 Packaging (Đóng Thùng - Chủ Nhà)</h3>
+                        <button class="get-coords-btn" data-target="edit_packaging">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_packaging" placeholder="vec3(x, y, z)" class="vec-input">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Exit (Thoát Ra Ngoài)</h3>
+                        <button class="get-coords-btn" data-target="edit_exit">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_exit" placeholder="vec3(x, y, z)" class="vec-input">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Garage (Cất Xe)</h3>
+                        <button class="get-coords-btn" data-target="edit_garage">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_garage" placeholder="vec3(x, y, z)" class="vec-input">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>Spawn (Lấy Xe Ra)</h3>
+                        <button class="get-coords-btn" data-target="edit_spawn">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_spawn" placeholder="vec4(x, y, z, heading)" class="vec-input">
+                        </div>
+                    </div>
+
+                    <div class="coord-section">
+                        <h3>🛏️ Bed (Giường - Tùy Chọn)</h3>
+                        <button class="get-coords-btn" data-target="edit_bed">📍 Lấy Coords</button>
+                        <div class="coord-inputs">
+                            <input type="text" data-coord="edit_bed" placeholder="vec3(x, y, z) hoặc để trống" class="vec-input">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button id="saveEditBtn" class="btn-primary">Lưu Thay Đổi</button>
+                    <button id="cancelEditBtn" class="btn-secondary">Hủy</button>
+                    <button id="deleteHouseBtn" class="btn-danger">Xóa Nhà</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="customAlertOverlay" class="alert-overlay">
+        <div class="alert-box">
+            <div class="alert-icon" id="alertIcon"></div>
+            <div class="alert-message" id="alertMessage"></div>
+            <button class="alert-button" id="alertButton">OK</button>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

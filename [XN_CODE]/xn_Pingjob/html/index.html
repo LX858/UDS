@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+	<meta charset="UTF-8">
+	<head>
+		<link href="style.css" rel="stylesheet">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+		<link href="bootstrap.css" rel="stylesheet">
+		<script src="fivem.js" type="text/javascript"></script>
+		<script src="script.js" type="text/javascript"></script>
+	</head>
+
+	<body>
+
+        <!-- <div class="bg-review"></div> -->
+
+		<div class="ping-bell-hud hidden">
+			<div class="bell-container">
+				<div class="bell-icon-box">
+					<i class="fa-solid fa-bell bell-ring-icon"></i>
+					<span class="bell-badge" id="ping-count">0</span>
+				</div>
+				<div class="key-hint-box">
+					<div class="key-cap">F4</div>
+					<div class="key-text">MỞ BẢNG PING</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="crime-call-hud hidden">
+			<div class="title">Gọi dịch vụ</div>
+
+			<div class="list">
+				<div class="service" id="mechanic">Gọi cứu hộ</div>
+				<div class="service" id="ambulance">Gọi bác sĩ</div>
+
+			</div>
+		</div>
+        <div class="Bg_Update">
+			<div class="crime-menu-hud hidden" --css-size="true">
+				<div class="list">
+					<div class="head">
+					<div class="item">
+						<div class="col">Người gọi</div>
+						<div class="col sdt">CitizenID</div>
+						<div class="col">Bucket</div>
+						<div class="col">Người nhận</div>
+						<div class="col">Blacklist</div>
+						<div class="col">Thời gian</div>
+							<div class="col">Khoảng cách</div>
+							<div class="col">Nhận</div>
+							<div class="col">GPS</div>
+							<div class="col">Kéo Xác</div>
+							<div class="col">XÓA</div>
+						</div>
+					</div>
+					<div class="body">
+						<div class="item">
+							<div class="col">1307 Coding</div>
+							<div class="col">Chưa nhận</div>
+							<div class="col">Không</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"><button type="button" class="btn btn-outline-success">Nhận</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+	
+						<div class="item blacklist">
+							<div class="col">1307 Coding</div>
+							<div class="col">Quốc Huy</div>
+							<div class="col">18:15 15/03</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"><button type="button" class="btn btn-outline-warning">Hủy Nhận</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+						<div class="item">
+							<div class="col">1307 Coding</div>
+							<div class="col">Chưa nhận</div>
+							<div class="col">Không</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+						<div class="item">
+							<div class="col">1307 Coding</div>
+							<div class="col">Chưa nhận</div>
+							<div class="col">Không</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"><button type="button" class="btn btn-outline-success">Nhận</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+	
+						<div class="item blacklist">
+							<div class="col">1307 Coding</div>
+							<div class="col">Quốc Huy</div>
+							<div class="col">18:15 15/03</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"><button type="button" class="btn btn-outline-warning">Hủy Nhận</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+						<div class="item">
+							<div class="col">1307 Coding</div>
+							<div class="col">Chưa nhận</div>
+							<div class="col">Không</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+						<div class="item">
+							<div class="col">1307 Coding</div>
+							<div class="col">Chưa nhận</div>
+							<div class="col">Không</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"><button type="button" class="btn btn-outline-success">Nhận</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+	
+						<div class="item blacklist">
+							<div class="col">1307 Coding</div>
+							<div class="col">Quốc Huy</div>
+							<div class="col">18:15 15/03</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"><button type="button" class="btn btn-outline-warning">Hủy Nhận</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+						<div class="item">
+							<div class="col">1307 Coding</div>
+							<div class="col">Chưa nhận</div>
+							<div class="col">Không</div>
+							<div class="col">00:00:10</div>
+							<div class="col">3567m</div>
+							<div class="col"></div>
+							<div class="col"><button type="button" class="btn btn-outline-info">GPS</button></div>
+							<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+						</div>
+					</div>
+	
+	
+					</div>
+					
+				</div>
+			</div>
+		</div>
+		
+
+		<div class="crime-blacklist-hud hidden" --css-size="true">
+			<div class="title">Danh sách blacklist bác sĩ</div>
+			<div class="list">
+				<div class="head">
+					<div class="item">
+						<div class="col">Người bị blacklist</div>
+						<div class="col">Người blacklist</div>
+						<div class="col">Thời gian</div>
+						<div class="col">Lý do</div>
+						<div class="col">Thao tác</div>
+						<div class="col">Thao tác</div>
+					</div>
+				</div>
+				<div class="body">
+				
+					<div class="item blacklist">
+						<div class="col">Vrality Nè</div>
+						<div class="col">Ruồi Cute</div>
+						<div class="col">18:15 15/03</div>
+						<div class="col">CR, ..... chửi, xúc phạm........</div>
+						<div class="col"><button type="button" class="btn btn-outline-warning">Chỉnh sửa</button></div>
+						<div class="col"><button type="button" class="btn btn-outline-danger">Xóa</button></div>
+					</div>
+					
+				</div>
+
+
+				</div>
+				<i  id="new" class="fa-solid fa-circle-plus"></i>
+			</div>
+		</div>
+
+		
+
+	</body>
+
+	
+
+</html>
+
+

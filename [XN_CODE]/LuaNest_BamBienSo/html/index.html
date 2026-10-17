@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Bấm Biển Số</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Oswald', sans-serif;
+            color: #fff;
+            background-color: rgb(24, 23, 23);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-size: 4vw;
+            text-align: center;
+            padding: 7vw;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            padding: 2vw;
+            border: 1.5vw solid rgb(252, 252, 252);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2vw;
+        }
+
+        .container h1 {
+            font-weight: 600;
+            font-size: 6vw;
+            letter-spacing: 0.2vw;
+        }
+
+        .plate-number {
+            display: flex;
+            justify-content: center;
+            gap: 1vw;
+            font-size: 6vw;
+            font-weight: bold;
+            letter-spacing: 1vw;
+        }
+
+        .digit-box {
+            display: flex;
+            justify-content: center;
+            width: 7.5vw;
+            height: 8.85vw;
+            background-color: #222;
+            border: 2px solid #555;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .digit-scroll {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            /* animation sẽ dùng JS để set */
+        }
+
+        .digit {
+            height: 7vw;
+            line-height: 7vw;
+        }
+
+
+        @keyframes scrollDigit {
+            0% {
+                top: 0;
+            }
+
+            100% {
+                top: -560%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>BẤM BIỂN SỐ <p id="model-display"></p></h1>
+        <div id="plate-number" class="plate-number"></div>
+    </div>
+
+    <script>
+        function showNumbersSequentially(numberString) {
+            const container = document.getElementById('plate-number');
+            container.innerHTML = '';
+
+            const delayBetweenDigits = 2000;
+
+            for (let i = 0; i < numberString.length; i++) {
+                const char = numberString[i];
+
+                const digitBox = document.createElement('div');
+                digitBox.className = 'digit-box';
+
+                const scrollWrapper = document.createElement('div');
+                scrollWrapper.className = 'digit-scroll';
+
+                const chars = getRandomChars(char, i);
+                chars.forEach(c => {
+                    const digit = document.createElement('div');
+                    digit.className = 'digit';
+                    digit.innerText = c;
+                    scrollWrapper.appendChild(digit);
+                });
+
+                digitBox.appendChild(scrollWrapper);
+                container.appendChild(digitBox);
+
+
+                const digitHeight = scrollWrapper.querySelector('.digit').offsetHeight || 40;
+                const totalHeight = digitHeight * (chars.length - 1);
+
+                scrollWrapper.animate([
+                    { transform: 'translateY(0)' },
+                    { transform: `translateY(-${totalHeight}px)` }
+                ], {
+                    duration: 2000,
+                    easing: 'ease-out',
+                    delay: i * delayBetweenDigits,
+                    fill: 'forwards'
+                });
+            }
+        }
+
+        function getRandomChars(finalChar, index) {
+            let available;
+
+            if (index < 2 || index >= 4) {
+                available = '0123456789';
+            } else {
+                available = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            }
+
+            const result = [];
+            for (let i = 0; i < 15; i++) {
+                result.push(available[Math.floor(Math.random() * available.length)]);
+            }
+
+            result.push(finalChar);
+            return result;
+        }
+
+
+
+        function showEmptyNumbers() {
+            const container = document.getElementById('plate-number');
+            container.innerHTML = '';
+
+            for (let i = 0; i < 8; i++) {
+                const digitBox = document.createElement('div');
+                digitBox.className = 'digit-box';
+
+                const digit = document.createElement('div');
+                digit.className = 'digit';
+                digit.innerText = '_';
+
+                digitBox.appendChild(digit);
+                container.appendChild(digitBox);
+            }
+        }
+
+        var lastdata = null;
+        window.addEventListener('message', function (event) {
+            const msg = event.data;
+            console.log("Received message:", msg);
+
+            if (msg.type === "showPlate" && msg.oldPlate && msg.newPlate) {
+                showPlateTransition(msg.oldPlate, msg.newPlate, msg.Model);
+            }
+        });
+
+        function showPlateTransition(oldPlate, newPlate, model) {
+            console.log(`Chuyển từ biển ${oldPlate} sang biển ${newPlate} (Model: ${model})`);
+
+            const modelDisplay = document.getElementById("model-display");
+            if (modelDisplay) {
+                modelDisplay.textContent = `Phương Tiện: ${model}`;
+            }
+
+            showNumbersSequentially(newPlate); 
+        }
+
+    </script>
+</body>
+
+</html>

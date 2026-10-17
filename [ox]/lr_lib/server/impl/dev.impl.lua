@@ -1,0 +1,58 @@
+-- ---@class SVDevImpl : Impl
+-- local Impl = NewImpl("Dev")
+-- ESX = {}
+-- local cache = {}
+-- local esxObj = exports.es_extended:getSharedObject()
+-- local hGetPlayerFromId = function(playerSrc)
+--   if not cache[playerSrc] then
+--     cache[playerSrc] = esxObj.GetPlayerFromId(playerSrc)
+--   end
+--   return cache[playerSrc]
+-- end
+-- local hGetPlayerFromIdcard = function(id)
+--   for _, v in pairs(cache) do
+--     if v.id == id then
+--       return v
+--     end
+--   end
+--   local xPlayer = esxObj.GetPlayerFromIdcard(id)
+--   if xPlayer then
+--     cache[xPlayer.source] = xPlayer
+--     return xPlayer
+--   end
+--   return nil
+-- end
+-- setmetatable(ESX, {
+--   __index = function(self, k)
+--     if k == "GetPlayerFromId" then
+--       return hGetPlayerFromId
+--     elseif k == "GetPlayerFromIdcard" then
+--       return hGetPlayerFromIdcard
+--     else
+--       return esxObj[k]
+--     end
+--   end
+-- })
+-- function Impl:Init()
+--   main:LogInfo("%s initialized", self:GetName())
+-- end
+
+-- function Impl:OnReady()
+--   main:LogInfo("%s ready", self:GetName())
+--   --[[ for i = 1, 200, 1 do
+--     self:TestStressESX()
+--   end ]]
+-- end
+
+-- function Impl:TestStressESX()
+--   Citizen.CreateThread(function()
+--     for i = 1, 1000000, 1 do
+--       local xPlayer = ESX.GetPlayerFromId(1)
+--       if xPlayer then
+--         xPlayer.addAccountMoney('money', 1)
+--         --main:LogInfo("%s:Player %s found", i, xPlayer.name)
+--       end
+--       Wait(0)
+--     end
+--   end)
+-- end

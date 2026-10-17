@@ -1,0 +1,4 @@
+logs/
+patch/backups/
+patch/install-state.json
+patch/scheduler.lua

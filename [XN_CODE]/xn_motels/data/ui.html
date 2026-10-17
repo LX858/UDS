@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minibar Nhà Trọ</title>
+    <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+    <!-- Door Animation -->
+    <div id="door"></div>
+
+    <!-- Main Motel UI -->
+    <div id="motel-container" class="hidden">
+        <div class="motel-wrapper">
+            <!-- Header -->
+            <div class="motel-header">
+                <h1 id="motel-title">VINWOOD MOTEL</h1>
+                <button class="close-btn" onclick="closeUI();">✕</button>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-nav" id="tab-nav">
+                <button class="tab-btn active" id="tab-tenant-btn" onclick="switchTab('tenant')">
+                    🏠 Người Thuê
+                </button>
+                <button class="tab-btn" id="tab-owner-btn" onclick="switchTab('owner')" style="display:none;">
+                    👑 Chủ Khu Trọ
+                </button>
+            </div>
+
+            <!-- ===== TAB: NGƯỜI THUÊ ===== -->
+            <div id="tab-tenant" class="tab-content active">
+                <!-- My Room Section -->
+                <div id="my-room-section" class="my-room hidden">
+                    <h2>🛏️ Phòng Của Tôi</h2>
+                    <div class="room-card current">
+                        <div class="room-info">
+                            <span class="room-number">Phòng #<span id="my-room-number">--</span></span>
+                            <span class="room-status active">Đang Thuê</span>
+                        </div>
+                        <div class="time-remaining">
+                            <i class="clock-icon">⏱</i>
+                            <span id="time-left">--</span>
+                        </div>
+                        <div class="room-actions">
+                            <button class="btn-renew" onclick="openRenewDialog()">
+                                <span>Gia Hạn</span>
+                            </button>
+                            <button class="btn-checkout" onclick="openCheckoutDialog()">
+                                <span>Trả Phòng</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Rooms Section -->
+                <div class="rooms-section">
+                    <h2>📋 Danh Sách Phòng</h2>
+                    <div class="rooms-grid" id="rooms-grid">
+                        <!-- Rooms rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TAB: CHỦ KHU TRỌ ===== -->
+            <div id="tab-owner" class="tab-content hidden">
+                <!-- Buy Motel (when not owned) -->
+                <div id="owner-buy-section" class="owner-section hidden">
+                    <div class="buy-motel-card">
+                        <div class="buy-icon">🏢</div>
+                        <h2>Mua Khu Trọ</h2>
+                        <p>Khu trọ này chưa có chủ. Hãy trở thành người sở hữu!</p>
+                        <div class="buy-info-grid">
+                            <div class="buy-info-item">
+                                <span class="label">Số phòng</span>
+                                <span class="value" id="buy-room-count">--</span>
+                            </div>
+                            <div class="buy-info-item">
+                                <span class="label">Giá mua</span>
+                                <span class="value green" id="buy-price">--</span>
+                            </div>
+                        </div>
+                        <button class="btn-buy-motel" onclick="confirmBuyMotel()">
+                            💰 Mua Khu Trọ Ngay
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Owner Dashboard (when owned) -->
+                <div id="owner-dashboard-section" class="owner-section hidden">
+                    <!-- Revenue Card -->
+                    <div class="revenue-card">
+                        <div class="revenue-header">
+                            <span>💵 Doanh Thu</span>
+                            <span class="revenue-amount" id="owner-revenue">$0</span>
+                        </div>
+                        <button class="btn-withdraw" onclick="openWithdrawDialog()">Rút Tiền</button>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-icon">🏠</span>
+                            <span class="stat-value" id="stat-total-rooms">0</span>
+                            <span class="stat-label">Tổng Phòng</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">✅</span>
+                            <span class="stat-value green" id="stat-rented-rooms">0</span>
+                            <span class="stat-label">Đang Thuê</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-icon">⭕</span>
+                            <span class="stat-value" id="stat-empty-rooms">0</span>
+                            <span class="stat-label">Còn Trống</span>
+                        </div>
+                    </div>
+
+                    <!-- Management Buttons -->
+                    <div class="mgmt-grid">
+                        <button class="mgmt-btn" onclick="openOwnerRoomsPanel()">
+                            <span class="mgmt-icon">🚪</span>
+                            <span class="mgmt-title">Quản Lý Phòng</span>
+                            <span class="mgmt-desc">Thêm/đá người thuê</span>
+                        </button>
+                        <button class="mgmt-btn" onclick="openEmployeePanel()">
+                            <span class="mgmt-icon">👥</span>
+                            <span class="mgmt-title">Nhân Viên</span>
+                            <span class="mgmt-desc">Thêm/xóa nhân viên</span>
+                        </button>
+                        <button class="mgmt-btn" onclick="openEditRateDialog()">
+                            <span class="mgmt-icon">💲</span>
+                            <span class="mgmt-title">Đặt Giá Thuê</span>
+                            <span class="mgmt-desc">Chỉnh giá thuê/ngày</span>
+                        </button>
+                        <button class="mgmt-btn" onclick="openSendInvoiceDialog()">
+                            <span class="mgmt-icon">📄</span>
+                            <span class="mgmt-title">Gửi Hóa Đơn</span>
+                            <span class="mgmt-desc">Lập hóa đơn người thuê</span>
+                        </button>
+                        <button class="mgmt-btn" onclick="openTransferDialog()">
+                            <span class="mgmt-icon">🔄</span>
+                            <span class="mgmt-title">Chuyển Nhượng</span>
+                            <span class="mgmt-desc">Sang người khác</span>
+                        </button>
+                        <button class="mgmt-btn danger" onclick="openSellDialog()">
+                            <span class="mgmt-icon">🏷️</span>
+                            <span class="mgmt-title">Bán Khu Trọ</span>
+                            <span class="mgmt-desc">Bán với giá nửa vốn</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Employee Dashboard (employee only, not owner) -->
+                <div id="employee-dashboard-section" class="owner-section hidden">
+                    <div class="employee-banner">
+                        <span class="emp-badge">👨‍💼 Nhân Viên</span>
+                        <p>Bạn là nhân viên của khu trọ này</p>
+                    </div>
+                    <div class="mgmt-grid">
+                        <button class="mgmt-btn" onclick="openOwnerRoomsPanel()">
+                            <span class="mgmt-icon">🚪</span>
+                            <span class="mgmt-title">Quản Lý Phòng</span>
+                            <span class="mgmt-desc">Thêm/đá người thuê</span>
+                        </button>
+                        <button class="mgmt-btn" onclick="openSendInvoiceDialog()">
+                            <span class="mgmt-icon">📄</span>
+                            <span class="mgmt-title">Gửi Hóa Đơn</span>
+                            <span class="mgmt-desc">Lập hóa đơn người thuê</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== DIALOGS ===== -->
+
+    <!-- Renew Dialog -->
+    <div id="renew-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>Gia Hạn Thuê Phòng</h3>
+            <div class="input-group">
+                <label>Số ngày gia hạn:</label>
+                <input type="number" id="renew-days" min="1" max="30" value="1">
+            </div>
+            <div class="price-info">
+                <span>Tổng thanh toán:</span>
+                <span id="renew-price">$0</span>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeRenewDialog()">Hủy</button>
+                <button class="btn-confirm" onclick="confirmRenew()">Xác Nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rent Dialog -->
+    <div id="rent-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>Thuê Phòng #<span id="rent-room-number">--</span></h3>
+            <div class="input-group">
+                <label>Số ngày thuê:</label>
+                <input type="number" id="rent-days" min="1" max="30" value="1">
+            </div>
+            <div class="input-group">
+                <label>Phương thức thanh toán:</label>
+                <select id="payment-method">
+                    <option value="money">Tiền Mặt</option>
+                    <option value="bank">Ngân Hàng</option>
+                </select>
+            </div>
+            <div class="price-info">
+                <span>Tổng thanh toán:</span>
+                <span id="rent-price">$0</span>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeRentDialog()">Hủy</button>
+                <button class="btn-confirm" onclick="confirmRent()">Xác Nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Dialog -->
+    <div id="checkout-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>Xác Nhận Trả Phòng</h3>
+            <p>Bạn có chắc chắn muốn trả phòng không?</p>
+            <p class="warning-text">⚠️ Tất cả vật phẩm trong kho sẽ bị mất!</p>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeCheckoutDialog()">Hủy</button>
+                <button class="btn-confirm btn-danger" onclick="confirmCheckout()">Xác Nhận Trả Phòng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Dialog -->
+    <div id="withdraw-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>💵 Rút Tiền Doanh Thu</h3>
+            <p style="color:rgba(255,255,255,0.6);font-size:13px;text-align:center;margin-bottom:15px;">Doanh thu: <span id="withdraw-available" style="color:#22c55e;font-weight:700;">$0</span></p>
+            <div class="input-group">
+                <label>Số tiền rút:</label>
+                <input type="number" id="withdraw-amount" min="1" value="0">
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeWithdrawDialog()">Hủy</button>
+                <button class="btn-confirm" onclick="confirmWithdraw()">Rút Tiền</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Rate Dialog -->
+    <div id="edit-rate-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>💲 Đặt Giá Thuê</h3>
+            <p style="color:rgba(255,255,255,0.6);font-size:13px;text-align:center;margin-bottom:15px;">Giá hiện tại: <span id="current-rate" style="color:#f59e0b;font-weight:700;">--</span></p>
+            <div class="input-group">
+                <label>Giá mới (VNĐ/ngày):</label>
+                <input type="number" id="new-rate" min="1" value="0">
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeEditRateDialog()">Hủy</button>
+                <button class="btn-confirm" onclick="confirmEditRate()">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Invoice Dialog -->
+    <div id="invoice-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>📄 Gửi Hóa Đơn</h3>
+            <div class="input-group">
+                <label>PID Người Chơi:</label>
+                <input type="number" id="invoice-pid" min="1" placeholder="VD: 1234">
+            </div>
+            <div class="input-group">
+                <label>Số tiền:</label>
+                <input type="number" id="invoice-amount" min="1" value="0">
+            </div>
+            <div class="input-group">
+                <label>Mô tả:</label>
+                <input type="text" id="invoice-desc" placeholder="Nội dung hóa đơn">
+            </div>
+            <div class="input-group">
+                <label>Thanh toán:</label>
+                <select id="invoice-payment">
+                    <option value="money">Tiền Mặt</option>
+                    <option value="bank">Ngân Hàng</option>
+                </select>
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeInvoiceDialog()">Hủy</button>
+                <button class="btn-confirm" onclick="confirmSendInvoice()">Gửi</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transfer Motel Dialog -->
+    <div id="transfer-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>🔄 Chuyển Nhượng Khu Trọ</h3>
+            <p class="warning-text">⚠️ Bạn sẽ mất quyền sở hữu khu trọ này!</p>
+            <div class="input-group">
+                <label>PID Người Nhận:</label>
+                <input type="number" id="transfer-pid" min="1" placeholder="VD: 1234">
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeTransferDialog()">Hủy</button>
+                <button class="btn-confirm btn-danger" onclick="confirmTransfer()">Chuyển Nhượng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sell Motel Dialog -->
+    <div id="sell-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>🏷️ Bán Khu Trọ</h3>
+            <p>Bán khu trọ với giá <strong style="color:#22c55e;" id="sell-price">--</strong></p>
+            <p class="warning-text">⚠️ Bạn sẽ mất quyền sở hữu!</p>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeSellDialog()">Hủy</button>
+                <button class="btn-confirm btn-danger" onclick="confirmSell()">Xác Nhận Bán</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Owner Rooms Panel -->
+    <div id="owner-rooms-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box wide-dialog">
+            <h3>🚪 Quản Lý Phòng</h3>
+            <div class="owner-rooms-grid" id="owner-rooms-grid">
+                <!-- rendered by JS -->
+            </div>
+            <div class="dialog-actions" style="margin-top:15px;">
+                <button class="btn-cancel" onclick="closeOwnerRoomsDialog()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Occupants Dialog -->
+    <div id="occupants-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>👥 Phòng #<span id="occ-room-number">--</span></h3>
+            <div id="occupants-list"><!-- rendered by JS --></div>
+            <div class="input-group" style="margin-top:15px;">
+                <label>Thêm người thuê mới (PID):</label>
+                <input type="number" id="add-occ-pid" placeholder="VD: 1234">
+            </div>
+            <div class="input-group">
+                <label>Thời gian thuê (ngày):</label>
+                <input type="number" id="add-occ-days" min="1" value="1">
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeOccupantsDialog()">Đóng</button>
+                <button class="btn-confirm" onclick="confirmAddOccupant()">Thêm Người Thuê</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Panel Dialog -->
+    <div id="employee-dialog" class="dialog-overlay hidden">
+        <div class="dialog-box">
+            <h3>👥 Quản Lý Nhân Viên</h3>
+            <div id="employee-list" style="margin-bottom:15px;"><!-- rendered by JS --></div>
+            <div class="input-group">
+                <label>Thêm nhân viên (PID):</label>
+                <input type="number" id="emp-pid" placeholder="VD: 1234">
+            </div>
+            <div class="dialog-actions">
+                <button class="btn-cancel" onclick="closeEmployeeDialog()">Đóng</button>
+                <button class="btn-confirm" onclick="confirmAddEmployee()">Thêm Nhân Viên</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="ui.js"></script>
+</body>
+</html>

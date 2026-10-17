@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XN Auction System</title>
+    <!-- Google Fonts (Hỗ trợ tiếng Việt đầy đủ 100%) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ==================== 3D OVERHEAD FLOATING TAG ==================== -->
+    <div id="overhead-hud" class="overhead-hud hidden">
+        <div class="overhead-badge-card">
+            <div class="overhead-glow"></div>
+            <!-- Header bar -->
+            <div class="overhead-header">
+                <div class="overhead-tag-label">
+                    <i class="fa-solid fa-gavel"></i>
+                    <span>ĐẶT THẦU</span>
+                </div>
+                <div class="overhead-timer-badge" id="overhead-timer-badge">
+                    <i class="fa-solid fa-stopwatch"></i>
+                    <span id="overhead-timer-val">10s</span>
+                </div>
+            </div>
+
+            <!-- Player Name & ID -->
+            <div class="overhead-player-row">
+                <i class="fa-solid fa-crown"></i>
+                <span id="overhead-player-name">Nguyễn Văn A</span>
+            </div>
+
+            <!-- Price value -->
+            <div class="overhead-price-row">
+                <span class="overhead-currency">$</span>
+                <span id="overhead-price-val">0</span>
+            </div>
+
+            <!-- Progress countdown bar -->
+            <div class="overhead-progress-track">
+                <div id="overhead-progress-fill" class="overhead-progress-fill"></div>
+            </div>
+
+            <!-- Bottom pointing pin/arrow -->
+            <div class="overhead-arrow-down"></div>
+        </div>
+    </div>
+
+    <div id="app" class="auction-app hidden">
+        <!-- Overlay Background -->
+        <div class="backdrop-overlay"></div>
+
+        <!-- ==================== 1. MODAL ĐẶT THẦU (BET MODAL) ==================== -->
+        <div id="bet-modal" class="auction-card glass-panel fade-in">
+            <!-- Header -->
+            <div class="card-header">
+                <div class="header-left">
+                    <div class="brand-badge">
+                        <i class="fa-solid fa-gavel"></i>
+                        <span>SÀN ĐẤU GIÁ HOÀNG GIA</span>
+                    </div>
+                    <h1 id="auction-title" class="auction-title">Gói Đấu Giá Đặc Biệt</h1>
+                </div>
+                <div class="header-right">
+                    <div id="timer-badge" class="timer-badge">
+                        <i class="fa-solid fa-stopwatch-20 fa-spin"></i>
+                        <span id="timer-text">10s</span>
+                    </div>
+                    <button id="btn-close-bet" class="btn-icon-close" title="Đóng (ESC)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Stats Overview -->
+            <div class="stats-grid">
+                <!-- Current Highest Bid -->
+                <div class="stat-box primary-stat">
+                    <div class="stat-label">
+                        <i class="fa-solid fa-coins"></i>
+                        <span>GIÁ HIỆN TẠI</span>
+                    </div>
+                    <div class="stat-value-container">
+                        <span class="currency-symbol">$</span>
+                        <span id="current-price-display" class="stat-price">0</span>
+                    </div>
+                    <div class="stat-subtext" id="starting-price-note">Giá khởi điểm: $0</div>
+                </div>
+
+                <!-- Previous Highest Bidder -->
+                <div class="stat-box secondary-stat">
+                    <div class="stat-label">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>NGƯỜI GỌI THẦU TRƯỚC ĐÓ</span>
+                    </div>
+                    <div class="bidder-info-container">
+                        <div class="bidder-avatar">
+                            <i id="bidder-icon" class="fa-solid fa-crown"></i>
+                        </div>
+                        <div class="bidder-details">
+                            <div id="bidder-name" class="bidder-name">Khởi Điểm (Chưa có ai)</div>
+                            <div id="bidder-tag" class="bidder-tag">Hệ Thống Đấu Giá</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cooldown / Lock Status Notification -->
+            <div id="cooldown-banner" class="cooldown-banner hidden">
+                <i class="fa-solid fa-hourglass-half"></i>
+                <span id="cooldown-msg">Vui lòng chờ sau 3 giây để đặt lượt tiếp theo (còn lại: 2s)...</span>
+            </div>
+
+            <!-- Bet Increment Section -->
+            <div class="bet-section">
+                <div class="section-title">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>CHỌN MỨC CƯỢC THÊM</span>
+                    <span class="step-guide">(Cộng dồn vào giá hiện tại)</span>
+                </div>
+
+                <div id="bet-steps-grid" class="bet-steps-grid">
+                    <!-- Dynamic Buttons rendered from Config.BetSteps -->
+                </div>
+            </div>
+
+            <!-- Calculated Summary Preview -->
+            <div class="summary-preview-card">
+                <div class="preview-info">
+                    <span class="preview-label">TỔNG MỨC THẦU SAU KHI ĐẶT:</span>
+                    <span class="preview-formula">
+                        (<span id="calc-current">$0</span> + <span id="calc-added">$0</span>)
+                    </span>
+                </div>
+                <div class="preview-total-value">
+                    <span class="currency-symbol">$</span>
+                    <span id="calc-total-display">0</span>
+                </div>
+            </div>
+
+            <!-- Place Bid Action Button -->
+            <div class="action-footer">
+                <button id="btn-place-bid" class="btn-main-bid">
+                    <div class="btn-glow-effect"></div>
+                    <i class="fa-solid fa-bolt-lightning"></i>
+                    <span>ĐẶT THẦU NGAY</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== 2. MODAL KẾT QUẢ / NGƯỜI CHIẾN THẮNG (WINNER MODAL) ==================== -->
+        <div id="winner-modal" class="auction-card glass-panel fade-in hidden">
+            <div class="card-header winner-header">
+                <div class="header-left">
+                    <div class="brand-badge gold-badge">
+                        <i class="fa-solid fa-trophy"></i>
+                        <span>PHIÊN ĐẤU GIÁ ĐÃ KẾT THÚC</span>
+                    </div>
+                    <h1 id="winner-auction-title" class="auction-title">Gói Đấu Giá Đặc Biệt</h1>
+                </div>
+                <div class="header-right">
+                    <button id="btn-close-winner" class="btn-icon-close" title="Đóng (ESC)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Winner Spotlight Box -->
+            <div class="winner-spotlight">
+                <div class="trophy-glow-wrapper">
+                    <i class="fa-solid fa-crown winner-crown"></i>
+                </div>
+                <div class="winner-title-label">NGƯỜI CHIẾN THẮNG CUỐI CÙNG</div>
+                <div id="winner-fullname" class="winner-fullname">Nguyễn Văn A</div>
+                <div id="winner-subid" class="winner-subid">ID: 12 • CitizenID: QXB1982</div>
+                
+                <div class="winner-price-tag">
+                    <span class="tag-title">MỨC GIÁ CHỐT THẦU</span>
+                    <div class="tag-amount">
+                        <span class="currency-symbol">$</span>
+                        <span id="winner-price-display">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard & History Table -->
+            <div class="leaderboard-section">
+                <div class="section-title">
+                    <i class="fa-solid fa-ranking-star"></i>
+                    <span>BẢNG LỊCH SỬ THAM GIA ĐẶT THẦU</span>
+                </div>
+                <div class="table-container">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>HẠNG</th>
+                                <th>NGƯỜI CHƠI</th>
+                                <th>MỨC GIÁ CUỐI</th>
+                                <th>TRẠNG THÁI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="winner-footer-note">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Giao diện kết quả được duy trì cho đến khi Quản trị viên mở gói thầu mới.</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

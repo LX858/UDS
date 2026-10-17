@@ -1,0 +1,46 @@
+Locales["th"] = {
+	["declined_request"] = "ปฏิเสธคำขอ",
+	["no_players_nearby"] = "ไม่พบผู้เล่นใกล้เคียง!",
+	["error"] = "เกิดข้อผิดพลาด",
+	["too_far"] = "ผู้เล่นอยู่ไกลเกินไป",
+	["request_expired"] = "คำขอหมดอายุแล้ว",
+	["emote_request_sent"] = "ส่งคำขอการแสดงท่าทางแล้ว",
+	["declined_request_desc"] = "ผู้เล่นได้ปฏิเสธคำขอของคุณ",
+	["emote_request_received"] = "คุณได้รับคำขอการแสดงท่าทาง",
+	["request_expired_desc"] = "ผู้เล่นไม่ตอบคำขอของคุณในเวลาที่กำหนด",
+	["info"] = "ข้อมูล",
+	["forbidden_zone"] = "ห้ามใช้ท่าทางในพื้นที่นี้โดยเด็ดขาด!",
+
+	["BIG_TITLE1"] = "แอนิเมชัน",
+	["BIG_TITLE2"] = "AK4Y ROLEPLAY",
+	["BIG_TITLE3"] = "เมนู",
+	["BIG_ANIMATIONPREVIEW"] = "แสดงตัวอย่างแอนิเมชัน",
+	["BIG_GRABDESC"] = "คุณสามารถใช้ทางลัดได้โดยลากแอนิเมชันด้วยเมาส์และวางในส่วนทางลัดด้านล่าง",
+	["BIG_HELPSTITLE"] = "ช่วยเหลือ",
+	["BIG_SHORTCUTSTITLE"] = "ทางลัด",
+	["BIG_TOTALTEXT"] = "ทั้งหมด",
+	["BIG_ANIMATIONSTEXT"] = "แอนิเมชัน",
+
+
+	["SMALL_TITLE1"] = "แอนิเมชัน",
+	["SMALL_TITLE2"] = "เมนู",
+	["SMALL_TITLE3"] = "ข้อความที่นี่",
+	["SMALL_SHORTCUTSTITLE"] = "ทางลัดด่วน",
+	
+	["FAVORITES"] = "รายการโปรด",
+	["ANIMATION"] = "แอนิเมชัน",
+	["DISABLE"] = "ปิดการใช้งาน",
+	["ENABLE"] = "เปิดการใช้งาน",
+	["EMPTY"] = "ว่างเปล่า",
+	["CLICK"] = "คลิก",
+	["USE"] = "ใช้",
+	["PREVIEW"] = "ดูตัวอย่าง",
+	["LEFT"] = "ซ้าย",
+	["RIGHT"] = "ขวา",
+	["SHORTCUTKEY"] = "SHIFT",
+ 
+	["WANT"] = "ต้องการ",
+	["ANIMATIONWITHYOU"] = "แอนิเมชันกับคุณ",
+	["ACCEPT"] = "ยอมรับ (Y)",
+	["DECLINE"] = "ปฏิเสธ (N)"
+}

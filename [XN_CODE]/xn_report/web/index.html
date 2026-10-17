@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XN Report System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Modal Container -->
+    <div id="report-app" class="report-app hidden">
+        <!-- Background Overlay (Ẩn khi bắt đầu quay) -->
+        <div class="modal-backdrop" id="modal-backdrop"></div>
+
+        <!-- Offscreen canvas used for WebGL game rendering / stream recording -->
+        <canvas id="render-canvas"></canvas>
+
+        <!-- Main Modal Window (Biến thành HUD nhỏ ở dưới giữa màn hình khi bắt đầu quay) -->
+        <div class="report-card" id="report-card">
+            <!-- Glow background effect -->
+            <div class="card-glow" id="card-glow"></div>
+
+            <!-- Card Header -->
+            <div class="card-header" id="card-header">
+                <div class="header-title-box">
+                    <div class="header-icon-badge">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="header-texts">
+                        <h2>HỆ THỐNG BÁO CÁO</h2>
+                        <span class="sub-text">QUẢN LÝ BÁO CÁO & BẰNG CHỨNG CÁ NHÂN</span>
+                    </div>
+                </div>
+                <button class="btn-close" id="btn-close" title="Đóng (ESC)">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Tab Navigation Bar -->
+            <div class="modal-tabs" id="modal-tabs">
+                <button class="tab-btn active" id="tab-create" data-tab="create">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Tạo Báo Cáo</span>
+                </button>
+                <button class="tab-btn" id="tab-history" data-tab="history">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Lịch Sử Báo Cáo</span>
+                    <span class="tab-badge" id="history-count-badge">0</span>
+                </button>
+            </div>
+
+            <!-- Card Body / Form View (Tab 1) -->
+            <div class="card-body tab-content" id="form-view">
+                <!-- Status & Feature Badges -->
+                <div class="feature-badges">
+                    <div class="badge-item active">
+                        <span class="dot-pulse"></span>
+                        <i class="fa-solid fa-video"></i>
+                        <span>Video Bằng Chứng HD</span>
+                    </div>
+                    <div class="badge-item active">
+                        <i class="fa-solid fa-radar"></i>
+                        <span>Quét Bán Kính 50m</span>
+                    </div>
+                    <div class="badge-item active">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>FiveManage CDN</span>
+                    </div>
+                </div>
+
+                <!-- Input Field for Reason -->
+                <div class="form-group">
+                    <label for="report-reason">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        Lý do báo cáo chi tiết
+                    </label>
+                    <div class="textarea-wrapper">
+                        <textarea 
+                            id="report-reason" 
+                            placeholder="Mô tả sự việc, tình huống vi phạm (RDM, VDM, Hacking...) và những ai liên quan..." 
+                            maxlength="500" 
+                            rows="4"
+                        ></textarea>
+                        <div class="textarea-footer">
+                            <span class="hint-text"><i class="fa-solid fa-circle-info"></i> Video sẽ được ghi và tải lên Discord Admin ngay sau khi xác nhận.</span>
+                            <span class="char-count" id="char-count">0 / 500</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Notice Box -->
+                <div class="info-alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <div class="alert-content">
+                        <strong>Lưu ý:</strong> Khi xác nhận, hệ thống sẽ tự động ghi lại 10 giây video màn hình game HD và quét danh sách người chơi trong bán kính <strong>50m</strong>.
+                    </div>
+                </div>
+
+                <!-- Action Footer -->
+                <div class="card-footer">
+                    <button class="btn-secondary" id="btn-cancel">
+                        <i class="fa-solid fa-ban"></i>
+                        <span>Hủy bỏ (ESC)</span>
+                    </button>
+                    <button class="btn-primary" id="btn-submit">
+                        <i class="fa-solid fa-circle-play"></i>
+                        <span>Bắt đầu Ghi & Gửi Report</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- History View (Tab 2) -->
+            <div class="card-body tab-content hidden" id="history-view">
+                <!-- History Top Search & Refresh Bar -->
+                <div class="history-controls">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="history-search-input" placeholder="Tìm theo ID hoặc nội dung báo cáo...">
+                        <button class="btn-clear-search hidden" id="btn-clear-search" title="Xóa tìm kiếm">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <button class="btn-icon" id="btn-refresh-history" title="Làm mới danh sách">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+
+                <!-- History List Container (Scrollable) -->
+                <div class="history-list-wrapper" id="history-list-wrapper">
+                    <div class="history-list" id="history-list">
+                        <!-- Dynamic items generated by script.js -->
+                    </div>
+                </div>
+
+                <!-- History Bottom Bar -->
+                <div class="history-footer">
+                    <span class="history-footer-text" id="history-footer-text">Đang tải lịch sử báo cáo...</span>
+                </div>
+            </div>
+
+            <!-- Compact Mini HUD View (Hiển thị nhỏ ở Center Bottom khi bắt đầu quay) -->
+            <div class="card-body status-view hidden" id="status-view">
+                <!-- Recording Mode -->
+                <div class="state-container compact" id="recording-state">
+                    <div class="hud-top-row">
+                        <div class="rec-badge">
+                            <span class="rec-dot"></span>
+                            <span>REC</span>
+                        </div>
+                        <div class="timer-display" id="record-timer">00:10</div>
+                        <!-- Sound Wave Equalizer -->
+                        <div class="sound-wave" id="sound-wave">
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                            <div class="bar"></div>
+                        </div>
+                    </div>
+                    <div class="hud-info-row">
+                        <span class="status-desc-mini">Đang ghi hình video + âm thanh môi trường xung quanh...</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar" id="record-progress"></div>
+                    </div>
+                </div>
+
+                <!-- Uploading Mode -->
+                <div class="state-container compact hidden" id="uploading-state">
+                    <div class="hud-top-row">
+                        <div class="cloud-mini-icon">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <span class="status-mini-title">Đang tải video lên FiveManage...</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar infinite-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Success Mode -->
+                <div class="state-container compact hidden" id="success-state">
+                    <div class="hud-top-row">
+                        <div class="success-icon-mini">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <span class="status-mini-title success-text">Gửi báo cáo thành công!</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

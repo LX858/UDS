@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stall System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Main Container -->
+    <div id="main-container" style="display: none;">
+        <!-- Header -->
+        <div class="stall-header">
+            <div class="header-left">
+                <h2>🏪 <span id="stall-name">Gian hàng</span></h2>
+                <p id="stall-status">👤 Chủ: <span id="stall-owner">Chưa có</span></p>
+            </div>
+            <div class="header-right">
+                <div class="countdown" id="countdown-container">
+                    <i class="fas fa-clock"></i>
+                    <span id="countdown-timer">--:--:--</span>
+                </div>
+                <button class="btn-renew" id="renew-btn" style="display:none; margin-left:15px; padding:8px 16px; background:#FFD700; border:none; border-radius:5px; color:#1a1a2e; font-weight:700; cursor:pointer;" onclick="openRenewPopup()">
+                    🔄 Gia hạn
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="rent" id="rent-tab">💰 Thuê gian hàng</button>
+            <button class="tab-btn" data-tab="sell" id="sell-tab" style="display:none;">🛒 Mua hàng</button>
+            <button class="tab-btn" data-tab="manage" id="manage-tab" style="display:none;">⚙️ Quản lý</button>
+            <button class="tab-btn" data-tab="revenue" id="revenue-tab" style="display:none;">📊 Thu nhập</button>
+        </div>
+
+        <!-- Tab Content: Rent -->
+        <div class="tab-content active" id="tab-rent">
+            <div class="rent-container">
+                <div class="rent-info">
+                    <i class="fas fa-store" style="font-size: 48px; color: #FFD700; margin-bottom: 15px;"></i>
+                    <h2 style="margin-bottom: 10px;">🏪 <span id="rent-stall-name-display">Gian hàng</span></h2>
+                    <p style="opacity: 0.7; margin-bottom: 5px;">📍 Gian hàng này chưa có chủ</p>
+                    <p style="opacity: 0.7; margin-bottom: 20px;">💰 Giá thuê: <span id="rent-price-display">1.000$</span>/giờ</p>
+                    
+                    <div class="rent-form">
+                        <div class="form-group">
+                            <label>Số giờ muốn thuê (tối đa 24h):</label>
+                            <div class="quantity-controls">
+                                <button class="qty-btn" onclick="changeRentHours(-1)">➖</button>
+                                <input type="number" id="rent-hours-input" value="1" min="1" max="24" onchange="validateRentHours()">
+                                <button class="qty-btn" onclick="changeRentHours(1)">➕</button>
+                            </div>
+                        </div>
+                        
+                        <div class="price-summary" style="margin-top: 15px;">
+                            <p class="total">📊 Tổng chi phí: <span id="rent-total-display">1.000$</span></p>
+                        </div>
+                        
+                        <button class="btn-rent-full" onclick="confirmRent()" style="width: 100%; margin-top: 15px;">
+                            🏪 Thuê ngay
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Sell -->
+        <div class="tab-content" id="tab-sell">
+            <div class="items-grid" id="items-grid"></div>
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <i class="fas fa-box-open"></i>
+                <p>Gian hàng trống</p>
+            </div>
+        </div>
+
+        <!-- Tab Content: Manage -->
+        <div class="tab-content" id="tab-manage">
+            <div class="manage-section">
+                <div class="sub-tabs">
+                    <button class="sub-tab-btn active" data-subtab="sell">📤 Đăng bán</button>
+                    <button class="sub-tab-btn" data-subtab="selling">📦 Đang bán</button>
+                </div>
+                
+                <div class="sub-tab-content active" id="subtab-sell">
+                    <h3>📦 Túi đồ của bạn</h3>
+                    <div class="inventory-container">
+                        <div class="inventory-items" id="inventory-items"></div>
+                    </div>
+                </div>
+
+                <div class="sub-tab-content" id="subtab-selling">
+                    <h3>📦 Vật phẩm đang bán</h3>
+                    <div class="selling-container">
+                        <div class="selling-items" id="selling-items"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Revenue -->
+        <div class="tab-content" id="tab-revenue">
+            <div class="revenue-stats">
+                <div class="stat-card">
+                    <h4>📊 Tổng doanh thu</h4>
+                    <p id="total-revenue">0$</p>
+                </div>
+                <div class="stat-card">
+                    <h4>💰 Tiền chưa nhận</h4>
+                    <p id="unclaimed-money">0$</p>
+                </div>
+            </div>
+            
+            <div class="revenue-actions">
+                <button class="btn-success" onclick="withdrawAllMoney()">
+                    💰 Nhận tất cả
+                </button>
+                <button class="btn-info" onclick="loadTransactionHistory()">
+                    📋 Lịch sử
+                </button>
+            </div>
+
+            <div class="transaction-history">
+                <h4>📋 Lịch sử giao dịch gần đây:</h4>
+                <div id="history-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buy Popup -->
+    <div class="backdrop" id="buy-backdrop" style="display: none;"></div>
+    <div class="popup" id="buy-popup" style="display: none;">
+        <div class="popup-header">
+            <h3>🛒 MUA VẬT PHẨM</h3>
+        </div>
+        <div class="popup-body">
+            <div class="item-info">
+                <img id="buy-item-image" src="" alt="Item" class="item-image-large">
+                <div class="item-details">
+                    <h4 id="buy-item-name">Tên vật phẩm</h4>
+                    <p>⭐ Độ hiếm: <span id="buy-item-rarity" class="rarity-badge">Common</span></p>
+                    <p>🔧 Độ bền: <span id="buy-item-durability">100%</span></p>
+                    <p>📋 Metadata: <span id="buy-item-metadata" style="font-size:12px;opacity:0.7;">Không có</span></p>
+                    <p>🔹 Số lượng đang bán: <span id="buy-item-stock">0</span></p>
+                    <p>💰 Giá: <span id="buy-item-price">0$</span>/cái</p>
+                </div>
+            </div>
+            
+            <div class="quantity-selector">
+                <label>Số lượng muốn mua:</label>
+                <div class="quantity-controls">
+                    <button class="qty-btn" onclick="changeQuantity(-1)">➖</button>
+                    <input type="number" id="buy-quantity" value="1" min="1" onchange="validateQuantity()">
+                    <button class="qty-btn" onclick="changeQuantity(1)">➕</button>
+                </div>
+            </div>
+
+            <div class="price-summary">
+                <p>💵 Tổng tiền: <span id="subtotal">0$</span></p>
+                <p>🧾 Thuế (2%): <span id="tax">0$</span></p>
+                <hr>
+                <p class="total">💰 Tổng thanh toán: <span id="total-price">0$</span></p>
+            </div>
+        </div>
+        <div class="popup-footer">
+            <button class="btn-cancel" onclick="closeBuyPopup()">❌ Hủy</button>
+            <button class="btn-buy" onclick="confirmBuy()">✅ Mua ngay</button>
+        </div>
+    </div>
+
+    <!-- Rent Popup -->
+    <div class="backdrop" id="rent-backdrop" style="display: none;"></div>
+    <div class="popup" id="rent-popup" style="display: none;">
+        <div class="popup-header">
+            <h3>🏪 THUÊ GIAN HÀNG</h3>
+        </div>
+        <div class="popup-body">
+            <div class="stall-info">
+                <p>📍 <span id="rent-stall-name">Gian hàng</span></p>
+                <p>💰 Giá thuê: <span id="rent-price">1.000$</span>/giờ</p>
+            </div>
+            
+            <div class="quantity-selector">
+                <label>Số giờ muốn thuê:</label>
+                <div class="quantity-controls">
+                    <button class="qty-btn" onclick="changeRentHoursPopup(-1)">➖</button>
+                    <input type="number" id="rent-hours" value="1" min="1" max="24" onchange="validateRentHoursPopup()">
+                    <button class="qty-btn" onclick="changeRentHoursPopup(1)">➕</button>
+                </div>
+            </div>
+
+            <div class="price-summary">
+                <p class="total">📊 Tổng chi phí: <span id="rent-total">1.000$</span></p>
+            </div>
+        </div>
+        <div class="popup-footer">
+            <button class="btn-cancel" onclick="closeRentPopup()">❌ Hủy</button>
+            <button class="btn-rent" onclick="confirmRentPopup()">✅ Thuê</button>
+        </div>
+    </div>
+
+    <!-- Renew Popup -->
+    <div class="backdrop" id="renew-backdrop" style="display: none;"></div>
+    <div class="popup" id="renew-popup" style="display: none;">
+        <div class="popup-header">
+            <h3>🔄 GIA HẠN GIAN HÀNG</h3>
+        </div>
+        <div class="popup-body">
+            <div class="stall-info">
+                <p>📍 <span id="renew-stall-name">Gian hàng</span></p>
+                <p>💰 Giá thuê: <span id="renew-price">1.000$</span>/giờ</p>
+                <p>⏰ Thời gian còn lại: <span id="renew-current-time">--:--:--</span></p>
+            </div>
+            
+            <div class="quantity-selector">
+                <label>Số giờ muốn gia hạn (tối đa 24h):</label>
+                <div class="quantity-controls">
+                    <button class="qty-btn" onclick="changeRenewHours(-1)">➖</button>
+                    <input type="number" id="renew-hours-input" value="1" min="1" max="24" onchange="validateRenewHours()">
+                    <button class="qty-btn" onclick="changeRenewHours(1)">➕</button>
+                </div>
+            </div>
+
+            <div class="price-summary">
+                <p class="total">📊 Tổng chi phí: <span id="renew-total">1.000$</span></p>
+            </div>
+        </div>
+        <div class="popup-footer">
+            <button class="btn-cancel" onclick="closeRenewPopup()">❌ Hủy</button>
+            <button class="btn-rent" onclick="confirmRenewPopup()">✅ Gia hạn</button>
+        </div>
+    </div>
+
+    <!-- Sell Popup -->
+    <div class="backdrop" id="sell-backdrop" style="display: none;"></div>
+    <div class="popup" id="sell-popup" style="display: none;">
+        <div class="popup-header">
+            <h3>🏪 ĐĂNG BÁN VẬT PHẨM</h3>
+        </div>
+        <div class="popup-body">
+            <div class="item-info">
+                <img id="sell-item-image" src="" alt="Item" class="item-image-large">
+                <div class="item-details">
+                    <h4 id="sell-item-name">Tên vật phẩm</h4>
+                    <p>📦 Số lượng đang có: <span id="sell-item-stock">0</span></p>
+                    <p>🔧 Độ bền: <span id="sell-item-durability">100%</span></p>
+                    <p>⭐ Độ hiếm: <span id="sell-item-rarity" class="rarity-badge">Common</span></p>
+                    <p>📋 Metadata: <span id="sell-item-metadata" style="font-size:12px;opacity:0.7;">Không có</span></p>
+                    <p id="sell-item-slot" style="font-size:12px;opacity:0.7;display:none;">📌 Slot: <span style="font-weight:bold;color:#FFD700;"></span></p>
+                </div>
+            </div>
+            
+            <div class="quantity-selector">
+                <label>Số lượng muốn bán:</label>
+                <div class="quantity-controls">
+                    <button class="qty-btn" onclick="changeSellQuantity(-1)">➖</button>
+                    <input type="number" id="sell-quantity" value="1" min="1" onchange="validateSellQuantity()">
+                    <button class="qty-btn" onclick="changeSellQuantity(1)">➕</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Giá bán (1 cái):</label>
+                <input type="number" id="sell-price" value="100" min="1" max="9999999">
+            </div>
+        </div>
+        <div class="popup-footer">
+            <button class="btn-cancel" onclick="closeSellPopup()">❌ Hủy</button>
+            <button class="btn-buy" onclick="confirmSell()">✅ Đăng bán</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Popup -->
+    <div class="backdrop" id="confirm-backdrop" style="display: none;"></div>
+    <div class="popup" id="confirm-popup" style="display: none;">
+        <div class="popup-header">
+            <h3>⚠️ XÁC NHẬN</h3>
+        </div>
+        <div class="popup-body" style="text-align: center; padding: 30px 20px;">
+            <p id="confirm-message" style="font-size: 16px; font-weight: 600;">Bạn có chắc muốn thực hiện hành động này?</p>
+        </div>
+        <div class="popup-footer">
+            <button class="btn-cancel" id="confirm-cancel-btn">❌ Hủy</button>
+            <button class="btn-buy" id="confirm-accept-btn">✅ Xác nhận</button>
+        </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div id="notifications-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

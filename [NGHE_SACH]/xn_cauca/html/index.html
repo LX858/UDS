@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fishing Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="fishing-panel" class="fishing-panel">
+        <div class="panel-header">
+            <div class="sonar-console-header">
+                <span class="sonar-live-indicator"><span class="live-dot"></span> SONAR ACTIVE</span>
+                <span class="sonar-header-stat">COORD: 34°05'N 118°24'W</span>
+                <span class="sonar-header-stat">TEMP: 19.8°C</span>
+                <span class="sonar-header-stat">WIND: 14KT NW</span>
+            </div>
+            <button id="close-btn" class="close-btn">&times;</button>
+        </div>
+
+        <div class="panel-content">
+            <!-- Player Info Section -->
+            <div class="player-info">
+                <h1>FISHING PANEL</h1>
+                <div class="player-name">
+                    <span class="label">CẦN THỦ:</span>
+                    <span id="player-name">XUÂN NGUYÊN</span>
+                </div>
+                <div class="level-info">
+                    <span class="label">CẤP ĐỘ:</span>
+                    <span id="player-level">2</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="current-xp">20</span> XP → <span id="next-level-xp">100</span> XP
+                    </div>
+
+                    <!-- Sonar Radar Console -->
+                    <div class="sonar-console">
+                        <div class="radar-container">
+                            <div class="radar-ring circle1"></div>
+                            <div class="radar-ring circle2"></div>
+                            <div class="radar-ring circle3"></div>
+                            <div class="radar-sweep"></div>
+                            <div class="radar-ping fish-ping ping-delay-1" style="top: 25%; left: 40%;"></div>
+                            <div class="radar-ping fish-ping ping-delay-2" style="top: 60%; left: 70%;"></div>
+                            <div class="radar-ping fish-ping ping-delay-3" style="top: 45%; left: 20%;"></div>
+                            <div class="radar-crosshair-v"></div>
+                            <div class="radar-crosshair-h"></div>
+                        </div>
+                        <div class="sonar-stats">
+                            <div class="sonar-stat-item"><span class="sonar-stat-lbl">TẦN SỐ:</span> <span class="sonar-stat-val">200 kHz</span></div>
+                            <div class="sonar-stat-item"><span class="sonar-stat-lbl">THỜI TIẾT:</span> <span class="sonar-stat-val">BÌNH THƯỜNG</span></div>
+                            <div class="sonar-stat-item"><span class="sonar-stat-lbl">PHẠM VI:</span> <span class="sonar-stat-val">50m</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Current Rods Section -->
+                    <div class="current-rods">
+                        <h3>CẦN CÂU HIỆN CÓ</h3>
+                        <div class="rods-grid" id="current-rods-grid">
+                            <!-- Dynamic rod items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Zones Section -->
+            <div class="zones-section">
+                <div class="zones-header">
+                    <span class="zones-header-icon">🗺️</span>
+                    <h2 class="zones-header-title">KHU VỰC CÂU CÁ</h2>
+                </div>
+                <div id="zones-list">
+                    <!-- Dynamic zone cards will be populated here -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

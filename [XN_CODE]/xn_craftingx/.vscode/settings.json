@@ -1,0 +1,6 @@
+{
+    "Lua.diagnostics.globals": [
+        "x"
+    ],
+    "lua.targetVersion": "5.3"
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thắp Hương Chùa</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="progress-container" class="hidden">
+        <div class="progress-card">
+            <div class="progress-icon">
+                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v6M12 18v4M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M2 12h6M18 12h4M4.93 19.07l4.24-4.24M14.83 9.17l4.24-4.24" />
+                </svg>
+            </div>
+            <div class="progress-details">
+                <div class="progress-title">ĐANG VÁI LẠY THẮP HƯƠNG</div>
+                <div class="progress-subtitle">Thành tâm khấn nguyện...</div>
+                <div class="progress-bar-wrapper">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+            </div>
+            <div id="progress-timer" class="progress-timer">10s</div>
+        </div>
+    </div>
+
+    <!-- Element phát âm thanh nhạc chùa -->
+    <audio id="temple-audio" preload="auto" loop></audio>
+
+    <script src="script.js"></script>
+</body>
+</html>

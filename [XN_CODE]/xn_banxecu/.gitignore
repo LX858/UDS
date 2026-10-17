@@ -1,0 +1,10 @@
+# Node modules
+web-src/node_modules/
+web-src/package-lock.json
+
+# Build output - giữ web folder vì đã build sẵn
+# web/
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông báo ban ngành</title>
+    <link rel="stylesheet" href="style.css?v=1.0.6">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header / Navigation Tabs -->
+        <header class="app-header">
+            <h1>Thông Báo</h1>
+            <div class="tab-container">
+                <button class="tab-btn active" data-tab="police" id="tab-pd">
+                    <svg viewBox="0 0 24 24" class="tab-icon"><path fill="currentColor" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    PD Thông báo
+                </button>
+                <button class="tab-btn" data-tab="ems" id="tab-ems">
+                    <svg viewBox="0 0 24 24" class="tab-icon"><path fill="currentColor" d="M19 10.5h-5.5V5h-3v5.5H5v3h5.5V19h3v-5.5H19v-3z"/></svg>
+                    EMS Thông báo
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Feed Scroll Area -->
+        <main class="announcement-feed" id="announcement-feed">
+            <!-- Items will be dynamically loaded here by script.js -->
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" class="empty-icon"><path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 9h-2V5h2v6zm0 4h-2v-2h2v2z"/></svg>
+                <p>Không có thông báo nào</p>
+            </div>
+        </main>
+
+        <!-- Floating Compose Button (pencil icon) -->
+        <button class="fab-btn" id="fab-btn" style="display: none;">
+            <svg viewBox="0 0 24 24" class="fab-icon">
+                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+            </svg>
+        </button>
+
+        <!-- Compose Announcement Popup / Modal -->
+        <div class="modal-overlay" id="compose-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Đăng Thông Báo</h2>
+                    <button class="close-btn" id="close-modal">
+                        <svg viewBox="0 0 24 24" class="close-icon"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                </div>
+                <form id="compose-form">
+                    <div class="form-group">
+                        <label for="post-title">Tiêu đề thông báo</label>
+                        <input type="text" id="post-title" required placeholder="Nhập tiêu đề...">
+                    </div>
+                    <div class="form-group">
+                        <label for="post-content">Nội dung thông báo</label>
+                        <textarea id="post-content" required placeholder="Nhập nội dung chi tiết..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="post-apply-time">Thời gian áp dụng</label>
+                        <input type="text" id="post-apply-time" required placeholder="Ví dụ: Từ 27/06 đến khi có thông báo mới">
+                    </div>
+                    <button type="submit" class="submit-btn">Đăng bài</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js?v=1.0.6"></script>
+</body>
+</html>

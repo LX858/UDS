@@ -1,0 +1,36 @@
+TSTUDIO CAYO BRIDGE - FIXED FOR FIVEM
+
+VẤN ĐỀ CỦA BẢN GỐC:
+- fxmanifest.lua không khai báo đây là map resource.
+- Không có this_is_a_map 'yes'.
+- Có 3 file .ytyp nhưng không đăng ký DLC_ITYP_REQUEST.
+- Manifest cũ chứa khai báo vehicle/audio không liên quan tới map.
+
+ĐÃ SỬA:
+- fx_version cerulean
+- this_is_a_map 'yes'
+- đăng ký:
+  turbosaif_cayo_bridge.ytyp
+  turbosaif_cayo_bridge_lod.ytyp
+  turbosaif_cayo_bridge_slod.ytyp
+
+CÀI:
+1. Xóa/đổi tên resource tstudio_cayo_bridge cũ.
+2. Chép folder tstudio_cayo_bridge trong ZIP này vào resources.
+3. server.cfg:
+   ensure tstudio_cayo_bridge
+
+4. Live Console:
+   refresh
+   ensure tstudio_cayo_bridge
+
+5. Thoát FiveM vào lại server để client tải lại map/cache.
+
+NẾU CẦU ĐÃ HIỆN NHƯNG CAYO PERICO VẪN KHÔNG HIỆN:
+Server của bạn còn thiếu phần kích hoạt Cayo Perico IPL/HeistIsland.
+Khi đó cần dùng resource Cayo IPL (ví dụ bob74_ipl/cayo loader hiện có của server)
+hoặc thêm client loader riêng.
+
+LƯU Ý:
+Nếu server đang có một map khác sửa cùng khu vực El Burro Heights/Cayo,
+có thể xảy ra xung đột YMAP/YBN/LOD.

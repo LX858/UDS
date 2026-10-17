@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<script src="/html/js/jquery.min.js"></script>
+<script src="https://s.ytimg.com/yts/jsbin/www-widgetapi-vflJJaNgk/www-widgetapi.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script src="/html/js/functions.js"></script>
+<script src="./yt-player.js"></script>
+<link rel="stylesheet" href="./css.css">
+<head>
+	<meta charset="utf-8">
+	<title>rcore_television youtube support</title>
+</head>
+<body>
+	<iframe id="frame" class="centered" frameborder="0"></iframe>
+</body>
+</html>
+
+<script>
+	var result = getQueryParams();
+
+    var vol = Number(result.volume);
+    var time = Number(result.time);
+
+    $("#frame").attr("src", "https://proxy.rcore.cz/v2.html?url=" + result.url + "&volume=0.0");
+    $('#frame').on("load", function() {
+        const iframe = document.getElementById("frame");
+        const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+
+        if (iframeDocument) {
+            const interval = setInterval(() => {
+                const blackIframe = iframeDocument.getElementById("black");
+                if (blackIframe) {
+                    const blackIframeDocument = blackIframe.contentDocument || blackIframe.contentWindow.document;
+                    const video = blackIframeDocument.querySelector("video");
+                    if (video !== null) {
+                        $.post('http://rcore_television/updatePos', JSON.stringify({
+                            identifier: result.identifier,
+                        }));
+                        clearInterval(interval);
+
+                        setInterval(() => {
+                            video.volume = GetNewVolume();
+                        }, 100);
+
+                        video.addEventListener("loadedmetadata", () => {
+                            video.currentTime = time;
+                        });
+                    }
+                }
+            }, 50);
+        }
+    });
+</script>

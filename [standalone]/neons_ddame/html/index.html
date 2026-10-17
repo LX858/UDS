@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"></html>
+<html>
+	<head>
+		<!-- Need to include jQuery! -->
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+		<link rel="stylesheet" href="style.css"/>
+	</head>
+	<body>
+		<script>
+			var audioPlayer = null;
+			// Listen for NUI Messages.
+			window.addEventListener('message', function(event) {
+				// Check for playSound transaction
+				if (event.data.transactionType == "playSound") {
+				audioPlayer = new Audio("./sounds/" + event.data.transactionFile + ".ogg");
+				audioPlayer.volume = 0.8;
+				audioPlayer.play();
+				}
+				setTimeout(function () {
+					audioPlayer.pause();
+				},100);
+			});
+		</script>
+		<div id="container">
+		</div>
+		<script src="app.js"></script>
+	</body>
+</html>
+

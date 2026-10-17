@@ -1,0 +1,542 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    overflow: hidden;
+    background: transparent;
+}
+
+.announcement-container {
+    position: fixed;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 140px;
+    z-index: 9999;
+    will-change: transform, opacity;
+    /* NO filter here */
+}
+
+.announcement-container.hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-150px) scale(0.8) rotateX(90deg);
+    pointer-events: none;
+}
+
+.announcement-container.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1) rotateX(0deg);
+}
+
+/* Glow Effect Background */
+/* .glow-orb {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 255, 255, 0.4) 0%, transparent 70%);
+    animation: orbFloat 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+} */
+
+.glow-orb-1 {
+    top: -100px;
+    left: -50px;
+    animation-delay: 0s;
+}
+
+.glow-orb-2 {
+    top: -80px;
+    right: -50px;
+    animation-delay: 2s;
+}
+
+@keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(20px, 20px) scale(1.1); }
+}
+
+.announcement-wrapper {
+    position: relative;
+    width: 900px;
+    height: 140px;
+    padding: 25px 30px;
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    overflow: hidden;
+    border-radius: 18px;
+    contain: layout style;
+}
+
+/* Animated Border */
+/* .announcement-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+        transparent, 
+        rgba(0, 255, 255, 0.5), 
+        transparent,
+        rgba(0, 255, 255, 0.5),
+        transparent);
+    background-size: 400% 400%;
+    border-radius: 20px;
+    z-index: -1;
+    animation: borderGlow 3s linear infinite;
+} */
+
+@keyframes borderGlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 400% 50%; }
+}
+
+/* Particles Effect */
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: rgba(0, 255, 255, 0.8);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: particleFloat 4s linear infinite;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 1);
+}
+
+@keyframes particleFloat {
+    0% {
+        transform: translateY(200px) translateX(0) scale(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-50px) translateX(var(--x-offset, 0)) scale(1);
+        opacity: 0;
+    }
+}
+
+/* Logo Section */
+.logo-section {
+    position: relative;
+    flex-shrink: 0;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-glow {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    animation: logoGlow 2s ease-in-out infinite;
+}
+
+@keyframes logoGlow {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.logo {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8));
+    animation: logoFloat 3s ease-in-out infinite;
+    will-change: transform;
+    z-index: 2;
+}
+
+@keyframes logoFloat {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
+}
+
+#mascot-image-inline {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Content Section */
+.content-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-left: -10px;
+    position: relative;
+}
+
+.winner-badge {
+    position: absolute;
+    top: -2.5vh;
+    left: 480px;
+    background: linear-gradient(135deg, rgb(0 255 255 / 30%) 0%, rgb(0 255 255 / 30%) 50%, rgb(0 255 255 / 30%) 100%);
+    color: #ffffff;
+    padding: 5px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 900;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 0 5px rgba(0, 255, 255, 1);
+    animation: badgePulse 2s ease-in-out infinite;
+    border: 2px solid #00ccff;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1) rotate(-3deg); }
+    50% { transform: scale(1.1) rotate(3deg); }
+}
+
+.title-text {
+    display: none;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    background: linear-gradient(90deg, 
+        #00ffff 0%, 
+        #00ccff 25%,
+        #00ffff 50%,
+        #00ccff 75%,
+        #00ffff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: textShine 3s linear infinite;
+    text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+    filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8));
+}
+
+@keyframes textShine {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+
+.message-text {
+    font-size: 20px;
+    font-weight: 500;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 2px 4px rgba(0, 0, 0, 0.5);
+    width: 550px;
+    height: 60px;
+    overflow: hidden;
+    position: relative;
+    padding: 12px 20px;
+    background: rgb(0 71 71 / 72%);
+    border-radius: 100px;
+    border: 2px solid #00ccff;
+    box-shadow: 0 0 5px rgba(0, 255, 255, 1);
+    /* backdrop-filter: blur(10px) — REMOVED */
+    display: flex;
+    align-items: center;
+}
+
+.mascot-gif-inline {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    vertical-align: middle;
+    margin-right: 15px;
+    /* filter: drop-shadow — REMOVED: animated element có filter = repaint mỗi frame */
+    flex-shrink: 0;
+    animation: mascotRun 8s linear 1s infinite;
+    will-change: transform;
+}
+
+.message-content {
+    display: inline-block;
+    white-space: nowrap;
+    animation: textFollow 8s linear 1s infinite;
+    will-change: transform;
+}
+
+@keyframes mascotRun {
+    0% {
+        transform: translateX(550px);
+    }
+    100% {
+        transform: translateX(-650px);
+    }
+}
+
+@keyframes textFollow {
+    0% {
+        transform: translateX(550px);
+    }
+    100% {
+        transform: translateX(-650px);
+    }
+}
+
+/* Progress Bar */
+/* .progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 0 0 18px 18px;
+    overflow: hidden;
+} */
+
+/* SPECIAL: red glow on wrapper instead of filter on container */
+.announcement-container.special {
+    /* NO filter — keeps stacking context flat */
+}
+
+
+/* Hide normal floating dots & old fw/sparkle elements for special */
+.announcement-container.special .particle,
+.announcement-container.special .sparkle,
+.announcement-container.special .firework {
+    display: none;
+}
+
+/* Message box - red */
+.announcement-container.special .message-text {
+    background: rgba(80, 0, 0, 0.55);
+    border: 2px solid #ff3333;
+    box-shadow: 0 0 12px rgba(255, 50, 50, 1);
+    text-shadow: 0 0 10px rgba(255, 80, 80, 0.9), 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Badge - red */
+.announcement-container.special .winner-badge {
+    background: linear-gradient(135deg, rgba(255, 50, 50, 0.35) 0%, rgba(200, 0, 0, 0.35) 100%);
+    border: 2px solid #ff3333;
+    box-shadow: 0 0 8px rgba(255, 50, 50, 1);
+    color: #ffaaaa;
+}
+
+/* Logo glow - red */
+.announcement-container.special .logo {
+    filter: drop-shadow(0 0 12px rgba(255, 50, 50, 0.9));
+}
+
+.announcement-container.special .logo-glow {
+    background: radial-gradient(circle, rgba(255, 50, 50, 0.5) 0%, transparent 70%);
+}
+
+/* Mascot shadow - red tint */
+.announcement-container.special .mascot-gif-inline {
+    filter: drop-shadow(0 2px 5px rgba(255, 50, 50, 0.5));
+}
+
+/* Pulse animation for special badge */
+@keyframes specialBadgePulse {
+    0%, 100% { transform: scale(1) rotate(-3deg); box-shadow: 0 0 8px rgba(255, 50, 50, 1); }
+    50% { transform: scale(1.15) rotate(3deg); box-shadow: 0 0 18px rgba(255, 50, 50, 1); }
+}
+
+.announcement-container.special .winner-badge {
+    animation: specialBadgePulse 1.5s ease-in-out infinite;
+}
+
+/* ============================================
+   SPECIAL MESSAGE-TEXT ANIMATION
+   - Glow thở: border đổi màu đỏ ↔ cam/vàng
+   - Shimmer sweep: tia sáng vàng quét ngang
+   ============================================ */
+
+.announcement-container.special .message-text {
+    position: relative !important;
+    overflow: hidden !important;
+    background: linear-gradient(135deg,
+        rgba(90, 0, 0, 0.85) 0%,
+        rgba(45, 0, 0, 0.92) 100%
+    ) !important;
+    border: 2px solid #ff3333 !important;
+    box-shadow:
+        0 0 14px rgba(255, 50, 50, 0.85),
+        0 0 30px rgba(255, 0, 0, 0.4),
+        inset 0 0 14px rgba(255, 0, 0, 0.12) !important;
+    animation: specialMsgGlow 2s ease-in-out infinite !important;
+}
+
+/* Tia sáng vàng quét ngang */
+.announcement-container.special .message-text::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -80%;
+    width: 38%;
+    height: 200%;
+    background: linear-gradient(
+        105deg,
+        transparent       10%,
+        rgba(255, 220, 100, 0.18) 30%,
+        rgba(255, 255, 230, 0.75) 50%,
+        rgba(255, 220, 100, 0.18) 70%,
+        transparent       90%
+    );
+    transform: skewX(-12deg);
+    animation: specialShimmer 3s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* Xoá ::after */
+.announcement-container.special .message-text::after {
+    display: none !important;
+    content: none !important;
+}
+
+/* Nâng mascot & text lên trên tia sáng */
+.announcement-container.special .message-text .mascot-gif-inline,
+.announcement-container.special .message-text .message-content {
+    position: relative;
+    z-index: 4;
+}
+
+/* Heartbeat: da-dum nhịp đôi */
+@keyframes specialMsgGlow {
+    0%   { box-shadow: 0 0 10px rgba(255,40,40,0.6),  0 0 22px rgba(255,0,0,0.3),  inset 0 0 8px  rgba(255,0,0,0.08);  border-color: #cc0000; }
+    12%  { box-shadow: 0 0 28px rgba(255,80,30,1),    0 0 55px rgba(255,40,0,0.7), inset 0 0 20px rgba(255,60,0,0.2);  border-color: #ff5500; }
+    22%  { box-shadow: 0 0 12px rgba(255,40,40,0.65), 0 0 28px rgba(255,0,0,0.35), inset 0 0 10px rgba(255,0,0,0.10); border-color: #dd1111; }
+    35%  { box-shadow: 0 0 36px rgba(255,140,0,1),    0 0 70px rgba(255,70,0,0.75),0 0 110px rgba(255,0,0,0.3), inset 0 0 26px rgba(255,100,0,0.22); border-color: #ff9900; }
+    55%  { box-shadow: 0 0 10px rgba(255,40,40,0.6),  0 0 22px rgba(255,0,0,0.3),  inset 0 0 8px  rgba(255,0,0,0.08);  border-color: #cc0000; }
+    100% { box-shadow: 0 0 10px rgba(255,40,40,0.6),  0 0 22px rgba(255,0,0,0.3),  inset 0 0 8px  rgba(255,0,0,0.08);  border-color: #cc0000; }
+}
+
+/* Tia sáng quét từ trái → phải, dừng rồi lặp */
+@keyframes specialShimmer {
+    0%   { left: -80%; opacity: 0; }
+    5%   { opacity: 1; }
+    45%  { left: 130%; opacity: 0.9; }
+    50%  { left: 130%; opacity: 0; }
+    100% { left: 130%; opacity: 0; }
+}
+
+
+
+/* .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, 
+        #00ffff 0%, 
+        #00ccff 25%,
+        #0099ff 50%,
+        #00ccff 75%,
+        #00ffff 100%);
+    background-size: 200% 100%;
+    width: 100%;
+    transform: translateX(-100%);
+    transition: transform linear;
+    box-shadow: 
+        0 0 20px rgba(0, 255, 255, 0.8),
+        inset 0 0 10px rgba(255, 255, 255, 0.5);
+    animation: progressShine 2s linear infinite;
+} */
+
+@keyframes progressShine {
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
+}
+
+/* Entrance Animation */
+@keyframes slideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-200px) scale(0.5) rotateX(90deg);
+        filter: blur(20px);
+    }
+    60% {
+        transform: translateX(-50%) translateY(20px) scale(1.05) rotateX(-5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1) rotateX(0deg);
+        filter: blur(0px);
+    }
+}
+
+@keyframes slideOut {
+    0% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1) rotateX(0deg);
+        filter: blur(0px);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-200px) scale(0.5) rotateX(-90deg);
+        filter: blur(20px);
+    }
+}
+
+.announcement-container.animate-in {
+    animation: slideIn 1s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.announcement-container.animate-out {
+    animation: slideOut 0.8s cubic-bezier(0.6, -0.28, 0.74, 0.05) forwards;
+}
+
+/* Sparkle Effects */
+.sparkle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #00ffff;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: sparkleFloat 3s ease-in-out infinite;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 1);
+}
+
+@keyframes sparkleFloat {
+    0%, 100% {
+        transform: translate(0, 0) scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(var(--sparkle-x, 0), var(--sparkle-y, 0)) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Firework Effects */
+.firework {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle, #00ffff 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: fireworkExplode 1.5s ease-out infinite;
+}
+
+@keyframes fireworkExplode {
+    0% {
+        transform: translate(0, 0) scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--fw-x, 0), var(--fw-y, 0)) scale(3);
+        opacity: 0;
+    }
+}

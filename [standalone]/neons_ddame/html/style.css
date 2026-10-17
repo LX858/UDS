@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Anton&display=swap');
+
+
+body {
+	text-transform:capitalize;
+	overflow: hidden;
+}
+body, html{
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+@keyframes upandhide {
+    0% {
+        opacity: 1;
+    }
+    30% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-1vh);
+        opacity: 0;
+    }
+}
+#container{
+    position: absolute;
+    width: 50%;
+    height: 50%;
+}
+.font {
+	font-family: 'arial bold';
+}
+#dmg{ /* Damage Máu*/
+    position: absolute;
+    /* font-weight: 0; */
+    animation: upandhide 0.1s ease-in-out forwards;
+    font-family: 'arial bold';
+    font-size: 1px;
+}

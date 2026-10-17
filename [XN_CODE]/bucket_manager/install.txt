@@ -1,0 +1,49 @@
+==================================================
+    BUCKET MANAGER - HƯỚNG DẪN CÀI ĐẶT
+==================================================
+
+📋 YÊU CẦU HỆ THỐNG:
+- FiveM Server
+- QBCore Framework
+- ox_lib
+
+🛠️ CÁCH CÀI ĐẶT:
+
+1. Sao chép thư mục "bucket_manager" vào thư mục "resources" của server
+   
+2. Mở file "server.cfg" và thêm dòng sau:
+   ensure bucket_manager
+
+3. Khởi động lại server hoặc dùng lệnh:
+   restart bucket_manager
+
+🎮 CÁCH SỬ DỤNG:
+
+🔍 Kiểm tra bucket hiện tại:
+   /bucket
+
+🔄 Reset bucket về 0:
+   /resetbucket
+
+👮‍♂️ Admin - Set bucket cho player khác:
+   /setbucket [ID_player] [ID_bucket]
+   Ví dụ: /setbucket 1 5
+
+⚙️ TÙY CHỈNH:
+
+Mở file "config.lua" để thay đổi:
+- Thời gian hiển thị thông báo
+- Tin nhắn hiển thị
+- Quyền cần thiết cho admin
+- Bucket mặc định
+- Bật/tắt logging
+
+📝 GHI CHÚ:
+- Bucket 0 = Bucket mặc định (tất cả player ở chung)
+- Bucket 1-63 = Bucket riêng biệt
+- Player ở bucket khác nhau không thể nhìn thấy nhau
+
+🆘 KHẮC PHỤC SỰ CỐ:
+- Kiểm tra dependencies đã được cài đặt
+- Xem console server có báo lỗi không
+- Đảm bảo file fxmanifest.lua không bị lỗi cú pháp

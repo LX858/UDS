@@ -1,0 +1,60 @@
+[
+    {
+        "totalUnique": 7,
+        "uniqueVehicles": {
+            "r2f2fmk4": true,
+            "r2f2fs2000": true,
+            "r2f2fgtr34": true,
+            "r2f2fgts": true,
+            "fnfmits": true,
+            "r2f2fmle7": true,
+            "godz95gsx": true
+        },
+        "citizenid": "X6N840JZ",
+        "vehicleList": [
+            {
+                "vehicle": "r2f2fgts",
+                "state": 1,
+                "garage": "750 Garage",
+                "plate": "UDS16650"
+            },
+            {
+                "vehicle": "r2f2fs2000",
+                "state": 0,
+                "garage": "N/A",
+                "plate": "UDS22883"
+            },
+            {
+                "vehicle": "r2f2fmle7",
+                "state": 1,
+                "garage": "633 Garage",
+                "plate": "UDS55179"
+            },
+            {
+                "vehicle": "r2f2fmk4",
+                "state": 1,
+                "garage": "750 Garage",
+                "plate": "UDS26696"
+            },
+            {
+                "vehicle": "GODz95GSX",
+                "state": 1,
+                "garage": "Khách sạn DX",
+                "plate": "UDS55169"
+            },
+            {
+                "vehicle": "fnfmits",
+                "state": 1,
+                "garage": "Khách sạn DX",
+                "plate": "UDS87341"
+            },
+            {
+                "vehicle": "r2f2fgtr34",
+                "state": 0,
+                "garage": "N/A",
+                "plate": "UDS65911"
+            }
+        ],
+        "playerName": "Mr Jacky"
+    }
+]

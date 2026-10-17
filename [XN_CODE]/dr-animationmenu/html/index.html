@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+		<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+		<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+		<link rel="stylesheet" href="style.css" />
+		<link rel="stylesheet" href="smallMenu.css" />
+		<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+		<title>Dr-animationmenu</title>
+	</head>
+	<body>
+		<div id="app">
+			<div class="bigMenu" v-if="this.general.show && this.general.page === 1">
+				<div class="backgroundElements">
+					<!-- <div class="leftTextBG"></div> -->
+					<!-- <div class="bodyIconBG"></div> -->
+				</div>
+				<div class="mainMenu">
+					<div class="headerArea">
+						<!-- <div class="logoElement">
+							<img src="./img/logo.png" alt="" />
+						</div> -->
+						<!-- <div class="logoTextArea">
+							<div class="animText">{{getTranslate["BIG_TITLE1"]}}</div>
+							<div class="rolePlayText">{{getTranslate["BIG_TITLE2"]}}</div>
+							<div class="menuText">{{getTranslate["BIG_TITLE3"]}}</div>
+						</div> -->
+						<div class="animDisableArea">
+							<div class="disableText">
+								{{this.general.previewDisable ? getTranslate["ENABLE"] : getTranslate["DISABLE"]}} <br />
+								{{getTranslate["ANIMATION"]}} {{getTranslate["PREVIEW"]}}
+							</div>
+							<div class="disableSwitch">
+								<input type="checkbox" v-model="this.general.previewDisable"/>
+								<span class="slider round"></span>
+							</div>
+						</div>
+						<!-- <div class="topInfoArea">
+							<span class="material-symbols-outlined" id="dragIcon"> drag_pan </span>
+
+							<div class="topInfoDesc">
+								{{getTranslate["BIG_GRABDESC"]}}
+							</div>
+						</div> -->
+						<div class="searchBarArea">
+							<span class="material-symbols-outlined"> search </span>
+							<input type="text" placeholder="Search..." v-model="this.general.search"/>
+						</div>
+						<div class="topClickableIcons">
+							<div class="clickableIcon minimize" @click="changePage(2)">
+								<span class="material-symbols-outlined"> close_fullscreen </span>
+							</div>
+							<div class="clickableIcon exit" @click="closeMenu()">
+								<span class="material-symbols-outlined"> close </span>
+							</div>
+						</div>
+					</div>
+					<div class="middleArea">
+						<div class="navMenuItemList">
+							<div class="navItem" :class="{'selected': 'favorites' == this.general.category}" @click="changeCategory('favorites')">
+								<div class="navLogoArea">
+									<img src="./img/favorites.png" alt="" />
+								</div>
+								<div class="navTextArea">
+									<div class="navItemName">{{getTranslate["FAVORITES"]}}</div>
+									<div class="navItemDesc">{{getTranslate["BIG_TOTALTEXT"]}} {{getItemCountInSameCategory('favorites')}} {{getTranslate["BIG_ANIMATIONSTEXT"]}}</div>
+								</div>
+							</div>
+							<div class="navItem" v-for="(item, index) in getCategories" :key="index" :class="{'selected': item.value == this.general.category}" @click="changeCategory(item.value)">
+								<div class="navLogoArea">
+									<img :src=item.image alt="" />
+								</div>
+								<div class="navTextArea">
+									<div class="navItemName">{{item.name}}</div>
+									<div class="navItemDesc">{{getTranslate["BIG_TOTALTEXT"]}} {{getItemCountInSameCategory(item.value)}} {{getTranslate["BIG_ANIMATIONSTEXT"]}}</div>
+								</div>
+							</div>
+						</div>
+						<div class="normalAnimList" ref="animList" @scroll="onScroll">
+							<div class="animItem" v-for="(item, index) in getVisibleItems" :key="index" :id="item.name" :data-id="item.name" @click="fastUseAnim(item)" @click.right="previewUseAnim(item)">
+								<div class="hotBadge" v-if="item.hot">NEW</div>
+								<div class="animFavoriteButton" v-if="checkAnimInFav(item)" @click="deleteFav(item, $event)">
+									<img src="./img/starClicked.png" alt="" />
+								</div>
+								<div class="animFavoriteButton" v-else @click="addFav(item, $event)">
+									<img src="./img/starNotClicked.png" alt="" />
+								</div>
+								<div class="animImageArea">
+									<img v-if="item.showImage && !this.general.previewDisable" :src=item.image @error="handleImageError" alt="" />
+									<img v-if="item.showImage && this.general.previewDisable" src="./img/question.png" alt="" />
+								</div>
+								<div class="animName">{{item.label}}</div>
+								<div class="animCommand">/e {{item.name}}</div>
+							</div>
+
+						</div>
+					</div>
+					<div class="bottomArea">
+						<div class="helpArea">
+							<div class="helpRectangleArea">
+								<div class="helpTextTitle">{{getTranslate["BIG_HELPSTITLE"]}}</div>
+								<div class="helpRectangle"></div>
+							</div>
+							<div class="helpItemList">
+								<div class="helpItem">
+									<div class="helpImage">
+										<img src="./img/leftClick.png" alt="" />
+									</div>
+									<div class="helpText">
+										{{getTranslate["USE"]}}
+									</div>
+								</div>
+								<div class="helpItem">
+									<div class="helpImage">
+										<img src="./img/rightClick.png" alt="" />
+									</div>
+									<div class="helpText">
+										{{getTranslate["PREVIEW"]}}
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="shortCutsArea">
+							<div class="shortcutsRectangleArea">
+								<div class="shortcutsTextTitle">{{getTranslate["BIG_SHORTCUTSTITLE"]}}</div>
+								<div class="shortcutsRectangle"></div>
+							</div>
+							<div class="shortCutsAnimList" >
+								<div class="animItemShortCuts" v-for="(item, index) in getshortcutAnims" :key="index" :id="'shortcutBig+'+item.shortcutId">
+									<!-- <div class="animFavoriteButton">
+										<img v-if="item.name !== 'empty'" src="./img/starNotClicked.png" alt="" />
+									</div> -->
+									<div class="animDeleteButton" @click="deleteShortcut(item.shortcutId)">
+										<img v-if="item.name !== 'empty'" src="./img/deleteIcon.png" alt="" />
+									</div>
+									<div class="animImageAreaShortCuts">
+										<img v-if="item.name !== 'empty' && !this.general.previewDisable" :src="item.image" @error="handleImageError"  alt="" />
+										<img v-if="item.name !== 'empty' && this.general.previewDisable" src="./img/question.png" @error="handleImageError"  alt="" />
+									</div>
+									<div class="animName">{{item.label}}</div>
+									<div class="animCommand">{{getTranslate["SHORTCUTKEY"]}} + {{item.shortcutId}}</div>
+								</div>
+								
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="smallMenu" v-if="this.general.show && this.general.page === 2">
+				<div class="smallContainer">
+					<div class="smallHeader">
+						<!-- <div class="smallLogoArea">
+							<img src="./img/smallLogo.png" alt="" />
+							<div class="smallLogoTextArea">
+								<div class="smallAnimText">{{getTranslate["SMALL_TITLE1"]}}</div>
+								<div class="smallBottomTitleArea">
+									<div class="smallBottomTtOne">{{getTranslate["SMALL_TITLE2"]}}</div>
+									<div class="smallBottomTtTwo">{{getTranslate["SMALL_TITLE3"]}}</div>
+								</div>
+							</div>
+						</div> -->
+						<div class="smallHeaderButtonArea">
+							<div class="smallDisablePreviewArea">
+								<!-- <div class="smallDisText">{{ this.general.previewDisable ? getTranslate["ENABLE"] : getTranslate["DISABLE"] }} {{getTranslate["PREVIEW"]}}</div> -->
+								<div class="smallDisableButton" :class="{'enabled': this.general.previewDisable}" @click="this.general.previewDisable = !this.general.previewDisable">
+									<span v-if="this.general.previewDisable" class="material-symbols-outlined"> visibility </span>
+									<span v-else class="material-symbols-outlined"> visibility_off </span>
+								</div>
+							</div>
+							<div class="smallMaximizeButton" @click="changePage(1)">
+								<span class="material-symbols-outlined"> fullscreen </span>
+							</div>
+							<div class="smallCloseButton" @click="closeMenu()">
+								<span class="material-symbols-outlined"> close </span>
+							</div>
+						</div>
+					</div>
+					<div class="searchBar">
+						<span class="material-symbols-outlined"> search </span>
+						<input type="text" placeholder="Search..." v-model="this.general.search"/>
+					</div>
+					<div class="smallMainArea">
+						<div class="smallNavigateItemList">
+							<div class="smallNormalAnimItem" @click="changeCategory('favorites')">
+								<div class="animItemLogoArea" :class="{'selected': 'favorites' == this.general.category}">
+									<!-- <img v-if="'favorites' == this.general.category" src="./img/smallAllAnimLogo.png" alt="" />
+									<img v-else src="./img/smallAllAnimLogoNotSelect.png" alt="" /> -->
+									<img src="./img/favorites.png" alt="" /> 
+								</div>
+								<div class="smallAnimTextArea">
+									<div class="smallAnimName">{{getTranslate["FAVORITES"]}}</div>
+									<div class="smallAnimDesc">{{getItemCountInSameCategory('favorites')}} {{getTranslate["BIG_ANIMATIONSTEXT"]}}</div>
+								</div>
+							</div>
+
+							<div class="smallNormalAnimItem" v-for="(item, index) in getCategories" :key="index"  @click="changeCategory(item.value)">
+								<div class="animItemLogoArea" :class="{'selected': item.value == this.general.category}">
+									<img :src=item.image alt="" />
+									<!-- <img v-if="item.value == this.general.category" src="./img/smallAllAnimLogo.png" alt="" />
+									<img v-else src="./img/smallAllAnimLogoNotSelect.png" alt="" /> -->
+								</div>
+								<div class="smallAnimTextArea">
+									<div class="smallAnimName">{{item.name}}</div>
+									<div class="smallAnimDesc">{{getItemCountInSameCategory(item.value)}} {{getTranslate["BIG_ANIMATIONSTEXT"]}}</div>
+								</div>
+							</div>
+						
+						</div>
+						<div class="smallAnimItemList" ref="animList2" @scroll="onScroll2">
+							<div class="smallAnimItem" v-for="(item, index) in getVisibleItems" :key="index" :id="item.name" :data-id="item.name" @click="fastUseAnim(item)" @click.right="previewUseAnim(item)">
+								<div class="smallHotBadge" v-if="item.hot">HOT</div>
+								<div class="smallFavoriteButton" v-if="checkAnimInFav(item)" @click="deleteFav(item, $event)">
+									<img src="./img/starClicked.png" alt="" />
+								</div>
+								<div class="smallFavoriteButton" v-else @click="addFav(item, $event)">
+									<img src="./img/starNotClicked.png" alt="" />
+								</div>
+								<div class="smallImageArea" >
+									<img v-if="item.showImage && !this.general.previewDisable" :src=item.image @error="handleImageError" alt="" />
+									<img v-if="item.showImage && this.general.previewDisable" src="./img/question.png" alt="" />
+								</div>
+								<div class="smallTextArea">
+									<div class="smallAnimAreaName">{{item.label}}</div>
+									<div class="smallAnimCommand">/e {{item.name}}</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="smallInfoSection">
+						<div class="smallInfoButtonItemList">
+							<div class="smallHelpItem">
+								<div class="smallHelpImage">
+									<img src="./img/leftClick.png" alt="" />
+								</div>
+								<div class="smallHelpTextArea">
+									<!-- <div class="smallTopText">{{getTranslate["CLICK"]}}</div> -->
+									<div class="smallBotText">{{getTranslate["USE"]}}</div>
+								</div>
+							</div>
+							<div class="smallHelpItem">
+								<div class="smallHelpImage">
+									<img src="./img/rightClick.png" alt="" />
+								</div>
+								<div class="smallHelpTextArea">
+									<!-- <div class="smallTopText">{{getTranslate["CLICK"]}}</div> -->
+									<div class="smallBotText">{{getTranslate["PREVIEW"]}}</div>
+								</div>
+							</div>
+						</div>
+						<div class="smallInfoTextArea">
+							<img src="./img/starNotClicked.png" alt="" />
+							{{getTranslate["SMALL_SHORTCUTSTITLE"]}}
+						</div>
+					</div>
+					<div class="smallFavoriteItemList">
+						<div class="smallAnimItemFavorite" v-for="(item, index) in getshortcutAnims" :key="index" :id="'shortcutSmall+'+item.shortcutId">
+							<div class="smallFavoriteButton" @click="deleteShortcut(item.shortcutId)">
+								<img v-if="item.name !== 'empty'" src="./img/deleteIcon.png" alt="" />
+							</div>
+							<div class="smallImageArea">
+								<img v-if="item.name !== 'empty' && !this.general.previewDisable" :src="item.image" @error="handleImageError"  alt="" />
+								<img v-if="item.name !== 'empty' && this.general.previewDisable" src="./img/question.png" @error="handleImageError"  alt="" />
+							</div>
+							<div class="smallTextAreaFavorite">
+								<div class="smallAnimAreaName">{{item.label}}</div>
+								<div v-if="item.name != 'empty'" class="smallAnimCommand">/e {{item.name}}</div>
+							</div>
+							<div class="smallShortcutText">{{getTranslate["SHORTCUTKEY"]}} + {{item.shortcutId}}</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="permissionSection" v-if="this.getRequestData.show">
+				<div class="animWantMenu">
+					<div class="wantTitleOne">{{this.getRequestData.whoSend}} {{getTranslate["WANT"]}}</div>
+					<div class="wantTitleTwo">{{this.getRequestData.anim.label}} {{getTranslate["ANIMATIONWITHYOU"]}}</div>
+					<div class="wantButtonArea">
+						<div class="wantButton accept">{{getTranslate["ACCEPT"]}}</div>
+						<div class="wantButton decline">{{getTranslate["DECLINE"]}}</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+		<script src="./app.js"></script>
+	</body>
+</html>

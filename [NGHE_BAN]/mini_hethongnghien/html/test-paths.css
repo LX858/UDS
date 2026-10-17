@@ -1,0 +1,26 @@
+/* Test background image với nhiều đường dẫn khác nhau */
+
+/* Option 1: ./img/avt.png */
+.modal-container.option1::before {
+    background-image: url('./img/avt.png');
+}
+
+/* Option 2: img/avt.png */
+.modal-container.option2::before {
+    background-image: url('img/avt.png');
+}
+
+/* Option 3: /img/avt.png */
+.modal-container.option3::before {
+    background-image: url('/img/avt.png');
+}
+
+/* Option 4: ../img/avt.png */
+.modal-container.option4::before {
+    background-image: url('../img/avt.png');
+}
+
+/* Option 5: Full nui path */
+.modal-container.option5::before {
+    background-image: url('nui://F7_ladudu_addiction/html/img/avt.png');
+}

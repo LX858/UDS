@@ -1,0 +1,164 @@
+---@alias Identifier string           -- steam:… | fivem:…
+---@alias License    string           -- license:xxxxxxxxxxxxxxxx
+---@alias CitizenId  string           -- CID123456
+---@alias BankNumber string           -- NVNxxxxxx
+---@alias PhoneNumber string          -- 09xxxxxxxx
+---@alias PlayerId   integer
+
+---@class Account
+---@field name   string
+---@field money  integer
+---@field index  integer
+---@field round? boolean
+
+---@class InventoryItem
+---@field name   string
+---@field label? string
+---@field count  integer
+---@field weight number
+---@field slot?  integer
+
+---@class JobGradeSkin
+---@field [string] any
+
+---@class JobGrade
+---@field name        string
+---@field label       string
+---@field salary      integer
+---@field skin_male?  JobGradeSkin|table
+---@field skin_female? JobGradeSkin|table
+
+---@class Job
+---@field id            integer
+---@field name          string
+---@field label         string
+---@field duty          boolean
+---@field grade         integer
+---@field grade_name    string
+---@field grade_label   string
+---@field grade_salary  integer
+---@field skin_male?    JobGradeSkin|table
+---@field skin_female?  JobGradeSkin|table
+
+---@class Vector3 : table  ---@field x number @---@field y number @---@field z number
+---@class Vector4 : Vector3 ---@field w number
+
+---@class Status  ---@field [string] any
+---@class PlayerMetadata ---@field [string] any
+---@class UpgradeData  ---@field level integer @---@field points integer @---@field [string] any
+
+
+--═══════════════  EXTENDED PLAYER ═══════════════--
+
+---@class ExtendedPlayer
+---@field id        integer
+---@field source    PlayerId
+---@field playerId  PlayerId
+---@field identifier Identifier
+---@field license   License
+---@field name      string
+---@field phone     PhoneNumber|number?
+---@field group     string
+---@field admin     boolean
+---@field isDead    boolean
+---@field coords    Vector4|Vector3|table
+---@field weight    number
+---@field maxWeight number
+---@field accounts  Account[]
+---@field inventory InventoryItem[]
+---@field job       Job
+---@field metadata  PlayerMetadata
+---@field status    Status
+---@field skin      table|nil
+---@field uid       integer|string
+---@field created_at string
+---@field upgrade   UpgradeData|integer
+---@field variables table<string,any>
+---@field avatar    string|nil
+--
+---@field triggerEvent fun( eventName:string, ...)
+---@field setCoords    fun( coords:Vector4|Vector3|table)
+---@field getCoords    fun( asVector?:boolean, withHeading?:boolean):Vector4|Vector3|table
+---@field getMoney     fun():integer
+---@field setMoney     fun(amount:number)
+---@field addMoney     fun(amount:number, reason?:string)
+---@field removeMoney  fun(amount:number, reason?:string)
+---@field getAccount   fun(name:string):Account|nil
+---@field setAccountMoney    fun(acc:string, amount:number, reason?:string)
+---@field addAccountMoney    fun(acc:string, amount:number, reason?:string)
+---@field removeAccountMoney fun(acc:string, amount:number, reason?:string)
+---@field getInventory       fun(minimal?:boolean):table<string,integer>|InventoryItem[]
+---@field getInventoryItem   fun(item:string):InventoryItem|nil
+---@field addInventoryItem   fun(item:string, count:number)
+---@field removeInventoryItem fun(item:string, count:number)
+---@field setInventoryItem   fun(item:string, count:number)
+---@field canCarryItem       fun(item:string, count:number):boolean
+---@field canSwapItem        fun(firstItem:string, firstCnt:number, secondItem:string, secondCnt:number):boolean
+---@field getJob     fun():Job
+---@field setJob     fun(job:string, grade:string|number)
+---@field setDuty    fun(on:boolean)
+---@field getGroup   fun():string
+---@field setGroup   fun(newGroup:string)
+---@field getStatus  fun():Status
+---@field setStatus  fun(s:Status)
+---@field setDead    fun(dead:boolean)
+---@field getDead    fun():boolean
+---@field getMeta    fun(index:any, subIndex?:any):any
+---@field setMeta    fun(index:any, value:any, subValue?:any)
+---@field clearMeta  fun(index:string, subValues?:string|string[])
+---@field getUpgrade fun():UpgradeData|integer
+---@field addUpgrade fun(value:number)
+---@field setUpgrade fun(value:number)
+---@field setMaxWeight fun(max:number)
+---@field showNotification         fun(msg:string, type?:string, length?:number)
+---@field showAdvancedNotification fun(sender:string, subject:string, msg:string, txd:string, icon:number, flash:boolean, save:boolean, color:number)
+---@field showHelpNotification     fun(msg:string, thisFrame?:boolean, beep?:boolean, duration?:number)
+---@field kick      fun(reason:string)
+---@field setName   fun(newName:string)
+---@field setAvatar fun(url:string)
+---@field setSkin   fun(skinData:table)
+---@field getSkin   fun():table|nil
+
+-- ░░ COMMAND / SUGGESTION ░░---------------------------------------------------
+---@class CommandArgument { name:string, help?:string, type?:string, validate?:boolean }
+---@class CommandSuggestion { help?:string, arguments:CommandArgument[], validate?:boolean }
+---@alias CommandGroup string
+
+-- ░░ DISCORD EMBED ░░----------------------------------------------------------
+---@class DiscordField { name:string, value:string, inline?:boolean }
+
+
+-- ░░ ESX GLOBAL TABLE (TYPE‑ONLY) ░░-------------------------------------------
+---@class ESXLib
+---@field Trace                  fun(msg:string)
+---@field TriggerClientEvent     fun(event:string, playerIds:PlayerId|PlayerId[], ...:any)      -- server->client
+---@field RegisterCommand        fun(name:string|string[], group:CommandGroup|CommandGroup[],  -- register /command
+---                                       cb:fun(xPlayer:ExtendedPlayer|false, args:table,
+---                                             reply:fun(msg:string)), allowConsole:boolean,
+---                                       suggestion?:CommandSuggestion)
+---@field CreateCitizenId        fun():CitizenId
+---@field CreateBankNumber       fun():BankNumber
+---@field CreatePhoneNumber      fun():PhoneNumber
+---@field GetExtendedPlayers     fun(key?:string, val?:any|any[]):table
+---@field GetNumPlayers          fun(key?:string, val?:any|any[]):integer|table
+---@field GetPlayerFromId        fun(src:PlayerId):ExtendedPlayer|nil
+---@field GetPlayerFromIdCard    fun(idCard:number):ExtendedPlayer|nil
+---@field GetPlayerFromIdentifier fun(identifier:string):ExtendedPlayer|nil
+---@field GetPlayerFromCitizenId fun(cid:CitizenId):ExtendedPlayer|nil
+---@field GetPlayerFromPhone     fun(phone:PhoneNumber):ExtendedPlayer|nil
+---@field GetIdentifier          fun(src:PlayerId):License
+---@field GetVehicleType         fun(model:string|integer, player:PlayerId, cb:fun(typeStr:string))
+---@field DiscordLog             fun(name:string, title:string, color:string, message:string)
+---@field DiscordLogFields       fun(name:string, title:string, color:string, fields:DiscordField[])
+---@field GetItemLabel           fun(item:string):string|nil
+---@field GetJobs                fun():table<string,Job>
+---@field GetUsableItems         fun():table<string,true>
+---@field RegisterUsableItem     fun(item:string, cb:fun(src:PlayerId, item:string, ...:any))
+---@field UseItem                fun(src:PlayerId, item:string, ...:any)
+---@field CreatePickup           fun(itemType:string, name:string, count:integer, label:string,
+---                                       playerId:PlayerId, components?:table, tintIndex?:integer,
+---                                       coords?:Vector3|Vector4|table)
+---@field DoesJobExist           fun(job:string, grade:integer|string):boolean
+---@field Log                    fun(playerSrc:PlayerId, type:string, event:string, msg:string,
+---                                       extra?:table)
+--- @field ShowNotification fun(msg:string, type?:string, length?:number)

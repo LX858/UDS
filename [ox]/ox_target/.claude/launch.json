@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ox_target-preview",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["_serve_ox_target.js"],
+      "port": 8785
+    }
+  ]
+}

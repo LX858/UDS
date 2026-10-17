@@ -1,0 +1,72 @@
+{
+    "notify": {
+        "no_access": "Không có quyền truy cập.",
+        "someone_at_door": "Có người đang ở trước cửa nhà bạn!",
+        "keyholder": " đã được thêm làm người giữ chìa khóa.",
+        "added_as_keyholder": "Bạn đã được thêm làm người giữ chìa khóa.",
+        "removed_as_keyholder": " đã bị xóa khỏi danh sách người giữ chìa khóa."
+    },
+    "alert": {
+        "give_keys": "Bạn có muốn đưa chìa khóa cho người này không?",
+        "apartment_selection": "Chọn căn hộ",
+        "are_you_sure": "Bạn có chắc muốn lấy %s không?",
+        "want_remove_keys": "Bạn có muốn thu hồi chìa khóa từ người này?",
+        "want_let_person_in": "Bạn có muốn cho người này vào nhà?",
+        "property_name": "Tên tài sản",
+        "property_name_description": "Một tên mô tả đơn giản cho tài sản",
+        "price": "Giá",
+        "price_description": "Giá mua hoặc giá thuê được trừ",
+        "rent_interval": "Chu kỳ thanh toán 💵 thuê",
+        "rent_interval_description": "Thời gian (tính bằng giờ) giữa mỗi lần trừ 💵 thuê (biến tài sản thành có thể thuê thay vì mua)",
+        "add_garage": "Thêm gara"
+    },
+    "menu": {
+        "add_keyholder": "Thêm người giữ chìa khóa",
+        "people_inside": "Người đang ở bên trong",
+        "keyholders": "Người giữ chìa khóa",
+        "doorbell_ringers": "Người bấm chuông cửa",
+        "manage_keys": "Quản lý chìa khóa",
+        "doorbell": "Chuông cửa",
+        "manage_property": "Quản lý tài sản",
+        "enter": "Vào nhà",
+        "ring_doorbell": "Bấm chuông cửa",
+        "properties": "Tài sản",
+        "retrieve_properties": "Lấy danh sách tài sản sở hữu",
+        "show_owned_properties": "Chỉ hiển thị tài sản bạn sở hữu",
+        "interior_preview": "Xem trước nội thất",
+        "start_decorating": "Bắt đầu trang trí",
+        "decorating_categories": "Danh mục"
+    },
+    "instructButtons": {
+        "up": "Lên",
+        "down": "Xuống",
+        "submit": "Xác nhận"
+    },
+    "keyMappings": {
+        "gizmo_translation": "Chuyển sang chế độ di chuyển",
+        "gizmo_rotation": "Chuyển sang chế độ xoay",
+        "gizmo_select": "Chọn mục đang được tô sáng",
+        "gizmo_local": "Đặt chế độ chỉnh sửa theo hướng cục bộ đối tượng"
+    },
+    "drawtext": {
+        "stash": "[E] - Tủ đồ",
+        "exit": "[E] - Thoát | [G] - Quản lý",
+        "clothing": "[E] - Quần áo | [G] - Trang phục",
+        "logout": "[E] - Đăng xuất",
+        "view_property": "[E] - Xem tài sản"
+    },
+    "logs": {
+        "create_property": "Đang cố gắng tạo tài sản.",
+        "property_created": "Đã tạo tài sản %s thành công.",
+        "enter_property": "Người chơi %s đã vào tài sản %s.",
+        "exit_property": "Người chơi %s đã rời khỏi tài sản ID %s.",
+        "apartment_selected": "Người chơi %s đã chọn căn hộ %s %s.",
+        "added_keyholder": "Đã thêm %s làm người giữ chìa khóa cho tài sản %s.",
+        "removed_keyholder": "Đã xóa %s khỏi người giữ chìa khóa của tài sản %s.",
+        "rent_property": "Người chơi %s đã thuê tài sản %s.",
+        "buy_property": "Người chơi %s đã mua tài sản %s.",
+        "stop_renting": "Người chơi %s đã ngừng thuê tài sản %s.",
+        "add_decoration": "Người chơi %s đã thêm vật trang trí %s vào tài sản %s.",
+        "remove_decoration": "Người chơi %s đã xóa vật trang trí %s khỏi tài sản %s."
+    }
+}

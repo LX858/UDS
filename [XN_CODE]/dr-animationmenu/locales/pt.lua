@@ -1,0 +1,46 @@
+Locales["pt"] = {
+	["declined_request"] = "Pedido recusado",
+	["no_players_nearby"] = "Nenhum jogador encontrado por perto!",
+	["error"] = "Ocorreu um erro",
+	["too_far"] = "O jogador está muito longe",
+	["request_expired"] = "O pedido expirou",
+	["emote_request_sent"] = "Pedido de emote enviado",
+	["declined_request_desc"] = "O jogador recusou seu pedido",
+	["emote_request_received"] = "Você recebeu um pedido de emote",
+	["request_expired_desc"] = "O jogador não respondeu ao seu pedido a tempo",
+	["info"] = "Informação",
+	["forbidden_zone"] = "Emotes são totalmente proibidos nesta zona!",
+
+	["BIG_TITLE1"] = "ANIMAÇÃO",
+	["BIG_TITLE2"] = "AK4Y ROLEPLAY",
+	["BIG_TITLE3"] = "MENU",
+	["BIG_ANIMATIONPREVIEW"] = "PRÉVIA DA ANIMAÇÃO",
+	["BIG_GRABDESC"] = "Você pode usar os atalhos arrastando a animação com o mouse e soltando-a na seção de atalhos abaixo.",
+	["BIG_HELPSTITLE"] = "AJUDA",
+	["BIG_SHORTCUTSTITLE"] = "ATALHOS",
+	["BIG_TOTALTEXT"] = "Total",
+	["BIG_ANIMATIONSTEXT"] = "Animações",
+
+
+	["SMALL_TITLE1"] = "ANIMAÇÃO",
+	["SMALL_TITLE2"] = "MENU",
+	["SMALL_TITLE3"] = "TEXTO AQUI",
+	["SMALL_SHORTCUTSTITLE"] = "ATALHOS RÁPIDOS",
+	
+	["FAVORITES"] = "Favoritos",
+	["ANIMATION"] = "ANIMAÇÃO",
+	["DISABLE"] = "DESATIVAR",
+	["ENABLE"] = "ATIVAR",
+	["EMPTY"] = "VAZIO",
+	["CLICK"] = "CLIQUE",
+	["USE"] = "USAR",
+	["PREVIEW"] = "PRÉVIA",
+	["LEFT"] = "ESQUERDA",
+	["RIGHT"] = "DIREITA",
+	["SHORTCUTKEY"] = "SHIFT",
+ 
+	["WANT"] = "QUER",
+	["ANIMATIONWITHYOU"] = "ANIMAÇÃO COM VOCÊ",
+	["ACCEPT"] = "ACEITAR (Y)",
+	["DECLINE"] = "RECUSAR (N)"
+}

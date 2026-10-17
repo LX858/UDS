@@ -1,0 +1,23 @@
+Language = {
+    ['shop'] = 'Chợ Trái Cây',
+    ['sell_header'] = 'Bán Cam',
+    ['sell'] = 'Bán',
+    ['amount'] = 'Số Lượng',
+    ['buy_stuff'] = "Mua Đồ",
+    ['sell_fruit'] = "Bán Trái Cây",
+    ['pluck_orange'] = "Hái Cam",
+    ['pickup_fruit'] = "Nhặt Cam",
+    ['pick_prog'] = "Đang hái cam",
+    ['pickup_success'] = "Bạn đã tìm thấy một quả cam từ vườn!",
+    ['no_more'] = "Bạn không thể hái thêm cam từ cây này!",
+    ['sucess'] = "Thành Công",
+    ['no_basket'] = "Bạn không có sọt trên tay!",
+    ['no_fruit'] = "Bạn không có cam trong sọt này!",
+    ['basket_full'] = "Bạn không thể bỏ thêm cam vào sọt này!",
+    ['not_own'] = "Sọt này thuộc về người khác!",
+    ['no_job'] = "Bạn không có công việc này!",
+    ['submit'] = "Xác Nhận",
+    ['pickup_basket'] = "Đã nhặt sọt lên",
+    ['drop_basket'] = "Đã thả sọt xuống",
+} 
+

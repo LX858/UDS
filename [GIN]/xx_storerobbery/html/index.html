@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Robbery Minigame</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app" class="hidden">
+        <div class="terminal-container">
+            <!-- Header Bar -->
+            <div class="terminal-header">
+                <div class="terminal-title">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span id="terminal-mode-title">CYBER HACK TERMINAL v2.4</span>
+                </div>
+                <div class="terminal-status">
+                    <span class="status-dot"></span>
+                    <span id="session-status">ĐANG KẾT NỐI...</span>
+                </div>
+                <button id="btn-close" class="btn-close" title="Đóng Terminal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Content Area -->
+            <div class="terminal-body">
+                <!-- VIEW DÀNH CHO NGƯỜI CHƠI 1 (MÁY TÍNH) -->
+                <div id="pc-view" class="view-panel hidden">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-laptop-code"></i> MÀN HÌNH GIẢI MÃ (CHECK PASS)</h2>
+                        <p class="subtitle">Thử các chuỗi 6 chữ số dựa trên Mã Ẩn của đồng đội để tìm Mật Khẩu đúng</p>
+                    </div>
+
+                    <!-- Input 6 ô chữ số -->
+                    <div class="pin-container">
+                        <div class="pin-inputs" id="pin-inputs">
+                            <input type="text" maxlength="1" class="pin-box" data-index="1" autofocus>
+                            <input type="text" maxlength="1" class="pin-box" data-index="2">
+                            <input type="text" maxlength="1" class="pin-box" data-index="3">
+                            <input type="text" maxlength="1" class="pin-box" data-index="4">
+                            <input type="text" maxlength="1" class="pin-box" data-index="5">
+                            <input type="text" maxlength="1" class="pin-box" data-index="6">
+                        </div>
+
+                        <!-- Progress Bar 5s Loading -->
+                        <div id="pc-progress-container" class="progress-container hidden">
+                            <div class="progress-info">
+                                <span class="progress-label"><i class="fa-solid fa-spinner fa-spin"></i> ĐANG GIẢI MÃ DỮ LIỆU...</span>
+                                <span id="pc-progress-percent" class="progress-percent">0%</span>
+                            </div>
+                            <div class="progress-track">
+                                <div id="pc-progress-fill" class="progress-fill"></div>
+                            </div>
+                        </div>
+
+                        <button id="btn-submit" class="btn-action">
+                            <i class="fa-solid fa-key"></i> KÍCH HOẠT THỬ MẬT KHẨU (CHECK PASS)
+                        </button>
+                    </div>
+
+                    <!-- Lịch sử các lần thử -->
+                    <div class="attempts-section">
+                        <h3><i class="fa-solid fa-clock-rotate-left"></i> LỊCH SỬ THỬ NGHỆM (<span id="pc-attempt-count">0</span>/<span id="pc-max-attempts">10</span> LẦN THỬ)</h3>
+                        <div id="attempts-list" class="attempts-list">
+                            <div class="empty-attempts">Chưa có dữ liệu thử nghiệm nào...</div>
+                        </div>
+                    </div>
+
+                    <!-- Debug / Test Pass Container -->
+                    <div id="pc-debug-pass" class="debug-pass-box hidden">
+                        <i class="fa-solid fa-flask"></i> <span class="debug-label">TEST MODE (PASS CHÍNH XÁC):</span> <span id="pc-debug-pass-val" class="debug-value">------</span>
+                    </div>
+                </div>
+
+                <!-- VIEW DÀNH CHO NGƯỜI CHƠI 2 (KÉT SẮT - THẺ XANH DƯƠNG) -->
+                <div id="safe-view" class="view-panel hidden">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-microchip"></i> ĐẦU ĐỌC THẺ & BẢNG MỞ KÉT SẮT</h2>
+                        <p class="subtitle">Đọc mã 10 chữ số cho đồng đội ở PC và Nhập 6 chữ số mật khẩu chính xác để Mở Két</p>
+                    </div>
+
+                    <div class="card-display">
+                        <div class="card-chip"><i class="fa-solid fa-sim-card"></i> BLUE CARD KEY</div>
+                        <div class="card-label">MÃ ẨN (HIDENUMBER):</div>
+                        <div id="card-hidenumber" class="hidenumber-text">----------</div>
+                        <div class="card-hint">
+                            <i class="fa-solid fa-circle-info"></i> Đọc mã 10 chữ số cho đồng đội ở PC thử nghiệm, sau đó nhập 6 chữ số mật khẩu tìm được bên dưới!
+                        </div>
+                    </div>
+
+                    <!-- Ô nhập 6 chữ số giải mã mở két -->
+                    <div class="pin-container safe-unlock-container">
+                        <div class="unlock-label">
+                            <span><i class="fa-solid fa-lock-open"></i> NHẬP MẬT KHẨU MỞ KÉT SẮT (6 CHỮ SỐ):</span>
+                            <span class="safe-attempts-badge"><i class="fa-solid fa-triangle-exclamation"></i> LẦN THỬ SAI: <span id="safe-attempt-count">0</span>/<span id="safe-max-attempts">3</span></span>
+                        </div>
+                        <div class="pin-inputs" id="safe-pin-inputs">
+                            <input type="text" maxlength="1" class="pin-box safe-pin-box" data-index="1">
+                            <input type="text" maxlength="1" class="pin-box safe-pin-box" data-index="2">
+                            <input type="text" maxlength="1" class="pin-box safe-pin-box" data-index="3">
+                            <input type="text" maxlength="1" class="pin-box safe-pin-box" data-index="4">
+                            <input type="text" maxlength="1" class="pin-box safe-pin-box" data-index="5">
+                            <input type="text" maxlength="1" class="pin-box safe-pin-box" data-index="6">
+                        </div>
+                        <button id="btn-unlock-safe" class="btn-action btn-unlock">
+                            <i class="fa-solid fa-unlock"></i> MỞ KHÓA KÉT SẮT
+                        </button>
+                    </div>
+
+                    <!-- Debug / Test Pass Container -->
+                    <div id="safe-debug-pass" class="debug-pass-box hidden">
+                        <i class="fa-solid fa-flask"></i> <span class="debug-label">TEST MODE (PASS CHÍNH XÁC):</span> <span id="safe-debug-pass-val" class="debug-value">------</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="terminal-footer">
+                <div class="footer-info">
+                    <i class="fa-solid fa-shield-halved"></i> SYSTEM ENCRYPTION: SECURE SESSION
+                </div>
+                <div class="footer-instructions">
+                    [ESC / BẤM X ĐỂ HỦY MINIGAME DÀNH CHO CẢ 2 NGƯỜI CHƠI]
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

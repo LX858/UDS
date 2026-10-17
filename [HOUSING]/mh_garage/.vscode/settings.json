@@ -1,0 +1,6 @@
+{
+    "Lua.diagnostics.disable": [
+        "cast-local-type"
+    ],
+    "lua.targetVersion": "5.3"
+}

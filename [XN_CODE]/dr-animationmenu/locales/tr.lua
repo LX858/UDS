@@ -1,0 +1,46 @@
+Locales["tr"] = {
+	["declined_request"] = "Istek reddedildi",
+	["no_players_nearby"] = "Yakında oyuncu bulunamadı!",
+	["error"] = "Bir hata oluştu",
+	["too_far"] = "Oyuncu çok uzakta",
+	["request_expired"] = "Istek süresi doldu",
+	["emote_request_sent"] = "Emote isteği gönderildi",
+	["declined_request_desc"] = "Oyuncu isteğinizi reddetti",
+	["emote_request_received"] = "Bir emote isteği aldınız",
+	["request_expired_desc"] = "Oyuncu, isteğinize zamanında cevap vermedi",
+	["info"] = "Bilgi",
+	["forbidden_zone"] = "Bu bölgede emote kullanımı kesinlikle yasaktır!",
+
+	["BIG_TITLE1"] = "ANIMASYON",
+	["BIG_TITLE2"] = "AK4Y ROLEPLAY",
+	["BIG_TITLE3"] = "MENÜ",
+	["BIG_ANIMATIONPREVIEW"] = "ANIMASYON ÖNIZLEME",
+	["BIG_GRABDESC"] = "Animasyonu fare ile sürükleyip aşağıdaki kısayol bölümüne bırakabilirsiniz.",
+	["BIG_HELPSTITLE"] = "YARDIM",
+	["BIG_SHORTCUTSTITLE"] = "KISAYOLLAR",
+	["BIG_TOTALTEXT"] = "Toplam",
+	["BIG_ANIMATIONSTEXT"] = "Animasyonlar",
+
+
+	["SMALL_TITLE1"] = "ANIMASYON",
+	["SMALL_TITLE2"] = "MENÜ",
+	["SMALL_TITLE3"] = "BURAYA METIN",
+	["SMALL_SHORTCUTSTITLE"] = "HIZLI KISAYOLLAR",
+	
+	["FAVORITES"] = "Favoriler",
+	["ANIMATION"] = "ANIMASYON",
+	["DISABLE"] = "KAPAT",
+	["ENABLE"] = "ETKINLEŞTIR",
+	["EMPTY"] = "BOŞ",
+	["CLICK"] = "TIKLA",
+	["USE"] = "KULLAN",
+	["PREVIEW"] = "ÖNIZLEME",
+	["LEFT"] = "SOL",
+	["RIGHT"] = "SAĞ",
+	["SHORTCUTKEY"] = "SHIFT",
+ 
+	["WANT"] = "ISTIYOR",
+	["ANIMATIONWITHYOU"] = "SENINLE ANIMASYON",
+	["ACCEPT"] = "KABUL ET (Y)",
+	["DECLINE"] = "REDDET (N)"
+}

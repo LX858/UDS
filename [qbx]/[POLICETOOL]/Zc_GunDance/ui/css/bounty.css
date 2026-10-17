@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Sriracha&display=swap');
+
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: 'Sriracha', cursive !important;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+#Bounty_IMG {
+    width: 159px;
+    height: 159px;
+    background-image: url('https://cdn.discordapp.com/attachments/834797426878971944/1043698606001115206/unknown.png');
+    background-repeat: no-repeat;
+    background-size: contain;
+    margin: 0;
+    position: absolute;
+    top: 21.6%;
+    right: 18%;
+}
+
+.Bounty_Container {
+    width: 246px;
+    height: 366px;
+    background-image: url('https://media.discordapp.net/attachments/834797426878971944/1043671596755324949/2mugshot.png');
+    background-repeat: no-repeat;
+    background-size: contain;
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    right: -2%;
+    transform: translate(-50%, -50%);
+}
+
+.Bounty_Header {
+    margin: 0;
+    position: absolute;
+    top: 7.2%;
+    right: 4%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    font-size: 1vw;
+    /* font-family: 'Ubuntu', sans-serif; */
+    font-weight: 700;
+    color: #fff;
+}
+
+.Bounty_Name {
+    width: 200px;
+    /* background-color: aquamarine; */
+    margin: 0;
+    position: absolute;
+    top: 72%;
+    font-size: 17px;
+    right: 9%;
+    display: flex;
+    justify-content: center;
+}
+
+.Bounty_Money {
+    width: 160px;
+    /* background-color: #c9841dad; */
+    margin: 0;
+    position: absolute;
+    top: 77%;
+    font-size: 28px;
+    font-weight: bold;
+    right: 17%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.Bounty_HeaderTime {
+    top: 88%;
+    right: 7%;
+    font-size: 11px;
+    position: absolute;
+}
+.Bounty_Time {
+    margin: 0;
+    position: absolute;
+    top: 92%;
+    font-size: 14px;
+    right: 7%;
+    /* transform: translate(-50%, -50%); */
+}
+
+
+.Bounty_HeaderText {
+    position: absolute;
+    top: 88%;
+    font-size: 11px;
+    left: 7%;
+}
+.Bounty_Text {
+    position: absolute;
+    top: 92%;
+    left: 10%;
+    font-size: 13px;
+}
+.Bounty_HeaderOut {
+    bottom: -10%;
+    position: absolute;
+    width: 246px;
+    display: flex;
+    /* background-color: aquamarine; */
+    font-size: 20px;
+    justify-content: center;
+    /* font-weight: bold; */
+}
+
+#textOut{
+    color: #fff;
+}

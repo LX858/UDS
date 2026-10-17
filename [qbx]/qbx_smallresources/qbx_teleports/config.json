@@ -1,0 +1,59 @@
+{
+    "teleports": [
+        [
+            {
+                "_name": "Elevator @ labs",
+                "coords": [3540.74, 3675.59, 20.99, 167.5],
+                "allowVehicle": false,
+                "drawText": "[E] Take Elevator Up",
+                "ignoreGround": true
+            },
+            {
+                "coords": [3540.74, 3675.59, 28.11, 172.5],
+                "allowVehicle": false,
+                "drawText": "[E] Take Elevator Down"
+            }
+        ],
+        [
+            {
+                "_name": "Thang may TL",
+                "coords": [-817.98, -705.74, 28.06],
+                "allowVehicle": false,
+                "drawText": "[E] Lên tầng 2",
+                "ignoreGround": true
+            },
+            {
+                "coords": [-817.91, -705.83, 32.34],
+                "allowVehicle": false,
+                "drawText": "[E] Xuống"
+            }
+        ],
+        [
+            {
+                "_name": "Thang may TL2",
+                "coords": [-818.0, -709.58, 32.34],
+                "allowVehicle": false,
+                "drawText": "[E] Lên tầng thượng",
+                "ignoreGround": true
+            },
+            {
+                "coords": [-820.02, -704.89, 121.27],
+                "allowVehicle": false,
+                "drawText": "[E] Xuống"
+            }
+        ],
+        [
+            {
+                "_name": "Coke Processing Enter/Exit",
+                "coords": [909.49, -1589.22, 30.51, 91.74],
+                "allowVehicle": false,
+                "drawText": "[E] Enter Coke Processing"
+            },
+            {
+                "coords": [1088.81, -3187.57, -38.99, 181.2],
+                "allowVehicle": false,
+                "drawText": "[E] Leave"
+            }
+        ]
+    ]
+}

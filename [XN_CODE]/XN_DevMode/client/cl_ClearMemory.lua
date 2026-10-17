@@ -1,0 +1,6 @@
+-- CreateThread(function()
+--     while true do 
+--         Wait(60000)
+--         TriggerEvent('1307_Core:ClientMemoryGarbage')
+--     end
+-- end)

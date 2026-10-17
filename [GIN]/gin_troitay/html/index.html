@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minigame Đối Kháng Trói Tay</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div id="duel-container" class="hidden">
+        <div class="glass-card">
+            <!-- Header -->
+            <div class="card-header">
+                <div class="title-wrap">
+                    <i class="fa-solid fa-handcuffs title-icon"></i>
+                    <h2>ĐỐI KHÁNG TRÓI TAY</h2>
+                </div>
+                <div class="timer-badge">
+                    <i class="fa-solid fa-clock"></i>
+                    <span id="timer-text">10.0s</span>
+                </div>
+            </div>
+
+            <!-- Role Badge -->
+            <div class="role-container">
+                <div id="role-badge" class="role-badge tyer-theme">
+                    <span id="role-title">BẠN LÀ NGƯỜI TRÓI</span>
+                    <span id="role-desc">Spam phím [E] để đẩy vạch vượt mốc 60%!</span>
+                </div>
+            </div>
+
+            <!-- Tug of War Bar -->
+            <div class="bar-section">
+                <div class="bar-labels">
+                    <span class="label-tyer"><i class="fa-solid fa-rope"></i> NGƯỜI TRÓI</span>
+                    <span class="label-target">NẠN NHÂN <i class="fa-solid fa-shield-halved"></i></span>
+                </div>
+
+                <div class="progress-track">
+                    <!-- Red Bar (Tyer Progress) -->
+                    <div id="red-fill" class="fill-bar red-fill" style="width: 0%;"></div>
+                    <!-- Blue Bar (Target Progress) -->
+                    <div id="blue-fill" class="fill-bar blue-fill" style="width: 100%;"></div>
+
+                    <!-- Target Marker Line (Vạch đỏ cố định ở mốc 60%) -->
+                    <div class="center-line"></div>
+                    <div class="center-tag">60%</div>
+
+                    <!-- Dynamic Slider Handle (Vạch chạy ranh giới động) -->
+                    <div id="slider-handle" class="slider-handle" style="left: 0%;">
+                        <div class="handle-line"></div>
+                        <div id="handle-percentage" class="handle-val">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Yellow Notice Box -->
+            <div class="yellow-notice-box">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="yellow-notice-text">Nạn nhân giữ vạch <strong class="highlight-target">DƯỚI 60%</strong> khi hết 10s sẽ <strong class="highlight-target">KHÔNG BỊ TRÓI</strong>!</span>
+            </div>
+
+            <!-- Key Spam Action Box -->
+            <div class="action-section">
+                <div id="key-cap" class="key-cap">
+                    <span>E</span>
+                </div>
+                <div class="action-text">
+                    <p class="main-prompt">SPAM PHÍM <span class="highlight-key">[E]</span> ĐỂ CHIẾN THẮNG!</p>
+                    <p class="sub-prompt">Bắt đầu từ 0%: Khi hết 10s, vạch từ 60% trở lên = Trói | Dưới 60% = Nạn nhân thoát</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Overlay -->
+        <div id="result-overlay" class="result-overlay hidden">
+            <div class="result-box">
+                <h1 id="result-title" class="win-title">CHIẾN THẮNG!</h1>
+                <p id="result-desc">Bạn đã áp đảo đối thủ thành công!</p>
+            </div>
+        </div>
+    </div>
+
+    <script href="script.js" src="script.js"></script>
+</body>
+
+</html>

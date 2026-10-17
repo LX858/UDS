@@ -1,0 +1,21 @@
+{
+  "name": "lb-phone-ui",
+  "version": "2.0.0",
+  "description": "LB Phone UI - React based phone interface",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "framer-motion": "^10.0.0",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^3.1.0",
+    "vite": "^4.0.0"
+  }
+}

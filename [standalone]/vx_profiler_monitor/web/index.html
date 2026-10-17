@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VX Server Profiler</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="login" class="login-shell">
+    <form id="login-form" class="login-card">
+      <div class="eyebrow">VX / SERVER PROFILER</div>
+      <h1>Phân tích 350 frame</h1>
+      <p>Dashboard chỉ mở trên chính VPS. Nhập token monitor để xem các mẫu profiler của server.</p>
+      <label for="token">Access token</label>
+      <input id="token" type="password" autocomplete="off" required>
+      <button type="submit">Mở dashboard</button>
+      <div id="login-error" class="error" role="alert"></div>
+    </form>
+  </div>
+  <div id="dashboard" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">VX</span><span>Server<br>Profiler</span></div>
+      <div class="nav-caption">THEO DÕI</div>
+      <div class="nav active">Tổng quan <span>01</span></div>
+      <div class="sidebar-bottom">
+        <div>350 frame / mẫu<br>30 giây / lượt bắt đầu</div>
+        <button id="logout" class="quiet">Đóng phiên</button>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div><div class="eyebrow">SERVER TELEMETRY / CPU WORK</div><h1>Profiler</h1></div>
+        <div class="top-actions"><span id="state" class="badge">Đang tải</span><button id="refresh" class="outline">Làm mới</button></div>
+      </header>
+      <div id="notice" class="notice hidden" role="status"></div>
+      <section class="metrics" aria-label="Số liệu chính">
+        <div class="metric"><span>Số mẫu</span><strong id="metric-samples">—</strong><small id="metric-frames">Đang tải</small></div>
+        <div class="metric"><span>P95 frame</span><strong id="metric-p95">—</strong><small>Ước lượng theo bước 1 ms</small></div>
+        <div class="metric"><span>Frame chậm nhất</span><strong id="metric-max">—</strong><small id="metric-slow">Trên 50 ms: —</small></div>
+        <div class="metric"><span>Lượt bị bỏ / lỗi</span><strong id="metric-skipped">—</strong><small id="metric-last">Chưa có mẫu</small></div>
+      </section>
+      <div class="toolbar">
+        <div class="segmented" role="group" aria-label="Khoảng thời gian">
+          <button class="window active" data-window="5m">5 phút</button>
+          <button class="window" data-window="1h">1 giờ</button>
+          <button class="window" data-window="24h">24 giờ</button>
+        </div>
+        <span id="range" class="range">Đang tải khoảng thời gian…</span>
+      </div>
+      <section class="panel">
+        <div class="section-heading"><div><h2>Xu hướng thời gian frame</h2><p>Mỗi cột là P95 và mức cao nhất trong khoảng tương ứng.</p></div><span class="mode">FRAME WORK</span></div>
+        <div id="trend" class="trend"><div class="empty">Đang tính…</div></div>
+        <div class="legend"><span class="legend-p95">P95</span><span class="legend-max">Cao nhất</span></div>
+      </section>
+      <div class="grid">
+        <section class="panel">
+          <div class="section-heading"><div><h2>Resource tốn thời gian</h2><p>Thời gian riêng, không cộng lặp resource lồng nhau.</p></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Resource</th><th>Tổng ms</th><th>ms / frame</th><th>Lượt</th></tr></thead><tbody id="resources"></tbody></table></div>
+        </section>
+        <section class="panel">
+          <div class="section-heading"><div><h2>Scope / event nổi bật</h2><p>Thời gian bao gồm lời gọi con; dùng để tìm điểm nóng.</p></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Resource / scope</th><th>Tổng ms</th><th>Cao nhất</th></tr></thead><tbody id="scopes"></tbody></table></div>
+        </section>
+      </div>
+      <div class="grid">
+        <section class="panel">
+          <div class="section-heading"><div><h2>Frame chậm nhất</h2><p>Chỉ tính frame có đủ mốc bắt đầu và kết thúc.</p></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Thời gian mẫu</th><th>Frame</th><th>Thời gian</th></tr></thead><tbody id="slow-frames"></tbody></table></div>
+        </section>
+        <section class="panel">
+          <div class="section-heading"><div><h2>Mẫu gần đây</h2><p>Giữ 20 trace gần nhất, tối đa 512 MB; thống kê giữ 24 giờ.</p></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Frame</th><th>P95</th><th>Trace</th></tr></thead><tbody id="samples"></tbody></table></div>
+        </section>
+      </div>
+      <footer><span>Giá trị là thời gian làm việc được ghi trong trace, không phải CPU toàn máy hay thời gian chờ giữa các tick.</span><span id="updated">Chưa cập nhật</span></footer>
+    </main>
+  </div>
+</body>
+</html>

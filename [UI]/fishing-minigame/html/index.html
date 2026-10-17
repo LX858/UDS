@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fishing Minigame</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="fish-box">
+      <div id="green-bar"></div>
+      <div id="fish-circle">
+        <svg id="fish-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="32" height="32">
+          <!-- Thân cá -->
+          <ellipse cx="28" cy="32" rx="22" ry="12" fill="var(--fish-body)"/>
+          <!-- Đuôi cá -->
+          <polygon points="6,32 0,20 0,44" fill="var(--fish-fin)"/>
+          <!-- Vây lưng -->
+          <path d="M20,20 Q28,12 36,20" fill="var(--fish-fin)"/>
+          <!-- Vây bụng -->
+          <path d="M20,44 Q28,52 36,44" fill="var(--fish-fin)"/>
+          <!-- Mắt trắng -->
+          <circle cx="44" cy="29" r="4" fill="white"/>
+          <!-- Ngươi tử -->
+          <circle cx="45" cy="29" r="2" fill="#1a1a1a"/>
+          <!-- Vảy -->
+          <path d="M32,24 Q36,32 32,40" fill="none" stroke="var(--fish-scale)" stroke-width="1.5" opacity="0.7"/>
+          <path d="M24,25 Q28,32 24,39" fill="none" stroke="var(--fish-scale)" stroke-width="1.5" opacity="0.7"/>
+          <!-- Miệng -->
+          <path d="M50,33 Q54,36 50,36" fill="none" stroke="var(--fish-scale)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <div id="catch-meter">
+      <div id="catch-fill"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
+

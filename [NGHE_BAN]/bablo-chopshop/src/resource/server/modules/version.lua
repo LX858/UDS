@@ -1,0 +1,1 @@
+-- Version check removed for performance optimization

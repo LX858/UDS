@@ -1,0 +1,96 @@
+Config = Config or {}
+
+Config.stations = {
+    -- { -- La Mesa LS Customs
+    --     label = "Repair station",
+    --     job = 'mechanic',
+    --     checkMecs = false,
+    --     price = 100,
+    --     progress = 5000,
+    --     blip = { enabled = false, color = 0, sprite = 446, display = 4, scale = 0.6 },
+    --     type = 'zone', -- zone or prop
+    --     zone = {
+    --         points = {
+    --             vec3(-365.15, -155.85, 38.25),
+    --             vec3(-361.1, -135.73, 38.68),
+    --             vec3(-353.18, -112.42, 38.7),
+    --             vec3(-385.41, -100.37, 38.7),
+    --             vec3(-397.06, -104.95, 38.7),
+    --             vec3(-412.97, -77.07, 42.69),
+    --             vec3(-397.77, -63.74, 44.62),
+    --             vec3(-383.34, -27.85, 46.91),
+    --             vec3(-276.21, -64.84, 49.38),
+    --             vec3(-301.97, -166.49, 40.07)
+    --         },
+    --         thickness = 5
+    --     }
+    -- },
+    -- { -- Route 68 Harmony
+    --     label = "Repair station",
+    --     job = 'mechanic',
+    --     checkMecs = false,
+    --     price = 100,
+    --     progress = 5000,
+    --     blip = { enabled = false, color = 0, sprite = 446, display = 4, scale = 0.6 },
+    --     type = 'zone', -- zone or prop
+    --     zone = {
+    --         points = {
+    --             vec3(1171.92, 2645.99, 37.8),
+    --             vec3(1178.87, 2644.73, 37.8),
+    --             vec3(1178.01, 2635.96, 37.8),
+    --             vec3(1172.33, 2635.59, 37.8)
+    --         },
+    --         thickness = 5
+    --     }
+    -- },
+    -- { -- Beekers Garage
+    --     label = "Repair station",
+    --     job = 'mechanic',
+    --     checkMecs = false,
+    --     price = 100,
+    --     progress = 5000,
+    --     blip = { enabled = false, color = 0, sprite = 446, display = 4, scale = 0.6 },
+    --     type = 'zone', -- zone or prop
+    --     zone = {
+    --         points = {
+    --             vec3(116.42, 6624.58, 31.8),
+    --             vec3(113.01, 6621.05, 31.8),
+    --             vec3(105.44, 6627.51, 31.8),
+    --             vec3(109.25, 6631.74, 31.8)
+    --         },
+    --         thickness = 5
+    --     }
+    -- },
+    -- { -- Misson Row LSPD
+    --     label = "LSPD Repair Station",
+    --     job = 'police',
+    --     checkMecs = false,
+    --     price = 100,
+    --     progress = 5000,
+    --     blip = { enabled = false, color = 0, sprite = 446, display = 4, scale = 0.6 },
+    --     type = 'zone', -- zone or prop
+    --     zone = {
+    --         points = {
+    --     		vec3(452.0, -969.5, 26.0),
+    --             vec3(452.14999389648, -974.0, 26.0),
+    --             vec3(445.5, -973.75, 26.0),
+    --             vec3(445.5, -969.5, 26.0),
+    --         },
+    --         thickness = 5
+    --     }
+    -- },
+    -- { -- Route 68 BCSO
+    --     label = "BCSO Repair Station",
+    --     job = 'police',
+    --     checkMecs = false,
+    --     price = 100,
+    --     progress = 5000,
+    --     blip = { enabled = false, color = 0, sprite = 446, display = 4, scale = 0.6 },
+    --     type = 'prop', -- zone or prop
+    --     prop = {
+    --         model = 'gr_prop_gr_bench_01b',
+    --         radius = 5,
+    --         coords = vec4(1050.85, 2746.15, 37.67, 178.12+180),
+    --     }
+    -- },
+}

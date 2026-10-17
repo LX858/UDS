@@ -1,0 +1,42 @@
+{
+   "error": {
+      "canceled": "Đã hủy..",
+      "cruise_control_disabled": "Kiểm soát hành trình đã tắt",
+      "cruise_control_unavailable": "Kiểm soát hành trình không khả dụng",
+      "deleted_recording": "Đã xóa bản ghi!",
+      "later_aligator": "Hẹn gặp lại!",
+      "stress_gain": "Cảm thấy căng thẳng hơn!",
+      "no_vehicle_nearby": "Không có xe gần đó để lật.",
+      "is_handcuffed": "Bạn đang bị còng tay.",
+      "is_fastened": "Bạn đang thắt dây an toàn."
+   },
+   "success": {
+      "cruise_control_enabled": "Kiểm soát hành trình đã bật",
+      "started_recording": "Bắt đầu ghi!",
+      "stopped_recording": "Dừng ghi!",
+      "saved_recording": "Đã lưu bản ghi!",
+      "stress_relief": "Cảm thấy thư giãn hơn!",
+      "flipped_car": "Lật xe thành công!"
+   },
+   "progress": {
+      "eating": "Đang ăn..",
+      "drinking": "Đang uống..",
+      "drinking_liquor": "Đang uống rượu..",
+      "quick_sniff": "Hít nhanh..",
+      "smoking_crack": "Đang hút crack..",
+      "popping_pills": "Đang uống thuốc..",
+      "healing": "Đang hồi phục..",
+      "smoking_meth": "Đang hút meth..",
+      "lighting_joint": "Đang đốt cần..",
+      "flipping_car": "Đang lật xe..."
+   },
+   "info": {
+      "minutes": "phút",
+      "seconds": "giây..",
+      "shuffleSeat": "Đổi chỗ ngồi"
+   },
+   "actions": {
+      "push_vehicle": "Nhấn [~g~SHIFT~w~] và [~g~E~w~] để đẩy xe cho đến khi thả [~g~SHIFT~w~]",
+      "toggle_cruise_control": "Bật/Tắt kiểm soát hành trình"
+   }
+}

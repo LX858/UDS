@@ -1,0 +1,7 @@
+{
+  "name": "xn_case",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd ui && pnpm build"
+  }
+}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+		<script src="./js/jquery.min.js"></script>
+		<link rel="stylesheet" href="./css/bootstrap.min.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+		<link rel="stylesheet" href="./css/showui.css">
+		<script src="./bootstrap.min.js"></script>
+
+		<title>rcore_television</title>
+		<style>
+		.dot{
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			width: 0.25vw;
+			height: 0.25vw;
+			background: white;
+			border-radius: 100%;
+			border-color: black;
+			border-style: solid;
+			box-sizing: unset !important;
+		}
+		</style>
+	</head>
+	<body style="background: transparent !important;">
+		<div class="dot" style="display:none;"></div>
+
+		<div class="modal fade" id="textboard" tabindex="-1" role="dialog" aria-hidden="true" data-keyboard="false"
+			 data-backdrop="static">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="textboard_header">Result</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="Close()">
+							<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<form onkeydown="return event.key != 'Enter';">
+							<div class="form-group">
+								<textarea class="textarea" style="min-height: 28vw;min-width: 100%;"></textarea>
+							</div>
+						</form>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="Close()">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Interactive TV Popup Modal (Mouse & Keyboard enabled) -->
+		<div id="tv-popup-overlay">
+			<div class="tv-popup-window size-standard" id="tv-popup-main-window">
+				<!-- Header -->
+				<div class="tv-header">
+					<div class="tv-header-left">
+						<div class="tv-logo-badge">
+							<div class="tv-status-dot"></div>
+							<span>TV SCREEN</span>
+						</div>
+						<div class="tv-title-info">
+							<div class="tv-title" id="tv-current-title">Màn hình TV</div>
+							<div class="tv-subtitle" id="tv-current-subtitle">Đang tải...</div>
+						</div>
+					</div>
+
+					<!-- URL Input Bar -->
+					<div class="tv-url-bar">
+						<span class="tv-url-icon"><i class="fas fa-link"></i></span>
+						<input type="text" class="tv-url-input" id="tv-url-input-field" placeholder="Dán link YouTube, Twitch, MP4 hoặc Web URL..." />
+						<button type="button" class="tv-btn-play" id="tv-btn-submit-url">
+							<i class="fas fa-play"></i> Phát
+						</button>
+					</div>
+
+					<!-- Header Actions -->
+					<div class="tv-header-right">
+						<button type="button" class="tv-icon-btn" id="tv-btn-reload-screen" title="Làm mới màn hình">
+							<i class="fas fa-rotate-right"></i>
+						</button>
+						<button type="button" class="tv-icon-btn" id="tv-btn-toggle-size" title="Thay đổi kích thước cửa sổ">
+							<i class="fas fa-expand"></i>
+						</button>
+						<button type="button" class="tv-icon-btn btn-close" id="tv-btn-close-popup" title="Đóng (ESC)">
+							<i class="fas fa-xmark"></i>
+						</button>
+					</div>
+				</div>
+
+				<!-- Body Screen -->
+				<div class="tv-screen-body">
+					<!-- Active Iframe / Video Container -->
+					<div id="tv-frame-container" style="width:100%;height:100%;"></div>
+
+					<!-- Standby / Channels Grid View -->
+					<div id="tv-standby-container" class="tv-standby-view" style="display:none;">
+						<div class="tv-standby-header">
+							<h2><i class="fas fa-tv" style="color: #3b82f6; margin-right: 8px;"></i> DANH SÁCH KÊNH TRUYỀN HÌNH</h2>
+							<p>Chọn kênh bên dưới hoặc dán liên kết vào thanh tìm kiếm phía trên</p>
+						</div>
+						<div class="tv-channels-grid" id="tv-channels-list"></div>
+					</div>
+				</div>
+
+				<!-- Footer -->
+				<div class="tv-footer">
+					<div class="tv-footer-left">
+						<div class="tv-volume-control">
+							<span class="tv-vol-icon"><i class="fas fa-volume-high"></i></span>
+							<input type="range" class="tv-vol-slider" id="tv-volume-slider-input" min="0" max="100" value="30" />
+							<span class="tv-vol-text" id="tv-volume-percent-text">30%</span>
+						</div>
+						<button type="button" class="tv-btn-stop" id="tv-btn-stop-playback">
+							<i class="fas fa-stop"></i> Dừng TV
+						</button>
+						<button type="button" class="tv-btn-channels" id="tv-btn-toggle-channels">
+							<i class="fas fa-list"></i> Danh sách kênh
+						</button>
+					</div>
+					<div class="tv-footer-right">
+						<div class="tv-hint-tag">
+							<span>Chuột & Bàn phím: </span>
+							<span class="tv-kbd">Bật</span>
+						</div>
+						<div class="tv-hint-tag">
+							<span>Đóng: </span>
+							<span class="tv-kbd">ESC</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="./js/showui.js"></script>
+	</body>
+	<script>
+		function Close(){
+ 			$("#textboard").modal("hide");
+ 			$.post('https://rcore_television/declined', JSON.stringify({}));
+		}
+
+		$(function(){
+			window.addEventListener('message', function(event) {
+				var item = event.data;
+				if(item.type === "showdot"){
+					$(".dot").show("slow");
+				}
+				if(item.type === "hidedot"){
+					$(".dot").hide("slow");
+				}
+
+				if(item.type === "display_for_copy"){
+					$('#textboard').modal("show");
+					$(".textarea").val(item.text);
+				}
+			})
+		});
+	</script>
+</html>

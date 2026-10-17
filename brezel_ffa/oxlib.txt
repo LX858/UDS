@@ -1,0 +1,3 @@
+For this resource you need OX_LIB 
+
+download : https://github.com/overextended/ox_lib/releases/

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Bomber Panel</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
+        body { background:transparent; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; }
+        @keyframes panelIn { from{opacity:0;transform:translateY(-20px) scale(0.98)} to{opacity:1;transform:translateY(0) scale(1)} }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* ADMIN PANEL */
+        .admin-panel { display:none; width:860px; background:rgba(10,10,25,0.97); border-radius:20px; border:1px solid rgba(139,92,246,0.4); box-shadow:0 0 0 1px rgba(139,92,246,0.1),0 30px 80px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,255,255,0.05); animation:panelIn 0.25s ease-out; overflow:hidden; }
+        .admin-panel.show { display:block; }
+
+        /* Header */
+        .panel-header { background:linear-gradient(135deg,#7c3aed 0%,#a855f7 50%,#ec4899 100%); padding:20px 30px; display:flex; align-items:center; justify-content:space-between; }
+        .panel-header-left { display:flex; align-items:center; gap:12px; }
+        .header-icon { width:44px; height:44px; background:rgba(255,255,255,0.15); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+        .header-title { color:#fff; font-size:22px; font-weight:800; letter-spacing:1.5px; }
+        .header-sub { color:rgba(255,255,255,0.7); font-size:12px; margin-top:2px; }
+        .header-badge { background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.3); border-radius:20px; padding:6px 16px; color:#fff; font-size:12px; font-weight:700; letter-spacing:1px; }
+
+        /* Notify bar */
+        .notify-bar { padding:14px 24px; background:rgba(255,255,255,0.02); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; gap:10px; }
+        .btn-notify-start { flex:1; padding:10px 16px; border-radius:10px; border:1px solid rgba(34,197,94,0.4); background:rgba(34,197,94,0.12); color:#4ade80; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+        .btn-notify-start:hover { background:rgba(34,197,94,0.25); border-color:rgba(34,197,94,0.7); transform:translateY(-1px); }
+        .btn-notify-end { flex:1; padding:10px 16px; border-radius:10px; border:1px solid rgba(236,72,153,0.4); background:rgba(236,72,153,0.12); color:#f472b6; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+        .btn-notify-end:hover { background:rgba(236,72,153,0.25); border-color:rgba(236,72,153,0.7); transform:translateY(-1px); }
+
+        /* Body */
+        .panel-body { display:flex; }
+        .col-left { flex:1; padding:20px 20px 20px 24px; border-right:1px solid rgba(255,255,255,0.05); }
+        .col-right { flex:1; padding:20px 24px 20px 20px; display:flex; flex-direction:column; gap:16px; }
+
+        /* Section */
+        .section { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:18px; margin-bottom:16px; }
+        .section:last-child { margin-bottom:0; }
+        .section-title { font-size:12px; font-weight:700; color:#a78bfa; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+        .section-title::after { content:''; flex:1; height:1px; background:rgba(167,139,250,0.2); }
+
+        /* Form */
+        .form-group { margin-bottom:12px; }
+        .form-group:last-child { margin-bottom:0; }
+        .form-label { display:block; font-size:11px; font-weight:600; color:rgba(255,255,255,0.45); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.8px; }
+        .form-input { width:100%; padding:10px 14px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#fff; font-size:14px; font-weight:500; transition:all 0.2s; outline:none; }
+        .form-input:focus { background:rgba(139,92,246,0.1); border-color:rgba(139,92,246,0.6); box-shadow:0 0 0 3px rgba(139,92,246,0.12); }
+        .form-input option { background:#1a1a2e; color:#fff; }
+
+        /* Count buttons */
+        .count-group { display:flex; gap:8px; }
+        .count-btn { flex:1; padding:9px 0; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:rgba(255,255,255,0.55); font-size:14px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+        .count-btn:hover { background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.4); color:#a78bfa; }
+        .count-btn.active { background:rgba(139,92,246,0.25); border-color:rgba(139,92,246,0.7); color:#c4b5fd; box-shadow:0 0 12px rgba(139,92,246,0.2); }
+
+        /* Info */
+        .info-grid { display:flex; flex-direction:column; gap:10px; }
+        .info-row { display:flex; align-items:center; justify-content:space-between; }
+        .info-key { font-size:13px; color:rgba(255,255,255,0.4); font-weight:500; }
+        .info-val { font-size:13px; color:rgba(255,255,255,0.9); font-weight:700; }
+
+        /* Status */
+        .status-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.8px; }
+        .status-badge::before { content:''; width:6px; height:6px; border-radius:50%; }
+        .status-idle { background:rgba(100,116,139,0.2); color:#94a3b8; border:1px solid rgba(100,116,139,0.3); }
+        .status-idle::before { background:#64748b; }
+        .status-waiting { background:rgba(234,179,8,0.15); color:#fbbf24; border:1px solid rgba(234,179,8,0.3); }
+        .status-waiting::before { background:#fbbf24; box-shadow:0 0 6px #fbbf24; animation:blink 1.2s infinite; }
+        .status-running { background:rgba(34,197,94,0.15); color:#4ade80; border:1px solid rgba(34,197,94,0.3); }
+        .status-running::before { background:#4ade80; box-shadow:0 0 6px #4ade80; animation:blink 0.8s infinite; }
+
+        /* Player list */
+        .player-list { max-height:160px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-top:12px; }
+        .player-list-empty { text-align:center; color:rgba(255,255,255,0.25); font-size:13px; padding:24px 0; }
+        .player-item { display:flex; align-items:center; gap:8px; padding:7px 10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:8px; font-size:13px; font-weight:600; color:rgba(255,255,255,0.8); transition:all 0.2s; }
+        .player-item:hover { background:rgba(139,92,246,0.1); border-color:rgba(139,92,246,0.25); }
+        .player-num { width:22px; height:22px; background:rgba(139,92,246,0.2); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#a78bfa; flex-shrink:0; }
+        .player-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .btn-follow { padding:3px 9px; border-radius:6px; background:rgba(59,130,246,0.15); color:#93c5fd; font-size:11px; font-weight:700; cursor:pointer; flex-shrink:0; border:1px solid rgba(59,130,246,0.3); transition:all 0.2s; }
+        .btn-follow:hover { background:rgba(59,130,246,0.35); color:#fff; border-color:rgba(59,130,246,0.6); }
+        .btn-follow.active { background:rgba(59,130,246,0.55); color:#fff; border-color:#3b82f6; }
+
+        /* Winner */
+        .winner-box { background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(249,115,22,0.15)); border:1px solid rgba(251,191,36,0.3); border-radius:12px; padding:16px; text-align:center; }
+        .winner-label { font-size:11px; font-weight:700; color:#fbbf24; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+        .winner-name { font-size:22px; font-weight:900; color:#fef3c7; text-shadow:0 0 20px rgba(251,191,36,0.5); }
+
+        /* Footer */
+        .panel-footer { padding:16px 24px; border-top:1px solid rgba(255,255,255,0.05); background:rgba(255,255,255,0.02); display:flex; gap:10px; }
+        .btn { padding:11px 0; border-radius:10px; border:none; font-size:13px; font-weight:800; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; transition:all 0.2s; outline:none; }
+        .btn:hover:not(:disabled) { transform:translateY(-2px); filter:brightness(1.15); }
+        .btn:active:not(:disabled) { transform:translateY(0); }
+        .btn:disabled { opacity:0.3; cursor:not-allowed; filter:grayscale(0.5); }
+        .btn-create { flex:1.3; background:linear-gradient(135deg,#7c3aed,#a855f7); color:#fff; box-shadow:0 4px 16px rgba(124,58,237,0.35); }
+        .btn-start  { flex:1;   background:linear-gradient(135deg,#059669,#10b981); color:#fff; box-shadow:0 4px 16px rgba(5,150,105,0.35); }
+        .btn-stop   { flex:1;   background:linear-gradient(135deg,#dc2626,#ef4444); color:#fff; box-shadow:0 4px 16px rgba(220,38,38,0.35); }
+        .btn-close  { flex:0.8; background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.6); border:1px solid rgba(255,255,255,0.1); }
+        .btn-close:hover:not(:disabled) { background:rgba(255,255,255,0.13); color:#fff; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:rgba(139,92,246,0.4); border-radius:4px; }
+        ::-webkit-scrollbar-thumb:hover { background:rgba(139,92,246,0.7); }
+
+        /* JOIN PANEL */
+        .join-panel { display:none; width:380px; background:rgba(10,10,25,0.97); border-radius:20px; border:1px solid rgba(139,92,246,0.4); box-shadow:0 30px 80px rgba(0,0,0,0.8); overflow:hidden; animation:panelIn 0.25s ease-out; }
+        .join-panel.show { display:block; }
+        .join-header { background:linear-gradient(135deg,#7c3aed 0%,#ec4899 100%); padding:30px 24px 24px; text-align:center; }
+        .join-icon { font-size:52px; margin-bottom:10px; }
+        .join-title { color:#fff; font-size:24px; font-weight:900; letter-spacing:2px; }
+        .join-sub { color:rgba(255,255,255,0.75); font-size:13px; margin-top:4px; }
+        .join-body { padding:20px; }
+        .join-info-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+        .join-info-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; }
+        .join-info-row + .join-info-row { border-top:1px solid rgba(255,255,255,0.05); }
+        .join-info-key { font-size:13px; color:rgba(255,255,255,0.45); font-weight:500; }
+        .join-info-val { font-size:13px; color:rgba(255,255,255,0.9); font-weight:700; }
+        .join-section-title { font-size:12px; font-weight:800; color:#a78bfa; text-transform:uppercase; letter-spacing:1px; margin:2px 0 10px; }
+        .join-player-list { max-height:180px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+        .join-player-empty { text-align:center; color:rgba(255,255,255,0.3); font-size:13px; padding:18px 0; }
+        .join-player-item { display:flex; align-items:center; gap:10px; padding:8px 10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:8px; }
+        .join-player-num { width:22px; height:22px; border-radius:6px; background:rgba(139,92,246,0.2); color:#c4b5fd; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+        .join-player-name { flex:1; color:rgba(255,255,255,0.9); font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .join-mode-label { font-size:12px; color:#fbbf24; font-weight:700; margin-bottom:10px; text-align:center; }
+        .fee-card { background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(249,115,22,0.12)); border:1px solid rgba(251,191,36,0.3); border-radius:12px; padding:14px; text-align:center; margin-bottom:16px; }
+        .fee-card-label { font-size:11px; font-weight:700; color:#fbbf24; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+        .fee-card-amount { font-size:32px; font-weight:900; color:#fef3c7; }
+        .join-actions { display:flex; gap:10px; }
+        .btn-join { flex:1; padding:12px 0; border-radius:10px; border:none; background:linear-gradient(135deg,#059669,#10b981); color:#fff; font-size:14px; font-weight:800; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; transition:all 0.2s; box-shadow:0 4px 16px rgba(5,150,105,0.35); }
+        .btn-join:hover { filter:brightness(1.15); transform:translateY(-2px); }
+        .btn-cancel-join { flex:1; padding:12px 0; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.6); font-size:14px; font-weight:800; letter-spacing:0.8px; text-transform:uppercase; cursor:pointer; transition:all 0.2s; }
+        .btn-cancel-join:hover { background:rgba(239,68,68,0.15); border-color:rgba(239,68,68,0.4); color:#f87171; }
+
+        /* Guide Card */
+        .guide-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px 16px; margin-bottom:14px; }
+        .guide-title { font-size:13px; font-weight:700; color:#fbbf24; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; text-align:center; }
+        .guide-item { display:flex; align-items:flex-start; gap:12px; padding:10px 12px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:8px; }
+        .guide-item:last-child { margin-bottom:0; }
+        .guide-icon { font-size:22px; flex-shrink:0; margin-top:2px; }
+        .guide-text { font-size:14px; color:rgba(255,255,255,0.95); line-height:1.6; }
+        .guide-text strong { color:#ffd700; display:block; font-size:15px; margin-bottom:3px; font-weight:700; }
+
+        /* Fee inline */
+        .fee-card { background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(249,115,22,0.12)); border:1px solid rgba(251,191,36,0.3); border-radius:12px; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .fee-label { font-size:13px; font-weight:600; color:#fbbf24; }
+        .fee-amount { font-size:18px; font-weight:900; color:#fef3c7; }
+    </style>
+</head>
+<body>
+
+    <!-- ADMIN PANEL -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="panel-header">
+            <div class="panel-header-left">
+                <div class="header-icon">💣</div>
+                <div>
+                    <div class="header-title">BOMBER ADMIN</div>
+                    <div class="header-sub">Quản lý sự kiện</div>
+                </div>
+            </div>
+            <div class="header-badge" id="headerStatus">● OFFLINE</div>
+        </div>
+
+        <div class="notify-bar">
+            <button class="btn-notify-start" id="btnNotifyStart">📢 Thông báo bắt đầu</button>
+            <button class="btn-notify-end" id="btnNotifyEnd">🏆 Thông báo kết thúc</button>
+        </div>
+
+        <div class="panel-body">
+            <div class="col-left">
+                <div class="section">
+                    <div class="section-title">⚙️ Cài đặt phòng</div>
+                    <div class="form-group">
+                        <div class="form-label">Số người tối đa</div>
+                        <div class="count-group">
+                            <button class="count-btn player-count-btn" data-count="10">10</button>
+                            <button class="count-btn player-count-btn active" data-count="20">20</button>
+                            <button class="count-btn player-count-btn" data-count="30">30</button>
+                            <button class="count-btn player-count-btn" data-count="50">50</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-label">Chọn map</div>
+                        <select class="form-input" id="mapSelect">
+                            <option value="map1">Map 1 - Vị trí tùy chỉnh</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-label">Thời gian trước khi bom rơi (giây)</div>
+                        <input class="form-input" type="number" id="waitTime" value="30" min="5" max="120">
+                    </div>
+                    <div class="form-group">
+                        <div class="form-label">Phí tham gia ($)</div>
+                        <input class="form-input" type="number" id="entryFee" value="0" min="0" max="1000000">
+                    </div>
+                    <div class="form-group">
+                        <div class="form-label">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;text-transform:none;color:rgba(255,255,255,0.7);">
+                                <input type="checkbox" id="autoNotify" checked style="width:16px;height:16px;cursor:pointer;accent-color:#a855f7;">
+                                <span>Tự động thông báo & cộng tiền khi kết thúc</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-right">
+                <div class="section">
+                    <div class="section-title">📊 Thông tin phòng</div>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <span class="info-key">Trạng thái</span>
+                            <span class="status-badge status-idle" id="roomStatus">Chờ</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Số người tham gia</span>
+                            <span class="info-val" id="playerCount">0 / 20</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-key">Map hiện tại</span>
+                            <span class="info-val" id="currentMap">Chưa chọn</span>
+                        </div>
+                    </div>
+                    <div class="player-list" id="playerList">
+                        <div class="player-list-empty">Chưa có người chơi tham gia</div>
+                    </div>
+                </div>
+                <div class="section" id="winnerSection" style="display:none">
+                    <div class="section-title">🏆 Người chiến thắng</div>
+                    <div class="winner-box">
+                        <div class="winner-label">🎉 Chúc mừng</div>
+                        <div class="winner-name" id="winnerName">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            <button class="btn btn-create" id="btnCreate">🎮 Tạo Phòng</button>
+            <button class="btn btn-start"  id="btnStart"  disabled>▶ Bắt Đầu</button>
+            <button class="btn btn-stop"   id="btnStop"   disabled>■ Kết Thúc</button>
+            <button class="btn btn-close"  id="btnClose">✕ Đóng</button>
+        </div>
+    </div>
+
+    <!-- JOIN PANEL -->
+    <div class="join-panel" id="joinPanel">
+        <div class="join-header">
+            <div class="join-icon">💣</div>
+            <div class="join-title">BOMBER EVENT</div>
+            <div class="join-sub">Sự kiện đặt bom</div>
+        </div>
+        <div class="join-body">
+            <div class="guide-card">
+                <div class="guide-title">📋 Hướng dẫn</div>
+                <div class="guide-item">
+                    <span class="guide-icon">❌</span>
+                    <div class="guide-text">
+                        <strong>Khi không ôm bom:</strong><br>
+                        Tránh xa người giữ bom
+                    </div>
+                </div>
+                <div class="guide-item">
+                    <span class="guide-icon">💣</span>
+                    <div class="guide-text">
+                        <strong>Khi đang ôm bom:</strong><br>
+                        Nhấn E để chuyền bom cho người gần nhất (bán kính 3m)
+                    </div>
+                </div>
+            </div>
+            <div class="join-mode-label" id="joinModeLabel">Xem danh sách phòng hiện tại</div>
+            <div class="join-section-title">👥 Danh sách người chơi</div>
+            <div class="join-player-list" id="joinPlayerList">
+                <div class="join-player-empty">Chưa có người chơi tham gia</div>
+            </div>
+            <div class="join-actions" style="margin-bottom:14px;">
+                <button class="btn-join" id="btnRefreshPlayers" style="flex:1;background:linear-gradient(135deg,#2563eb,#3b82f6);box-shadow:0 4px 16px rgba(37,99,235,0.35);">Làm mới danh sách</button>
+            </div>
+            <div class="fee-card">
+                <span class="fee-label">Phí tham gia:</span>
+                <span class="fee-amount">$<span id="joinEntryFee">0</span></span>
+            </div>
+            <div class="join-actions" id="joinActionArea">
+                <button class="btn-join" id="btnJoin">THAM GIA</button>
+                <button class="btn-cancel-join" id="btnCancelJoin">HỦY</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="nui://game/ui/jquery.js"></script>
+    <script src="script.js"></script>
+    <script src="join.js"></script>
+    <script>console.log('[BOMBER] Loading admin.js...');</script>
+    <script src="admin.js"></script>
+</body>
+</html>

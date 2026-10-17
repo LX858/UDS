@@ -1,0 +1,46 @@
+Locales["fr"] = {
+	["declined_request"] = "Demande refusée",
+	["no_players_nearby"] = "Aucun joueur trouvé à proximité !",
+	["error"] = "Une erreur s'est produite",
+	["too_far"] = "Le joueur est trop loin",
+	["request_expired"] = "La demande a expiré",
+	["emote_request_sent"] = "Demande d'emote envoyée",
+	["declined_request_desc"] = "Le joueur a refusé votre demande",
+	["emote_request_received"] = "Vous avez reçu une demande d'emote",
+	["request_expired_desc"] = "Le joueur n'a pas répondu à votre demande à temps",
+	["info"] = "Information",
+	["forbidden_zone"] = "Les animations sont totalement interdites dans cette zone !",
+
+	["BIG_TITLE1"] = "ANIMATION",
+	["BIG_TITLE2"] = "AK4Y ROLEPLAY",
+	["BIG_TITLE3"] = "MENU",
+	["BIG_ANIMATIONPREVIEW"] = "APERÇU DE L'ANIMATION",
+	["BIG_GRABDESC"] = "Vous pouvez utiliser les raccourcis en saisissant l'animation avec la souris et en la faisant glisser dans la section des raccourcis ci-dessous.",
+	["BIG_HELPSTITLE"] = "AIDE",
+	["BIG_SHORTCUTSTITLE"] = "RACCOURCIS",
+	["BIG_TOTALTEXT"] = "Total",
+	["BIG_ANIMATIONSTEXT"] = "Animations",
+
+
+	["SMALL_TITLE1"] = "ANIMATION",
+	["SMALL_TITLE2"] = "MENU",
+	["SMALL_TITLE3"] = "TEXTE ICI",
+	["SMALL_SHORTCUTSTITLE"] = "RACCOURCIS RAPIDES",
+	
+	["FAVORITES"] = "Favoris",
+	["ANIMATION"] = "ANIMATION",
+	["DISABLE"] = "DÉSACTIVER",
+	["ENABLE"] = "ACTIVER",
+	["EMPTY"] = "VIDE",
+	["CLICK"] = "CLIC",
+	["USE"] = "UTILISER",
+	["PREVIEW"] = "APERÇU",
+	["LEFT"] = "GAUCHE",
+	["RIGHT"] = "DROITE",
+	["SHORTCUTKEY"] = "SHIFT",
+ 
+	["WANT"] = "VEUT",
+	["ANIMATIONWITHYOU"] = "ANIMATION AVEC TOI",
+	["ACCEPT"] = "ACCEPTER (Y)",
+	["DECLINE"] = "REFUSER (N)"
+}

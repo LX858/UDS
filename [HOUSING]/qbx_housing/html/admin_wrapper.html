@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Wrapper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #adminFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: none;
+        }
+        
+        #adminFrame.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="adminFrame" src="admin.html"></iframe>
+    
+    <script>
+        const frame = document.getElementById('adminFrame');
+        
+        window.addEventListener('message', function(event) {
+            const data = event.data;
+            
+            if (data.action === 'loadAdminUI') {
+                frame.classList.add('active');
+            } else if (data.action === 'closeAdmin') {
+                frame.classList.remove('active');
+            } else {
+                // Forward message to iframe
+                frame.contentWindow.postMessage(data, '*');
+            }
+        });
+        
+        // Listen to messages from iframe
+        window.addEventListener('message', function(event) {
+            // Forward NUI callbacks from iframe to game
+            if (event.source === frame.contentWindow) {
+                if (event.data.type === 'nuiCallback') {
+                    fetch(`https://${GetParentResourceName()}/${event.data.callback}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(event.data.body || {})
+                    }).then(resp => resp.json()).then(resp => {
+                        // Send response back to iframe
+                        frame.contentWindow.postMessage({
+                            type: 'nuiResponse',
+                            callback: event.data.callback,
+                            response: resp
+                        }, '*');
+                    });
+                }
+            }
+        });
+        
+        function GetParentResourceName() {
+            return 'qbx_housing';
+        }
+    </script>
+</body>
+</html>

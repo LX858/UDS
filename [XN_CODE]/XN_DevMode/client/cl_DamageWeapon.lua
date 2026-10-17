@@ -1,0 +1,12 @@
+-- local Config = require 'config.config'
+
+-- Citizen.CreateThread(function()
+-- 	while true do
+-- 		Wait(200)
+-- 		for k, v in pairs(Config.Weapon) do
+-- 			if GetSelectedPedWeapon(PlayerPedId()) == GetHashKey(v.WeaponName) then
+-- 				N_0x4757f00bc6323cfe(GetHashKey(v.WeaponName), v.WeaponDamage) 
+-- 			end
+-- 		end
+-- 	end
+-- end)

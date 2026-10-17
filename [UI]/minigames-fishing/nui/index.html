@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pyhFishing</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- <link rel="stylesheet" href="index-8b8eb59b.css"> -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!--   -->
+    <div id="game" style="display: none;">
+        <!-- style=" display: none;" -->
+
+        <div id="container">
+            <div id="rod-wrapper">
+                <img src="rod.png" id="rod" />
+            </div>
+
+            <div id="bar">
+                <div id="fish"></div>
+                <div id="floater"></div>
+            </div>
+
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+
+        <!-- Văn bản hướng dẫn sẽ được cập nhật bằng JavaScript -->
+        <div id="instruction">Cá sẽ di chuyển theo nhiều mẫu khác nhau. Nhấn phím để theo dõi cá!</div>
+
+        <!-- Popup câu cá thành công -->
+        <div id="success-screen" style="display: none;" class="success-screen">
+            <div class="success-content">
+                🎣 Câu cá thành công!
+            </div>
+        </div>
+
+    </div>
+    <script src="main.js"></script>
+</body>
+
+</html>

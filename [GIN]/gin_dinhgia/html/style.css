@@ -1,0 +1,1142 @@
+/* ============================================================
+   GIN_DINHGIA - SAPPHIRE CYBER TECH UI (ROBOTO FONT - NO CSS BLUR)
+   FLOATING BOTTOM PROGRESS BAR & 5 SLOTS 1 HÀNG NGANG
+   ============================================================ */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(5, 8, 15, 0.88);
+    /* Solid dark overlay without CSS blur */
+}
+
+#app.processing-active {
+    background: transparent !important;
+    /* Màn hình trong suốt 100% khi chạy progressbar */
+}
+
+
+/* Modal Wrapper (1280px) */
+.valuation-modal {
+    width: 1280px;
+    max-width: 96vw;
+    background: #0b0f19;
+    /* Solid deep slate navy */
+    border: 1px solid rgba(6, 182, 212, 0.45);
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 35px rgba(6, 182, 212, 0.15);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Modal Header */
+.modal-header {
+    background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+    padding: 18px 26px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand-icon {
+    width: 46px;
+    height: 46px;
+    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff;
+    font-size: 22px;
+    box-shadow: 0 0 16px rgba(6, 182, 212, 0.5);
+}
+
+.brand-text h2 {
+    color: #ffffff;
+    font-size: 19px;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.brand-text .sub-title {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+}
+
+.brand-text .sub-title i {
+    color: #22d3ee;
+}
+
+.header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.time-mode-badge {
+    background: rgba(15, 23, 42, 0.85);
+    border-radius: 10px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.25s ease;
+}
+
+.time-mode-badge .mode-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+}
+
+.time-mode-badge .mode-text-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.time-mode-badge .mode-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+.time-mode-badge .mode-value {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+/* Chế độ Giờ Định Giá: Vàng cam công nghệ cao / Amber */
+.time-mode-badge.mode-appraisal {
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    box-shadow: inset 0 0 12px rgba(245, 158, 11, 0.15), 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.time-mode-badge.mode-appraisal .mode-icon {
+    background: rgba(245, 158, 11, 0.18);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #fbbf24;
+}
+
+.time-mode-badge.mode-appraisal .mode-label {
+    color: #cbd5e1;
+}
+
+.time-mode-badge.mode-appraisal .mode-value {
+    color: #f59e0b;
+}
+
+/* Chế độ Giờ Rửa Tiền: Xanh ngọc lục bảo / Emerald Neon */
+.time-mode-badge.mode-washing {
+    border: 1px solid rgba(16, 185, 129, 0.5);
+    box-shadow: inset 0 0 12px rgba(16, 185, 129, 0.15), 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.time-mode-badge.mode-washing .mode-icon {
+    background: rgba(16, 185, 129, 0.18);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    color: #34d399;
+}
+
+.time-mode-badge.mode-washing .mode-label {
+    color: #94a3b8;
+}
+
+.time-mode-badge.mode-washing .mode-value {
+    color: #10b981;
+}
+
+.market-timer-badge {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(6, 182, 212, 0.45);
+    border-radius: 10px;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: inset 0 0 12px rgba(6, 182, 212, 0.15);
+}
+
+.market-timer-badge .timer-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid rgba(6, 182, 212, 0.4);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #22d3ee;
+    font-size: 14px;
+}
+
+.market-timer-badge .timer-text-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.market-timer-badge .timer-label {
+    color: #94a3b8;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+}
+
+.market-timer-badge .timer-value {
+    color: #22d3ee;
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+    font-family: monospace, sans-serif;
+}
+
+.btn-close-modal {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #94a3b8;
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.btn-close-modal:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.6);
+    color: #f87171;
+}
+
+/* Modal Body */
+.modal-body {
+    padding: 22px 26px;
+    display: flex;
+    gap: 22px;
+    background: #0b0f19;
+}
+
+/* Panels */
+.panel {
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    height: 400px;
+    overflow: hidden;
+}
+
+.panel-inventory {
+    flex: 1;
+}
+
+.panel-appraisal {
+    flex: 1.45;
+    /* Rộng hơn để chứa 5 ô nằm trên 1 hàng ngang */
+}
+
+.panel-header {
+    background: #1e293b;
+    padding: 13px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.panel-title {
+    color: #f8fafc;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-title i {
+    color: #22d3ee;
+    font-size: 15px;
+}
+
+.item-count-badge {
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.cyan-badge {
+    background: rgba(6, 182, 212, 0.15);
+    color: #22d3ee;
+    border-color: rgba(6, 182, 212, 0.4);
+}
+
+.panel-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    position: relative;
+}
+
+/* Custom Scrollbar */
+.panel-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.panel-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.panel-content::-webkit-scrollbar-thumb {
+    background: rgba(6, 182, 212, 0.4);
+    border-radius: 3px;
+}
+
+.panel-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(6, 182, 212, 0.8);
+}
+
+/* Tab 1: Inventory Grid */
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.item-card {
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    cursor: grab;
+    transition: all 0.2s ease;
+    min-height: 110px;
+}
+
+.item-card * {
+    pointer-events: none;
+}
+
+.item-cardInSlot * {
+    pointer-events: none;
+}
+
+.item-card:hover {
+    border-color: #22d3ee;
+    background: #334155;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25);
+}
+
+.item-card:active {
+    cursor: grabbing;
+}
+
+.item-card.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    filter: grayscale(0.9);
+}
+
+.item-card.dragging, .item-cardInSlot.dragging {
+    opacity: 0.4 !important;
+    border-color: #22d3ee !important;
+    transform: scale(0.95);
+}
+
+.panel-inventory.drag-return-active {
+    border-color: #22d3ee !important;
+    box-shadow: inset 0 0 25px rgba(6, 182, 212, 0.25) !important;
+}
+
+.item-card .item-img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    margin-bottom: 4px;
+}
+
+.item-card .item-info {
+    text-align: center;
+    width: 100%;
+}
+
+.item-card .item-label {
+    color: #f1f5f9;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: block;
+}
+
+.item-card .item-price-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.item-card .item-price {
+    color: #22d3ee;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.item-card .item-old-price {
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 500;
+    text-decoration: line-through;
+}
+
+.item-card .item-qty-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: #0b0f19;
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* Price Trend Badges (Lên / Xuống / Không đổi) */
+.price-trend-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    line-height: 1.4;
+    border: 1px solid transparent;
+}
+
+.price-trend-badge.trend-up {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.45);
+    color: #10b981;
+}
+
+.price-trend-badge.trend-down {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #f87171;
+}
+
+.price-trend-badge.trend-stable {
+    background: rgba(148, 163, 184, 0.15);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #94a3b8;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #64748b;
+    gap: 12px;
+    text-align: center;
+}
+
+.empty-state .empty-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 26px;
+    color: #475569;
+}
+
+.empty-state p {
+    font-size: 13px;
+    font-weight: 400;
+}
+
+/* TAB 2: 5 Ô CHỨA NẰM TRÊN 1 HÀNG NGANG (SLOTS HORIZONTAL ROW) */
+.appraisal-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+}
+
+.slots-horizontal-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    /* 5 Ô CHỨA NẰM TRÊN 1 HÀNG NGANG DUY NHẤT */
+    gap: 12px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.appraisal-slot {
+    background: #1e293b;
+    border: 1px dashed rgba(6, 182, 212, 0.45);
+    border-radius: 8px;
+    height: 110px;
+    min-height: 110px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.appraisal-slot:hover {
+    border-color: #22d3ee;
+    background: rgba(6, 182, 212, 0.1);
+}
+
+.appraisal-slot.drag-over {
+    border-color: #22d3ee;
+    background: rgba(6, 182, 212, 0.2);
+    box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.35);
+}
+
+.appraisal-slot.occupied {
+    border-style: solid;
+    border-width: 1px;
+    border-color: #06b6d4;
+    background: #1e293b;
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.25);
+}
+
+.slot-badge {
+    display: none !important;
+}
+
+.slot-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+}
+
+.instruction-banner {
+    background: rgba(6, 182, 212, 0.06);
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #94a3b8;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.instruction-banner i {
+    color: #22d3ee;
+    font-size: 15px;
+}
+
+.instruction-banner b {
+    color: #f1f5f9;
+}
+
+.instruction-banner.banner-appraisal {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px dashed rgba(245, 158, 11, 0.45);
+    color: #fde68a;
+}
+
+.instruction-banner.banner-appraisal i {
+    color: #fbbf24;
+}
+
+.instruction-banner.banner-appraisal b {
+    color: #ffffff;
+}
+
+/* Footer & Live Calculation Box */
+.modal-footer {
+    background: #0f172a;
+    padding: 18px 26px;
+    border-top: 1px solid rgba(6, 182, 212, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calculation-container {
+    background: #1e293b;
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    border-radius: 10px;
+    padding: 12px 22px;
+    min-width: 480px;
+}
+
+.calc-tag {
+    color: #22d3ee;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.calc-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.calc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.calc-label {
+    color: #cbd5e1;
+}
+
+.calc-val {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.cyan-text {
+    color: #22d3ee;
+}
+
+.green-text {
+    color: #10b981;
+}
+
+.red-text {
+    color: #f87171;
+}
+
+.trend-stable-text {
+    color: #94a3b8;
+}
+
+/* Action Buttons */
+.action-bar {
+    display: flex;
+    gap: 12px;
+}
+
+.btn {
+    padding: 13px 26px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.btn-confirm {
+    background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.35);
+}
+
+.btn-confirm:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0891b2 0%, #2563eb 100%);
+    box-shadow: 0 6px 22px rgba(6, 182, 212, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-confirm:disabled {
+    background: #334155;
+    color: #64748b;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.btn-confirm.btn-locked-mode {
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%) !important;
+    border: 1px solid rgba(245, 158, 11, 0.45) !important;
+    color: #fbbf24 !important;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.15) !important;
+    cursor: not-allowed !important;
+    opacity: 0.95 !important;
+}
+
+.btn-confirm.btn-locked-mode i {
+    color: #f59e0b;
+}
+
+.btn-cancel {
+    background: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}
+
+.btn-cancel:hover {
+    background: rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.6);
+    color: #ef4444;
+}
+
+/* Floating Progress Bar ở phía dưới giữa màn hình */
+.processing-overlay {
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    max-width: 92vw;
+    z-index: 9999;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.bottom-loader-card {
+    background: #0f172a;
+    border: 1px solid rgba(6, 182, 212, 0.5);
+    border-radius: 14px;
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.85), 0 0 25px rgba(6, 182, 212, 0.2);
+}
+
+.loader-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.loader-spinner {
+    width: 42px;
+    height: 42px;
+    background: rgba(6, 182, 212, 0.15);
+    border: 1px solid #06b6d4;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #22d3ee;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.loader-text-group {
+    flex: 1;
+}
+
+.loader-title {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.loader-sub {
+    color: #94a3b8;
+    font-size: 11px;
+    display: block;
+    margin-top: 2px;
+}
+
+.progress-container {
+    width: 100%;
+    height: 10px;
+    background: #0b0f19;
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.progress-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #06b6d4 0%, #3b82f6 100%);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.6);
+    transition: width 0.1s linear;
+}
+
+.progress-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.progress-status {
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.progress-status i {
+    color: #22d3ee;
+}
+
+.progress-text {
+    color: #22d3ee;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.btn-cancel-process {
+    background: rgba(239, 68, 68, 0.18);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    color: #f87171;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-cancel-process:hover {
+    background: rgba(239, 68, 68, 0.35);
+    color: #ef4444;
+}
+
+/* Result Modal Popup (Thông Báo Kết Quả Nhận Tiền - Tĩnh Hoàn Toàn, Không Có Hiệu Ứng Di Chuyển) */
+.result-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: transparent;
+    /* Xóa hoàn toàn background màu đen phía sau */
+    backdrop-filter: none;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: auto;
+}
+
+.result-modal-card {
+    width: 580px;
+    max-width: 92vw;
+    background: #0b0f19;
+    border: 2px solid #10b981;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95), 0 0 45px rgba(16, 185, 129, 0.4);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* Hiệu ứng bung ra (Scale Pop Out) tại chính giữa màn hình, không trượt ngang */
+    animation: popOutScale 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes popOutScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.35);
+    }
+    70% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.result-header {
+    background: linear-gradient(90deg, #064e3b 0%, #0f172a 100%);
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.result-icon-badge {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff;
+    font-size: 24px;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+    animation: none !important;
+    transform: none !important;
+}
+
+.result-title-group h2 {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.8px;
+}
+
+.result-subtitle {
+    color: #a7f3d0;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 3px;
+    display: block;
+}
+
+.result-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: #0b0f19;
+}
+
+/* Thẻ tổng tiền quy đổi thực nhận */
+.result-payout-box {
+    background: linear-gradient(135deg, #064e3b 0%, #022c22 100%);
+    border: 1px solid #10b981;
+    border-radius: 12px;
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: inset 0 0 25px rgba(16, 185, 129, 0.2), 0 8px 25px rgba(16, 185, 129, 0.15);
+    animation: none !important;
+    transform: none !important;
+}
+
+.payout-box-title {
+    color: #a7f3d0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.payout-box-amount {
+    color: #34d399;
+    font-size: 36px;
+    font-weight: 900;
+    margin: 6px 0;
+    text-shadow: 0 0 25px rgba(52, 211, 153, 0.8);
+    letter-spacing: 1px;
+    animation: none !important;
+}
+
+.payout-box-note {
+    color: #6ee7b7;
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.8;
+}
+
+/* Section danh sách các item quy đổi */
+.result-summary-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.summary-title {
+    color: #cbd5e1;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.result-items-list {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.result-item-chip {
+    background: #1e293b;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.result-item-chip img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    margin-bottom: 4px;
+}
+
+.result-item-chip .chip-name {
+    color: #f1f5f9;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.result-item-chip .chip-price {
+    color: #34d399;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 1px;
+}
+
+/* Footer Nút bấm nhận tiền */
+.result-footer {
+    background: #0f172a;
+    padding: 18px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.btn-claim {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4);
+    font-size: 14px;
+    padding: 12px 24px;
+}
+
+.btn-claim:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 6px 24px rgba(16, 185, 129, 0.6);
+    transform: translateY(-1px);
+}
+
+.btn-cancel-result {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 12px 18px;
+}
+
+.btn-cancel-result:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #f87171;
+}

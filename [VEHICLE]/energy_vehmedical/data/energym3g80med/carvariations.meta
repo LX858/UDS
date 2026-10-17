@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<CVehicleModelInfoVariation>
+  <variationData>
+    <Item>
+      <modelName>energym3g80med</modelName>
+      <colors>
+        <Item>
+          <indices content="char_array">
+            111 
+            111 
+            111 
+            111
+            111
+            111
+            111
+          </indices>
+        </Item>
+      </colors>
+      <kits>
+        <Item>621_energym3g80med_modkit</Item>
+	      </kits>
+      <windowsWithExposedEdges />
+      <plateProbabilities>
+        <Probabilities>
+          <Item>
+            <Name>Liberty_Sity</Name>
+            <Value value="25" />
+          </Item>
+        </Probabilities>
+      </plateProbabilities>
+      <lightSettings value="1" />        
+	  <sirenSettings value="1" />
+    </Item>       
+
+  </variationData>
+</CVehicleModelInfoVariation>

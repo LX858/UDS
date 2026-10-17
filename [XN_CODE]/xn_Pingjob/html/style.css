@@ -1,0 +1,619 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@200..700&display=swap');
+
+@font-face {
+    font-family: 'UTM-Cookie';
+    src: url('./font/UTM-Cookies.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    font-family: "Oswald", sans-serif;
+    font-size: 0.8vw;
+}
+
+body {
+    /* display: none; */
+    background: none !important;
+    overflow: hidden;
+}
+
+
+.bg-review {
+    position: absolute;
+    display: flex;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-image: url('https://defkey.com/content/images/program/fivem-2020-01-21_12-48-43-original-size.webp');
+    background-position: center;
+    background-repeat: no-repeat;
+    box-shadow: inset 0 0 0 100% rgba(0, 0, 0, .2);
+    background-size: cover;
+
+}
+
+.sdt {
+    display: flex;
+    flex-direction: row;
+}
+
+.crime-call-hud {
+    width: 30vh;
+    height: 18vh;
+    position: absolute;
+    top: 35%;
+    left: 20%;
+
+    background-color: #001931;
+    border-radius: 4vh;
+    display: block;
+    overflow: hidden;
+    box-shadow: 0 0 2vh #0091e6;
+    opacity: 1;
+    transition: opacity 0.3s ease-in, left 0.3s ease-in;
+}
+
+.crime-call-hud.hidden {
+    opacity: 0;
+    left: -40%;
+}
+
+
+.crime-call-hud .list {
+    width: 85%;
+    height: 55%;
+    position: absolute;
+    left: 50%;
+    bottom: 2vh;
+    transform: translateX(-50%);
+    display: grid;
+    gap: 3vh;
+    display: grid;
+    grid-auto-flow: column;
+}
+
+.crime-call-hud .list .service {
+    background-color: #ed9d26;
+    border-radius: 3vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    font-size: 1.6vh;
+    font-weight: 700;
+    padding-bottom: 1vh;
+    background-repeat: no-repeat;
+    background-position: center 30%;
+    cursor: pointer;
+    transition: all 0.2s ease-in;
+}
+
+.crime-call-hud .list .service:hover {
+    background-color: #ffd359;
+}
+
+.crime-call-hud .list .service#ambulance {
+    background-image: url('ambulance.png');
+    background-size: 80%;
+
+}
+
+.crime-call-hud .list .service#mechanic {
+    background-image: url('mechanic.png');
+    background-size: 70%;
+}
+
+.crime-menu-hud {
+    aspect-ratio: 5/3;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #001931;
+    border-radius: calc(var(--width)*0.03);
+    display: block;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 0.3s ease-in, top 0.3s ease-in;
+    background: url(https://raw.githubusercontent.com/xuannguyen995/prime_item/refs/heads/main/medicalallstars.webp);
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.crime-menu-hud.hidden {
+    opacity: 0;
+    top: 120%;
+}
+
+
+
+@media (max-aspect-ratio: 4/3) {
+    .crime-menu-hud {
+        width: 80%;
+    }
+}
+
+
+@media (min-aspect-ratio: 4/3) and (max-aspect-ratio: 21/9) {
+    .crime-menu-hud {
+        width: 60%;
+    }
+}
+
+
+@media (min-aspect-ratio: 21/9) {
+    .crime-menu-hud {
+        height: 50%;
+    }
+}
+
+
+
+
+.crime-menu-hud .list {
+    width: 94%;
+    height: 85%;
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--width)*-0.010);
+    transform: translateX(-50%);
+    color: white;
+    text-align: center;
+}
+
+.crime-menu-hud .list .head {
+    width: 100%;
+    height: auto;
+    overflow: hidden;
+    padding-bottom: calc(var(--width)*0.01);
+}
+
+
+.crime-menu-hud .list .body {
+    width: 100%;
+    max-height: 76%;
+    overflow-y: overlay;
+    overflow-x: hidden;
+}
+
+
+::-webkit-scrollbar {
+    display: none !important;
+}
+
+
+
+
+
+.crime-menu-hud .list .item {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    height: auto;
+    padding-bottom: calc(var(--width)*0.008);
+    justify-content: center;
+    align-items: center;
+    gap: 0.6vw;
+}
+
+.crime-menu-hud .list .item.blacklist {
+    color: rgb(255, 75, 75);
+}
+
+
+
+.crime-menu-hud .list .col button {
+    width: 100%;
+    height: 100%;
+}
+
+.crime-menu-hud .list .head .item .col {
+    background-color: #097156;
+    border-radius: 1vw;
+    padding: 0.2vw;
+    border: 0.1vw solid #00f8b9;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.crime-menu-hud .list .body .item {
+    background-color: rgba(90, 90, 90, 0.479);
+    border-radius: 0.4vw;
+    padding: 0.3vw 0.3vw;
+    border: 0.2vw solid rgba(187, 71, 71, 0.322);
+    margin-bottom: 0.3vw;
+}
+
+
+/* Cột 1: Người gọi */
+.crime-menu-hud .list .col:nth-child(1) {
+    flex-basis: calc(var(--width)*0.013);
+}
+
+/* Cột 2: CitizenID */
+.crime-menu-hud .list .col:nth-child(2) {
+    flex-basis: calc(var(--width)*0.015);
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Cột 3: Bucket */
+.crime-menu-hud .list .col:nth-child(3) {
+    flex-basis: calc(var(--width)*0.009);
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 0.3vw;
+}
+
+.crime-menu-hud .list .col .bucket-val.warning {
+    color: #ffc107;
+    font-weight: 700;
+}
+
+.crime-menu-hud .list .col .btn-reset-bucket {
+    font-size: 0.7vw;
+    padding: 0.15vw 0.3vw;
+    line-height: 1;
+    border-radius: 0.25vw;
+    border: 1px solid #ffc107;
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto !important;
+    height: auto !important;
+    transition: background-color 0.2s, color 0.2s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.crime-menu-hud .list .col .btn-reset-bucket:hover {
+    background-color: #ffc107;
+    color: #000;
+    transform: rotate(180deg) scale(1.15);
+}
+
+.crime-menu-hud .list .col .btn-reset-bucket:active {
+    transform: rotate(360deg) scale(0.95);
+}
+
+/* Cột 4: Người nhận */
+.crime-menu-hud .list .col:nth-child(4) {
+    flex-basis: calc(var(--width)*0.013);
+}
+
+/* Cột 5: Blacklist */
+.crime-menu-hud .list .col:nth-child(5) {
+    flex-basis: calc(var(--width)*0.013);
+}
+
+/* Cột 6: Thời gian */
+.crime-menu-hud .list .col:nth-child(6) {
+    flex-basis: calc(var(--width)*0.013);
+}
+
+/* Cột 7: Khoảng cách */
+.crime-menu-hud .list .col:nth-child(7) {
+    flex-basis: calc(var(--width)*0.013);
+}
+
+/* Cột 8: Nhận */
+.crime-menu-hud .list .col:nth-child(8) {
+    flex-basis: calc(var(--width)*0.012);
+}
+
+/* Cột 9: GPS */
+.crime-menu-hud .list .col:nth-child(9) {
+    flex-basis: calc(var(--width)*0.011);
+}
+
+/* Cột 10: Kéo Xác */
+.crime-menu-hud .list .col:nth-child(10) {
+    flex-basis: calc(var(--width)*0.013);
+}
+
+/* Cột 11: Xóa */
+.crime-menu-hud .list .col:nth-child(11) {
+    flex-basis: calc(var(--width)*0.011);
+}
+
+/* Style cho nút copy số điện thoại */
+.crime-menu-hud .list .col #copy-phone {
+    font-size: 0.7vw;
+    padding: 0.2vw 0.4vw;
+    margin-left: 0.5vw;
+    border: 1px solid #6c757d;
+    background-color: transparent;
+    color: #6c757d;
+    border-radius: 0.2vw;
+    transition: all 0.2s;
+}
+
+.crime-menu-hud .list .col #copy-phone:hover {
+    background-color: #6c757d;
+    color: white;
+    transform: scale(1.05);
+}
+
+
+.crime-blacklist-hud {
+    aspect-ratio: 6/3;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #001931;
+    border-radius: calc(var(--width)*0.03);
+    display: block;
+    overflow: hidden;
+    box-shadow: 0 0 calc(var(--width)*0.03) #e69600;
+    opacity: 1;
+    transition: opacity 0.3s ease-in, top 0.3s ease-in;
+}
+
+.crime-blacklist-hud.hidden {
+    opacity: 0;
+    top: 120%;
+}
+
+
+
+@media (max-aspect-ratio: 4/3) {
+    .crime-blacklist-hud {
+        width: 80%;
+    }
+}
+
+
+@media (min-aspect-ratio: 4/3) and (max-aspect-ratio: 21/9) {
+    .crime-blacklist-hud {
+        width: 60%;
+    }
+}
+
+
+@media (min-aspect-ratio: 21/9) {
+    .crime-blacklist-hud {
+        height: 50%;
+    }
+}
+
+
+
+
+.crime-blacklist-hud .title {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: calc(var(--width)*0.03);
+    font-weight: 700;
+    text-align: center;
+    background-color: #ed9d26;
+}
+
+.crime-blacklist-hud #new {
+    position: absolute;
+    bottom: calc(var(--width)*0.025);
+    right: calc(var(--width)*0.025);
+    font-size: 200%;
+    text-align: center;
+    vertical-align: center;
+    aspect-ratio: 1/1;
+    border-radius: var(--width);
+    color: #28f797;
+    transition: scale ease-in 0.1s;
+}
+
+.crime-blacklist-hud #new:hover {
+    scale: 1.2;
+    cursor: pointer;
+}
+
+.crime-blacklist-hud .list {
+    width: 98%;
+    height: 85%;
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--width)*0.025);
+    transform: translateX(-50%);
+    color: white;
+    text-align: center;
+}
+
+.crime-blacklist-hud .list .head {
+    width: 100%;
+    color: rgb(255, 230, 0);
+    height: auto;
+    overflow: hidden;
+    padding-bottom: calc(var(--width)*0.01);
+}
+
+
+.crime-blacklist-hud .list .body {
+    width: 100%;
+    max-height: 90%;
+    overflow-y: overlay;
+    overflow-x: hidden;
+}
+
+
+
+.crime-blacklist-hud .list .item {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    height: auto;
+    padding-bottom: calc(var(--width)*0.008);
+    justify-content: center;
+    align-items: center;
+}
+
+
+.crime-blacklist-hud .list .col button {
+    font-size: 0.8vw;
+    width: 90%;
+    height: 100%;
+}
+
+
+
+.crime-blacklist-hud .list .col:nth-child(1) {
+    flex-basis: calc(var(--width)*0.07);
+}
+
+.crime-blacklist-hud .list .col:nth-child(2) {
+    flex-basis: calc(var(--width)*0.07);
+}
+
+.crime-blacklist-hud .list .col:nth-child(3) {
+    flex-basis: calc(var(--width)*0.07);
+}
+
+.crime-blacklist-hud .list .col:nth-child(4) {
+    flex-basis: calc(var(--width)*0.1);
+}
+
+
+.crime-blacklist-hud .list .col:nth-child(5) {
+    flex-basis: calc(var(--width)*0.05);
+}
+
+/* =========================================
+   Ping Bell HUD & F4 Indicator Styling
+   ========================================= */
+.ping-bell-hud {
+    position: fixed;
+    right: 25px;
+    top: 35%;
+    transform: translateY(-50%);
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ping-bell-hud.hidden {
+    opacity: 0;
+    transform: translateY(-50%) translateX(60px);
+    pointer-events: none;
+}
+
+.ping-bell-hud .bell-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.ping-bell-hud .bell-icon-box {
+    position: relative;
+    width: 54px;
+    height: 54px;
+    border: 2px solid rgba(255, 193, 7, 0.7);
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 18px rgba(255, 193, 7, 0.45), inset 0 0 10px rgba(255, 193, 7, 0.2);
+}
+
+.ping-bell-hud .bell-ring-icon {
+    font-size: 26px;
+    color: #ffc107;
+    animation: bellRing 1.4s infinite ease-in-out;
+}
+
+@keyframes bellRing {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    10% {
+        transform: rotate(14deg);
+    }
+
+    20% {
+        transform: rotate(-14deg);
+    }
+
+    30% {
+        transform: rotate(10deg);
+    }
+
+    40% {
+        transform: rotate(-10deg);
+    }
+
+    50% {
+        transform: rotate(6deg);
+    }
+
+    60% {
+        transform: rotate(-6deg);
+    }
+
+    70% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+.ping-bell-hud .bell-badge {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    min-width: 22px;
+    height: 22px;
+    background: linear-gradient(135deg, #ff4d4d, #dc2626);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 11px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 6px;
+    box-shadow: 0 0 10px rgba(255, 77, 77, 0.85);
+    border: 2px solid #0a192f;
+}
+
+.ping-bell-hud .key-hint-box {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.ping-bell-hud .key-cap {
+    background: linear-gradient(180deg, #3a475a, #1f2937);
+    border: 1px solid #6b7280;
+    border-bottom: 3px solid #4b5563;
+    border-radius: 5px;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 12px;
+    padding: 1px 6px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.ping-bell-hud .key-text {
+    color: #e5e7eb;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}

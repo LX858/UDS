@@ -1,0 +1,453 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap');
+*{
+    font-family: 'Kanit', sans-serif;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+:root {
+    --bg: rgb(12, 12, 12, 0.985);
+    --bglgd1: rgb(1, 96, 228);
+    --bglgd2: rgb(19, 45, 63);
+    --bglgd3: rgb(228, 1, 1);
+    --bglgd4: rgb(100, 18, 18);
+
+    --bglgd5: rgb(0, 114, 221);
+    --bglgd6: rgb(27, 63, 110);
+    --bgcontainer: rgba(10, 10, 10, 0.932);
+}
+
+
+body {
+    overflow: hidden;
+}
+
+
+.box-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    transform: translate(-50%,-50%);
+    bottom: 5rem;
+    left: 50%;
+    width: 18rem;
+    height: 8.5rem;
+    opacity: 0;
+}
+
+@keyframes open {
+    0% {
+    bottom: 4rem;
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+        bottom: 5rem;
+
+    }
+}
+
+@keyframes quit {
+    0% {
+    bottom: 5rem;
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        bottom: 4rem;
+
+    }
+}
+
+.container-wasd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-shadow: 0 0 10px #00000071;
+    height: 5.2rem;
+    position: absolute;
+    bottom: 1.2rem;
+    padding: 0 15px;
+    background-color: rgba(14, 14, 14, 0.956);
+    border-radius: 4px;
+}
+
+.box-key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 5rem;
+    background-color: rgba(14, 14, 14, 0.956);
+    border: solid 2px rgba(49, 49, 49, 0.836);
+    border-radius: 8px;
+    margin: 5px;
+    margin-top: -3px;
+    text-shadow: 0 0 10px #000000;
+    color: #dddddd;
+    font-size: 26px;
+    font-weight: 500;
+    box-shadow: 0 0 10px #000;
+    height: 3rem;
+}
+
+.box-key:nth-child(1){
+    animation: button .5s forwards;
+
+}
+.box-key:nth-child(2){
+    animation: button .5s .2s forwards;
+
+}
+.box-key:nth-child(3){
+    animation: button .5s .4s forwards;
+
+}
+.box-key:nth-child(4){
+    animation: button .5s .6s forwards;
+
+}
+
+.loading-wasd {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    bottom: 25px;
+    width: 84%;
+    height: 8px;
+    background-color: rgba(0, 0, 0, 0.956);
+    border-radius: 50px;
+    box-shadow: 0 0 10px #00000071;
+    padding: 0 2px;
+    z-index: 1111;
+}
+.loadss {
+    background: linear-gradient(-175deg, var(--bglgd5) 0%, var(--bglgd6) 100%);
+    width: 20%;
+    height: 52%;
+    border-radius: 50px;
+}
+.box-header-left {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 65px;
+    background-color: rgba(14, 14, 14, 0.956);
+    height: 16px;
+    color: #dadada;
+    font-size: 8px;
+    letter-spacing: 7px;
+    box-shadow: 0 0 10px #00000071;
+
+    position: absolute;
+    left: 0;
+    bottom: 50.5px;
+    margin-left: -40.5px;
+    transform: rotate(-90deg);
+    clip-path: polygon(6% 0, 94% 0, 100% 100%, 0% 100%);
+    z-index: 11;
+}
+
+.box-header-right {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 65px;
+    background-color: rgba(14, 14, 14, 0.956);
+    height: 16px;
+    color: #dadada;
+    font-size: 8px;
+    letter-spacing: 7px;
+    box-shadow: 0 0 10px #00000071;
+
+    position: absolute;
+    right: 0;
+    bottom: 50.5px;
+    margin-right: -40.2px;
+
+    transform: rotate(90deg);
+    clip-path: polygon(6% 0, 94% 0, 100% 100%, 0% 100%);
+    z-index: 11;
+}
+.box-header-right p {
+    margin-left: 7px;
+}
+.box-header-left p {
+    margin-left: 7px;
+}
+
+.active {
+    border: solid 2px #153e74;
+    background: linear-gradient(-175deg, var(--bglgd1) 0%, var(--bglgd2) 100%);
+}
+
+.fail {
+    border: solid 2px #860f0f;
+    background: linear-gradient(-175deg, var(--bglgd3) 0%, var(--bglgd4) 100%);
+}
+
+.header-pass {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: -10px;
+    width: 59%;
+    height: 1.4rem;
+    box-shadow: 0 0 10px #00000071;
+
+    background-color: rgba(14, 14, 14, 0.956);
+    border-radius: 7px;
+}
+
+.header-pass .ppp {
+    color: #fff;
+    font-size: 10px;
+    font-weight: 400;
+    position: absolute;
+    left: 8px;
+    text-shadow: 0 0 5px #000;
+    letter-spacing: 4px;
+}
+
+
+.box-pass {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    width: 5rem;
+    left: 3.55rem;
+    border: solid 1px #3d3d3dbd;
+    border-radius: 50px;
+    box-shadow: 0 0 10px #000;
+    height: 60%;
+    background-color: #0a0a0ae5;
+    color: #fff;
+}
+
+
+.box-pass .fa-sharp {
+    position: relative;
+    margin: 2px;
+    font-size: 8px;
+}
+
+.activepass {
+    color: #1f87ff;
+}
+.failpass {
+    color: #ff5252;
+}
+
+
+
+.text-pass {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    right: 5px;
+    font-size: 12px;
+    color: #fff;
+}
+
+@keyframes fadeIn{
+    from{
+        opacity: 0;
+    }
+    to{
+        opacity: 1;
+    }
+}
+@keyframes fadeOut{
+    from{
+        opacity: 0;
+    }
+    to{
+        opacity: 1;
+    }
+}
+
+@keyframes button{
+    from{
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to{
+        transform: translateY(0px);
+
+        opacity: 1;
+    } 
+}
+
+
+
+
+
+/* .title{
+    color: white;
+    font-size: 17px;
+}
+.container{
+    position: absolute;
+    bottom: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    padding: 5px 20px;
+    border-radius: 0.4em;
+}
+.check{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 45px;
+    border-radius: 0.4em;
+    background: rgba(12, 12, 12, 0.918);
+}
+.check .text{
+    padding: 10px;
+    color: white;
+    font-size: 17px;
+    text-align:end;
+    width: 15%;
+    position: absolute;
+    right: 20px;
+}
+.pointAll{
+    font-size: 14px;
+    position: absolute;
+    font-weight: 400;
+    display: flex;
+    left: 2.4rem;
+    align-items: center;
+    justify-content: center;
+    color: rgb(241, 241, 241);
+}
+.point{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: center;
+    margin-left: 10px;
+    min-width: 120px;
+    height:30px;
+    font-size: 12px;
+    padding: 0 15px;
+    background: rgba(12, 12, 12, 0.918);
+    border-radius: 0.7em;
+    border: 2.2px solid var(--main1);
+}
+.point i {
+    margin: 3px;
+    color: white;
+}
+.point i.current{
+    color: var(--main1);
+}
+.block {
+    margin: 6px 0;
+    display: flex;
+    width: 100%;
+    padding: 10px 13px;
+    border-radius: 6px;
+    background: rgba(12, 12, 12, 0.918);
+    
+    justify-content: space-between;
+}
+.block  .button{
+    color: rgba(255, 255, 255, 0.849);
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+
+    height: 44px;
+    opacity: 0;
+    border-radius: 8px;
+    font-size: 20px;
+    background: rgba(27, 27, 27, 0.89);
+    box-shadow: 0 2px 2px #000;
+    border: 2px solid var(--main1);
+}
+.block  .button:nth-child(1){
+    animation: button .5s forwards;
+
+}
+.block  .button:nth-child(2){
+    animation: button .5s .2s forwards;
+
+}
+.block  .button:nth-child(3){
+    animation: button .5s .4s forwards;
+
+}
+.block  .button:nth-child(4){
+    animation: button .5s .6s forwards;
+
+}
+.block  .button:nth-child(5){
+    animation: button .5s .6s forwards;
+
+}
+.block  .button:nth-child(6){
+    animation: button .5s .6s forwards;
+
+}
+.block  .button:nth-child(7){
+    animation: button .5s .6s forwards;
+
+}
+
+.bar{
+    width: 100%;
+    height: 6px;
+    background: rgba(12, 12, 12, 0.651);
+    border-radius: 0.4em;
+}
+.load{
+    width: 50%;
+    height: 6px;
+    background: linear-gradient(-175deg, var(--bglgd1) 0%, var(--bglgd2) 100%);
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 2px 4px, rgba(0, 0, 0, 0.2) 0px 8px 13px -3px, rgba(0, 0, 0, 0.2) 0px -2px 0px inset;
+    border-radius: 0.4em;
+}
+.button.current{
+    color: #fff;
+    opacity: 0.7;
+    background: linear-gradient(-175deg, var(--bglgd1) 0%, var(--bglgd2) 100%);
+}
+.button.fail{
+    background: rgb(233, 0, 0);
+}
+@keyframes fadeIn{
+    from{
+        opacity: 0;
+    }
+    to{
+        opacity: 1;
+    }
+}
+@keyframes fadeOut{
+    from{
+        opacity: 0;
+    }
+    to{
+        opacity: 1;
+    }
+}
+@keyframes button{
+    from{
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to{
+        transform: translateY(0px);
+
+        opacity: 1;
+    } 
+} */

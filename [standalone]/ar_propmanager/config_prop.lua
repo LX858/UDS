@@ -1,0 +1,198 @@
+-- Danh sách prop có thể spawn trong Prop Manager
+-- Thêm hoặc xoá model name tuỳ ý
+
+return {
+
+    -- ── Rào cản / Giao thông ──────────────────────────────────────────────────
+    'prop_barrier_01a',
+    'prop_barrier_01b',
+    'prop_barrier_02',
+    'prop_barrier_03',
+    'prop_barrier_04a',
+    'prop_barrier_05',
+    'prop_barrier_06a',
+    'prop_barrier_06b',
+    'prop_mp_barrier_02',
+    'prop_mp_barrier_02b',
+    'prop_mp_barrier_01',
+    'prop_cone_01',
+    'prop_cone_02',
+    'prop_cone_03',
+    'prop_cone_04',
+    'prop_cone_05',
+    'prop_roadcone01a',
+    'prop_roadcone02a',
+    'prop_bollard_01a',
+    'prop_bollard_02a',
+    'prop_bollard_03a',
+
+    -- ── Đèn đường / Cột điện ─────────────────────────────────────────────────
+    'prop_streetlight_01',
+    'prop_streetlight_02',
+    'prop_streetlight_03',
+    'prop_streetlight_04',
+    'prop_streetlight_05',
+    'prop_streetlight_06',
+    'prop_streetlight_07',
+    'prop_streetlight_09',
+    'prop_streetlight_10',
+
+    -- ── Ghế / Bàn ────────────────────────────────────────────────────────────
+    'prop_bench_01a',
+    'prop_bench_01b',
+    'prop_bench_02',
+    'prop_bench_03',
+    'prop_bench_04',
+    'prop_bench_05',
+    'prop_bench_06',
+    'prop_bench_07',
+
+    -- ── Thùng rác / Thùng chứa ───────────────────────────────────────────────
+    'prop_bin_01a',
+    'prop_bin_02a',
+    'prop_bin_04a',
+    'prop_bin_05a',
+    'prop_bin_06a',
+    'prop_dumpster_01a',
+    'prop_dumpster_02a',
+    'prop_dumpster_3a',
+    'prop_recyclebin_01a',
+    'prop_recyclebin_01b',
+
+    -- ── Hòm / Thùng gỗ / Thùng carton ───────────────────────────────────────
+    'prop_box_wood01a',
+    'prop_box_wood02a',
+    'prop_box_wood03a',
+    'prop_box_wood04a',
+    'prop_box_cardboard_01a',
+    'prop_box_cardboard_02a',
+    'prop_cs_cardbox_01',
+    'prop_cs_cardbox_02',
+    'prop_cs_cardbox_03',
+    'prop_pallet_01a',
+    'prop_pallet_02a',
+
+    -- ── Container / Kho ──────────────────────────────────────────────────────
+    'prop_container_01a',
+    'prop_container_01b',
+    'prop_container_01c',
+    'prop_container_01d',
+    'prop_container_02a',
+    'prop_container_03a',
+    'prop_container_03b',
+    'prop_container_04a',
+    'prop_container_04b',
+    'prop_container_ld',
+
+    -- ── Hàng rào ─────────────────────────────────────────────────────────────
+    'prop_fence_01',
+    'prop_fence_02',
+    'prop_fence_03',
+    'prop_fence_04',
+    'prop_fence_05',
+    'prop_fence_07',
+    'prop_fence_09',
+    'prop_fnccorfn_01',
+    'prop_fnclink_03gate',
+    'prop_fnclink_05gate1',
+    'prop_fnclink_05gate2',
+
+    -- ── Cây cối ──────────────────────────────────────────────────────────────
+    'prop_tree_pine_01a',
+    'prop_tree_pine_01b',
+    'prop_tree_pine_02a',
+    'prop_tree_pine_03a',
+    'prop_tree_fallen_pine_01',
+    'prop_tree_birch_01',
+    'prop_tree_birch_02',
+    'prop_tree_birch_03',
+    'prop_tree_birch_04',
+    'prop_tree_oak_01',
+    'prop_tree_eucalip_01',
+    'prop_tree_maple_02',
+    'prop_tree_maple_03',
+    'prop_bush_lrg_01a',
+    'prop_bush_lrg_02a',
+    'prop_bush_med_01a',
+
+    -- ── Nhà / Lều / Cabin ────────────────────────────────────────────────────
+    'prop_portacabin_01a',
+    'prop_portacabin_02a',
+    'prop_gazebo_01',
+    'prop_gazebo_02',
+
+    -- ── Máy móc / Thiết bị ───────────────────────────────────────────────────
+    'prop_generator_01a',
+    'prop_generator_01b',
+    'prop_generator_03a',
+    'prop_generator_04',
+    'prop_portable_light_01',
+    'prop_portable_light_02',
+    'prop_portable_light_03',
+    'prop_portable_light_04',
+    'prop_worklight_01a',
+    'prop_worklight_02a',
+    'prop_worklight_03a',
+    'prop_worklight_04a',
+
+    -- ── Biển hiệu / Bảng ─────────────────────────────────────────────────────
+    'prop_mp_arrow_barrier_01',
+    'prop_mp_cone_01',
+    'prop_mp_cone_02',
+    'prop_mp_cone_03',
+    'prop_mp_cone_04',
+    'prop_consign_01a',
+    'prop_consign_02a',
+
+    -- ── Vũ khí / Quân sự ─────────────────────────────────────────────────────
+    'prop_mil_crate_01',
+    'prop_mil_crate_02',
+    'prop_mil_crate_03',
+    'prop_mil_crate_04',
+    'prop_mil_crate_05',
+    'prop_mil_crate_06',
+
+    -- ── Lốp xe / Xe cộ ───────────────────────────────────────────────────────
+    'prop_tyre_wall_01',
+    'prop_tyre_wall_01b',
+    'prop_tyre_wall_02',
+
+    -- ── Chữa cháy / Hydrant ──────────────────────────────────────────────────
+    'prop_fire_hydrant_1',
+    'prop_fire_hydrant_2',
+    'prop_byard_woodpile_01a',
+    'prop_byard_woodpile_02a',
+
+    -- ── Trạm điện / Hộp điện ─────────────────────────────────────────────────
+    'prop_elecbox_01',
+    'prop_elecbox_01b',
+    'prop_elecbox_02',
+    'prop_elecbox_03',
+    'prop_elecbox_05',
+
+    -- ── Bãi đỗ / Khu vực ─────────────────────────────────────────────────────
+    'prop_carport_01',
+    'prop_carport_02',
+    'prop_air_woodshed',
+    'prop_trafficcone01a',
+
+    -- ── Bổ sung tuỳ chỉnh ────────────────────────────────────────────────────
+    -- Thêm model name mới vào đây:
+     'bzzz_plant_water_a',
+     'toilet2',
+     'm23_2_prop_m32_weaponcrate_01b',
+     'ex_prop_crate_ammo_sc',
+     'v_52_clothing07',
+     'v_52_clothing12',
+     'v_52_clothing07',
+     'prop_bar_fridge_04',
+     'v_24_hangingclothes1',
+     'ex_prop_crate_clothing_sc',
+     'sf_prop_sf_dj_desk_02a',
+     'v_med_bed2',
+     'prop_bar_fridge_01',
+     'vw_vwint01_shop_counter',
+     'ba_trad_pay_counter',
+     'ba_glam_pay_counter',
+     'sf_int1_kitchen_doors_mid'
+}
