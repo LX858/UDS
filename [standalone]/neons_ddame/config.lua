@@ -152,25 +152,71 @@ Config = {
         }
     },
 
-    IslandRedZone = {
-        coords = vector3(4840.571, -5174.425, 2.0),
-        radius = 1500.0,
-        activationPadding = 300.0,
-        scanInterval = 250,
-        deleteEmptyVehicles = false,
-        vehicleStorage = {
-            enabled = true,
-            bucket = 999,
-            propModel = 'null_garage_prop',
-            interactionDistance = 3.0,
-            retrieveDuration = 5000
+    -- Cấu hình lưu trữ phương tiện chung cho RedZone
+    RedZoneVehicleStorage = {
+        enabled = true,
+        bucket = 999,
+        propModel = 'null_garage_prop',
+        interactionDistance = 3.0,
+        retrieveDuration = 5000
+    },
+
+    -- Danh sách các IslandRedZone (hỗ trợ cấu hình nhiều khu vực)
+    -- blip:
+    --   + Dạng boolean: blip = true (bật blip bán kính mặc định), blip = false (tắt blip)
+    --   + Dạng table: blip = { enabled = true/false, color = 1, alpha = 125, display = 4, name = '...' }
+    IslandRedZones = {
+        {
+            name = 'Cayo Perico RedZone',
+            coords = vector3(4840.571, -5174.425, 2.0),
+            radius = 1500.0,
+            activationPadding = 300.0,
+            scanInterval = 250,
+            deleteEmptyVehicles = false,
+            vehicleStorage = {
+                enabled = true,
+                bucket = 999,
+                propModel = 'null_garage_prop',
+                interactionDistance = 3.0,
+                retrieveDuration = 5000
+            },
+            blip = {
+                enabled = true, -- true = hiện blip, false = ẩn blip
+                color = 1,
+                alpha = 125,
+                display = 4,
+                name = 'Cayo Perico RedZone'
+            }
         },
-        blip = {
-            color = 1,
-            alpha = 125,
-            display = 4
+        {
+            name = 'Bãi trồng trái phép',
+            coords = vector3(1231.5006, -86.8380, 59.6442),
+            radius = 100.0,
+            activationPadding = 110.0,
+            scanInterval = 250,
+            deleteEmptyVehicles = false,
+            blip = false -- Đặt false để tắt blip cho khu vực này (hoặc { enabled = false })
+        },
+        {
+            name = 'Chợ đen',
+            coords = vector3(-1171.2560, -1571.1517, 3.6636),
+            radius = 100.0,
+            activationPadding = 110.0,
+            scanInterval = 250,
+            deleteEmptyVehicles = false,
+            blip = false -- Đặt false để tắt blip cho khu vực này (hoặc { enabled = false })
+        },
+        {
+            name = 'Bãi dò kim loại',
+            coords = vector3(-1171.4543, 33.4847, 51.4955),
+            radius = 100.0,
+            activationPadding = 110.0,
+            scanInterval = 250,
+            deleteEmptyVehicles = false,
+            blip = false -- Đặt false để tắt blip cho khu vực này (hoặc { enabled = false })
         }
     }
-
-
 }
+
+-- Tương thích ngược: cho phép truy cập qua Config.IslandRedZone
+Config.IslandRedZone = Config.IslandRedZones

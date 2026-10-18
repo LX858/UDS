@@ -46,7 +46,8 @@ Config.ItemToLabelMapping = {
     ['cloth_helmet'] = 'Mũ',
     ['cloth_glasses'] = 'Kính',
     ['cloth_watches'] = 'Đồng hồ',
-    ['cloth_bracelets'] = 'Vòng tay'
+    ['cloth_bracelets'] = 'Vòng tay',
+    ['cloth_decals'] = 'Phụ kiện',
 }
 
 -- Hàm tạo tên đẹp cho quần áo
@@ -260,6 +261,11 @@ Config.Items = {
         component = 7,
         prop = false,
         label = 'Dây chuyền'
+    },
+    ['cloth_decals'] = {
+        component = 10,
+        prop = false,
+        label = 'Phụ kiện'
     },
     ['cloth_pants'] = {
         component = 4,

@@ -7,8 +7,8 @@ shared_scripts {
     'config.lua',
 }
 client_scripts {
-    "client/main.lua",
     '@qbx_core/modules/playerdata.lua',
+    "client/main.lua",
 }
 server_scripts {
     "@oxmysql/lib/MySQL.lua",

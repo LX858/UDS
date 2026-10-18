@@ -129,16 +129,15 @@ Config[1] = {
                     Max = 1,
                     WeaponLevel = 1,
                     CraftItems = {
-                        congcuren = {'Công cụ rèn', 1},
-                        cong_thuc_machete = {'Bản vẽ machete', 10},
+                        congcuren = {'Công cụ rèn', 5},
+                        cong_thuc_machete = {'Bản vẽ machete', 50},
                     },
                     PermItems = {
                         WEAPON_WRENCH = {'Cờ lê', 1},
                     },
-                    Cash = 100000,
+                    Cash = 500000,
                     Length = 1000,
-                    Chance = 30,
-                    Success = 10,
+                    Chance = 100,
                     Failed = {}
                 },
             }

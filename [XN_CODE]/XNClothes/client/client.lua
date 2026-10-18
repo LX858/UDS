@@ -220,6 +220,7 @@ function getComponentType(component_id)
         [7] = "chain",
         [8] = "shirt",
         [9] = "vest",
+        [10] = "decal",
         [11] = "torso"
     }
     return mapping[component_id]
@@ -296,7 +297,7 @@ function getCurrentOutfitData()
             -- Get item from this slot
             local item = playerItems[mapping.clothesSlotID]
             
-            if item and item.metadata then
+            if item and item.metadata and (item.name == mapping.itemname or (mapping.itemname == 'cloth_decals' and item.name == 'cloth_decal')) then
                 local drawable = item.metadata.drawable or 0
                 local originalTexture = item.metadata.texture or 0
                 local texture = originalTexture
@@ -491,7 +492,7 @@ end
 local ALL_CATEGORIES = {
     'shirt', 'torso', 'pants', 'shoes', 'gloves',
     'mask', 'vest', 'bag', 'hat', 'glasses',
-    'earrings', 'chain', 'watch', 'bracelets'
+    'earrings', 'chain', 'watch', 'bracelets', 'decal'
 }
 
 RegisterNetEvent('XNClothes:adminOpenClothes')

@@ -1,0 +1,14 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ALLGAMERS Vault</title>
+<script>
+// CEF keeps nui:// files in its own cache, so a changed stylesheet or script can keep
+// serving the old copy after a resource restart. A fresh query on every page start
+// makes sure the running build is the one on disk.
+window.__scootBust = `?v=${Date.now()}&skin=ag7`;
+document.write(`<link rel="stylesheet" href="style.css${window.__scootBust}"><link rel="stylesheet" href="creator-extra.css${window.__scootBust}">`);
+</script></head>
+<body><main id="app" hidden></main><aside id="rental-hud" hidden></aside>
+<script>
+document.write(`<link rel="stylesheet" href="interaction.css${window.__scootBust}">`);
+for (const src of ['audio.js', 'app.js', 'pointer.js', 'interaction.js']) document.write(`<script src="${src}${window.__scootBust}"><\/script>`);
+</script></body></html>

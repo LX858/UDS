@@ -1164,7 +1164,7 @@ local function GetClothingSlot(itemName)
 		['cloth_shoes'] = 21,
 		['cloth_arms'] = 10,
 		['cloth_outfit'] = 14,
-		['cloth_decals'] = 15,  -- Thêm slot cho decals nếu cần
+		['cloth_decals'] = 16,  -- Thêm slot cho decals nếu cần
 		['clothes'] = 14,  -- clothes generic item cũng vào slot outfit
 	}
 	

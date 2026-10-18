@@ -1,6 +1,43 @@
-local islandRedZone = Config.IslandRedZone
-local vehicleStorage = islandRedZone.vehicleStorage or {}
-local redZoneBlip
+local function getRedZones()
+    local zones = Config.IslandRedZones or Config.IslandRedZone
+    if not zones then return {} end
+    if zones.coords then
+        return { zones }
+    end
+    local list = {}
+    for _, v in pairs(zones) do
+        if type(v) == 'table' and v.coords and v.radius then
+            list[#list + 1] = v
+        end
+    end
+    return list
+end
+
+local function getVehicleStorageConfig()
+    if Config.RedZoneVehicleStorage then
+        return Config.RedZoneVehicleStorage
+    end
+    local zones = Config.IslandRedZones or Config.IslandRedZone
+    if zones then
+        if zones.vehicleStorage then return zones.vehicleStorage end
+        if zones[1] and zones[1].vehicleStorage then return zones[1].vehicleStorage end
+        for _, z in pairs(zones) do
+            if type(z) == 'table' and z.vehicleStorage then
+                return z.vehicleStorage
+            end
+        end
+    end
+    return {
+        enabled = true,
+        bucket = 999,
+        propModel = 'null_garage_prop',
+        interactionDistance = 3.0,
+        retrieveDuration = 5000
+    }
+end
+
+local vehicleStorage = getVehicleStorageConfig()
+local redZoneBlips = {}
 local redZoneVehicleStates = {}
 local localDrivenVehicles = {}
 local storedVehicleProps = {}
@@ -15,7 +52,15 @@ local function distanceSquared2D(first, second)
 end
 
 local function isInsideIslandRedZone(coords)
-    return distanceSquared2D(coords, islandRedZone.coords) <= (islandRedZone.radius * islandRedZone.radius)
+    local zones = getRedZones()
+    for _, zone in ipairs(zones) do
+        if zone.coords and zone.radius then
+            if distanceSquared2D(coords, zone.coords) <= (zone.radius * zone.radius) then
+                return true, zone
+            end
+        end
+    end
+    return false
 end
 
 local function applyRedZoneVehicleState(vehicle)
@@ -158,14 +203,71 @@ local function getClosestStoredProp(playerCoords)
     return closestProp
 end
 
-local function createIslandRedZoneBlip()
-    local blipConfig = islandRedZone.blip or {}
-    local coords = islandRedZone.coords
+local function removeIslandRedZoneBlips()
+    for _, blip in ipairs(redZoneBlips) do
+        if DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
+    end
+    redZoneBlips = {}
+end
 
-    redZoneBlip = AddBlipForRadius(coords.x, coords.y, coords.z, islandRedZone.radius)
-    SetBlipColour(redZoneBlip, blipConfig.color or 1)
-    SetBlipAlpha(redZoneBlip, blipConfig.alpha or 125)
-    SetBlipDisplay(redZoneBlip, blipConfig.display or 4)
+local function isBlipEnabled(blipConfig)
+    if blipConfig == nil then return false end
+    if type(blipConfig) == 'boolean' then
+        return blipConfig
+    end
+    if type(blipConfig) == 'table' then
+        if blipConfig.enabled ~= nil then
+            return blipConfig.enabled == true
+        end
+        return true
+    end
+    return false
+end
+
+local function createIslandRedZoneBlips()
+    removeIslandRedZoneBlips()
+
+    local zones = getRedZones()
+    for _, zone in ipairs(zones) do
+        if zone.coords and zone.radius then
+            local blipConfig = zone.blip
+            if isBlipEnabled(blipConfig) then
+                local coords = zone.coords
+                local radius = zone.radius
+
+                local color = 1
+                local alpha = 125
+                local display = 4
+
+                if type(blipConfig) == 'table' then
+                    if blipConfig.color ~= nil then color = blipConfig.color end
+                    if blipConfig.alpha ~= nil then alpha = blipConfig.alpha end
+                    if blipConfig.display ~= nil then display = blipConfig.display end
+                end
+
+                local radiusBlip = AddBlipForRadius(coords.x, coords.y, coords.z, radius + 0.0)
+                SetBlipColour(radiusBlip, color)
+                SetBlipAlpha(radiusBlip, alpha)
+                SetBlipDisplay(radiusBlip, display)
+                redZoneBlips[#redZoneBlips + 1] = radiusBlip
+
+                if type(blipConfig) == 'table' and (blipConfig.sprite or blipConfig.name or blipConfig.showCenterBlip) then
+                    local centerBlip = AddBlipForCoord(coords.x, coords.y, coords.z)
+                    SetBlipSprite(centerBlip, blipConfig.sprite or 161)
+                    SetBlipColour(centerBlip, blipConfig.color or color)
+                    SetBlipScale(centerBlip, blipConfig.scale or 0.8)
+                    SetBlipAsShortRange(centerBlip, true)
+                    SetBlipDisplay(centerBlip, blipConfig.display or display)
+                    BeginTextCommandSetBlipName('STRING')
+                    AddTextComponentSubstringPlayerName(blipConfig.name or zone.name or 'RedZone')
+                    EndTextCommandSetBlipName(centerBlip)
+                    redZoneBlips[#redZoneBlips + 1] = centerBlip
+                end
+            end
+        end
+    end
 end
 
 RegisterNetEvent('neons_ddame:client:redZoneVehicleStored', function(vehicleNetId, propNetId)
@@ -247,26 +349,45 @@ RegisterNetEvent('neons_ddame:client:redZoneVehicleRetrieveResult', function(suc
 end)
 
 CreateThread(function()
-    createIslandRedZoneBlip()
+    createIslandRedZoneBlips()
 end)
+
 local inIsland = false
 exports('inIsland', function()
     return inIsland
 end)
+exports('inRedZone', function()
+    return inIsland
+end)
+exports('refreshRedZoneBlips', createIslandRedZoneBlips)
+
 CreateThread(function()
-    local radius = islandRedZone.radius
-    local activationRadius = radius + (islandRedZone.activationPadding or 300.0)
-    local activationRadiusSquared = activationRadius * activationRadius
-    local scanInterval = islandRedZone.scanInterval or 250
-    
     while true do
         local playerPed = PlayerPedId()
         local playerCoords = GetEntityCoords(playerPed)
+        local zones = getRedZones()
 
-        if distanceSquared2D(playerCoords, islandRedZone.coords) <= activationRadiusSquared then
+        local inActivationZone = false
+        local scanInterval = 250
+
+        for _, zone in ipairs(zones) do
+            if zone.coords and zone.radius then
+                local radius = zone.radius
+                local activationRadius = radius + (zone.activationPadding or 300.0)
+                if distanceSquared2D(playerCoords, zone.coords) <= (activationRadius * activationRadius) then
+                    inActivationZone = true
+                    if zone.scanInterval and zone.scanInterval < scanInterval then
+                        scanInterval = zone.scanInterval
+                    end
+                end
+            end
+        end
+
+        if inActivationZone then
             local vehiclesInRedZone = {}
             local locallyDrivenThisScan = {}
             inIsland = true
+
             for _, vehicle in ipairs(GetGamePool('CVehicle')) do
                 if DoesEntityExist(vehicle) and isInsideIslandRedZone(GetEntityCoords(vehicle)) then
                     local driver = GetPedInVehicleSeat(vehicle, -1)
@@ -329,7 +450,6 @@ CreateThread(function()
             restoreAllVehicleStates()
             Wait(1000)
         end
-        
     end
 end)
 
@@ -400,9 +520,7 @@ AddEventHandler('onResourceStop', function(resourceName)
 
     setStorageTextVisible(false)
 
-    if redZoneBlip and DoesBlipExist(redZoneBlip) then
-        RemoveBlip(redZoneBlip)
-    end
+    removeIslandRedZoneBlips()
 
     restoreAllVehicleStates()
 end)

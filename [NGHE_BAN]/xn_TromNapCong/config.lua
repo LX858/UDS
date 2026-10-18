@@ -15,7 +15,7 @@ Config.ViTriBan = {
 
 Config.Event = {
     enabled = true, -- Bật/tắt hệ thống phần thưởng đặc biệt
-    chance = 3, -- Tỉ lệ % ra phần thưởng đặc biệt (10 = 10%)
+    chance = 30, -- Tỉ lệ % ra phần thưởng đặc biệt (10 = 10%)
     rewards = {
         {item = "banvevukhi", chance = 70}, -- 25% nhận manhgep1
         {item = "the_sieu_trom", chance = 30}, -- Thẻ Siêu trộm

@@ -167,7 +167,7 @@ CropTypes = {
             {hash = joaat('bzzz_plants_papaya_d'), zOffset = 0.05},
         },
         GrowthTime = 15, -- Thời gian lớn (phút)
-        planamount = 20,
+        planamount = 50,
         decreaseRate = 0,
         decreaseInterval = 120000, -- 3 phút
         MaleFactor = 0.9,
@@ -210,7 +210,7 @@ CropTypes = {
             {hash = joaat('bzzz_plants_poppy_2c'),  zOffset = 0.05},
         },
         GrowthTime = 15, -- Thời gian lớn (phút)
-        planamount = 20,
+        planamount = 50,
         decreaseRate = 0,
         decreaseInterval = 120000, -- 3 phút
         MaleFactor = 0.9,
@@ -429,43 +429,43 @@ FarmRental = {
             cameraPos = vector3(1232.3610, -85.5546, 59.7014),
             cameraRot = vector3(-45.0, 0.0, 0.0),
             rentalPrice = 6000, -- Giá thuê $1600/giờ
-            cropTypes = {'dudu'}, -- Ruộng bí ngô
+            cropTypes = {'dudu', 'poppy'}, -- Ruộng bí ngô
         },
 
-        [12] = {
-            id = 12,
-            name = "Ruộng 12",
-            center = vector3(1481.9066, -2354.6516, 71.9142),
-            radius = 100.0,
-            no_rent = true,
-            blip = false,
-            cameraPos = vector3(1481.9066, -2354.6516, 71.9142),
-            cameraRot = vector3(-45.0, 0.0, 0.0),
-            rentalPrice = 6000, -- Giá thuê $1600/giờ
-            cropTypes = {'poppy'}, -- Ruộng bí ngô
-        },
-        [13] = {
-            id = 13,
-            name = "Ruộng 13 (Đu đủ, Hoa Mỹ Nhân)",
-            center = vector3(4843.6895, -4594.4800, 17.4002),
-            radius = 70.0,
-            no_rent = true,
-            blip = true,
-            blipRadius = 70.0,
-            marker = {
-                enabled = true,
-                type = 1,
-                scale = { z = 50.0 }, -- Chiều cao cột marker (50m vút lên trời)
-                zOffset = 20.0, -- Hạ đáy marker xuống 5m dưới mặt đất để ôm sát địa hình dốc
-                color = { r = 255, g = 0, b = 0, a = 100 },
-            },
-            cameraPos = vector3(4859.8813, -4582.9717, 38.0563),
-            cameraRot = vector3(-45.0, 0.0, 0.0),
-            rentalPrice = 6000,
-            cropTypes = {'dudu', 'poppy'},
-            harvestMultiplier = 1.5, -- Hệ số x1.5 tài nguyên khi thu hoạch
-            plantLimitMultiplier = 3, -- Hệ số x3 giới hạn số lượng cây có thể trồng
-        },
+        -- [12] = {
+        --     id = 12,
+        --     name = "Ruộng 12",
+        --     center = vector3(1481.9066, -2354.6516, 71.9142),
+        --     radius = 100.0,
+        --     no_rent = true,
+        --     blip = false,
+        --     cameraPos = vector3(1481.9066, -2354.6516, 71.9142),
+        --     cameraRot = vector3(-45.0, 0.0, 0.0),
+        --     rentalPrice = 6000, -- Giá thuê $1600/giờ
+        --     cropTypes = {'poppy'}, -- Ruộng bí ngô
+        -- },
+        -- [13] = {
+        --     id = 13,
+        --     name = "Ruộng 13 (Đu đủ, Hoa Mỹ Nhân)",
+        --     center = vector3(4843.6895, -4594.4800, 17.4002),
+        --     radius = 70.0,
+        --     no_rent = true,
+        --     blip = true,
+        --     blipRadius = 70.0,
+        --     marker = {
+        --         enabled = true,
+        --         type = 1,
+        --         scale = { z = 50.0 }, -- Chiều cao cột marker (50m vút lên trời)
+        --         zOffset = 20.0, -- Hạ đáy marker xuống 5m dưới mặt đất để ôm sát địa hình dốc
+        --         color = { r = 255, g = 0, b = 0, a = 100 },
+        --     },
+        --     cameraPos = vector3(4859.8813, -4582.9717, 38.0563),
+        --     cameraRot = vector3(-45.0, 0.0, 0.0),
+        --     rentalPrice = 6000,
+        --     cropTypes = {'dudu', 'poppy'},
+        --     harvestMultiplier = 1.5, -- Hệ số x1.5 tài nguyên khi thu hoạch
+        --     plantLimitMultiplier = 3, -- Hệ số x3 giới hạn số lượng cây có thể trồng
+        -- },
     }
 }
 

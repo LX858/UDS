@@ -159,11 +159,11 @@ Config.ReputationSystem = {
             coords = vector3(-807.1800, 864.9300, 203.1542),
             radius = 75.0 -- bán kính 50 mét
         },
-        -- {
-        --     name = "Khách sạn 9H",
-        --     coords = vector3(332.8467, -1637.1892, 32.7539),
-        --     radius = 60.0 -- bán kính 50 mét
-        -- },
+        {
+            name = "LUXURY CARDEALER",
+            coords = vector3(733.0587, -966.9283, 24.7018),
+            radius = 60.0 -- bán kính 50 mét
+        },
 
         -- Cây xăng (Gas Stations)
         {

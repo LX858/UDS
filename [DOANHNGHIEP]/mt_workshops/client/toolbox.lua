@@ -1244,19 +1244,20 @@ RegisterNetEvent('mt_workshops:client:useRepairInvoice', function(slot, metadata
     local nearbyList = {}
     local playerCoords = GetEntityCoords(cache.ped)
     local nearbyPeds = getPlayersFromCoords(playerCoords, 3.0)
+    local Peds = {}
     for k, v in pairs(nearbyPeds) do 
-        v.source = GetPlayerServerId(v)
+        table.insert(Peds, {ped = v, source = GetPlayerServerId(v)})
     end
 
-    local results = lib.callback.await("mt_workshops:server:getInfoPlayers", false, nearbyPeds)
+    local results = lib.callback.await("mt_workshops:server:getInfoPlayers", false, Peds)
     if not results then 
         notify("Không tìm thấy người chơi nào trực tuyến!", "error") 
         return 
     end
-    for _, v in pairs(nearbyPeds) do
+    for _, v in pairs(Peds) do
         local src = v.source
         if src ~= cache.serverId then
-            local targetPed = GetPlayerPed(v)
+            local targetPed = GetPlayerPed(v.ped)
             local dist = #(GetEntityCoords(targetPed) - playerCoords)
             if results[src] then
                 nearbyList[#nearbyList+1] = { 

@@ -68,8 +68,45 @@ AddEventHandler('playerDropped', function()
     boatRentalCooldown[source] = nil
 end)
 
-local islandRedZone = Config.IslandRedZone
-local vehicleStorage = islandRedZone and islandRedZone.vehicleStorage or {}
+local function getRedZones()
+    local zones = Config.IslandRedZones or Config.IslandRedZone
+    if not zones then return {} end
+    if zones.coords then
+        return { zones }
+    end
+    local list = {}
+    for _, v in pairs(zones) do
+        if type(v) == 'table' and v.coords and v.radius then
+            list[#list + 1] = v
+        end
+    end
+    return list
+end
+
+local function getVehicleStorageConfig()
+    if Config.RedZoneVehicleStorage then
+        return Config.RedZoneVehicleStorage
+    end
+    local zones = Config.IslandRedZones or Config.IslandRedZone
+    if zones then
+        if zones.vehicleStorage then return zones.vehicleStorage end
+        if zones[1] and zones[1].vehicleStorage then return zones[1].vehicleStorage end
+        for _, z in pairs(zones) do
+            if type(z) == 'table' and z.vehicleStorage then
+                return z.vehicleStorage
+            end
+        end
+    end
+    return {
+        enabled = true,
+        bucket = 999,
+        propModel = 'null_garage_prop',
+        interactionDistance = 3.0,
+        retrieveDuration = 5000
+    }
+end
+
+local vehicleStorage = getVehicleStorageConfig()
 local trackedRedZoneDrivers = {}
 local storedRedZoneVehicles = {}
 
@@ -86,13 +123,17 @@ local function getNetworkVehicle(netId)
 end
 
 local function isInsideIslandRedZone(coords)
-    if not islandRedZone or not islandRedZone.coords or not islandRedZone.radius then
-        return false
+    local zones = getRedZones()
+    for _, zone in ipairs(zones) do
+        if zone.coords and zone.radius then
+            local dx = coords.x - zone.coords.x
+            local dy = coords.y - zone.coords.y
+            if (dx * dx) + (dy * dy) <= (zone.radius * zone.radius) then
+                return true, zone
+            end
+        end
     end
-
-    local dx = coords.x - islandRedZone.coords.x
-    local dy = coords.y - islandRedZone.coords.y
-    return (dx * dx) + (dy * dy) <= (islandRedZone.radius * islandRedZone.radius)
+    return false
 end
 
 local function sendStoreFailed(src, netId, reason)

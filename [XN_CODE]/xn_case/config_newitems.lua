@@ -111,6 +111,12 @@ Config.NewItems = {
         cloth_bracelets = {
             female = {},
             male = {}
+        },
+
+        -- Phụ kiện (Decals)
+        cloth_decals = {
+            female = {},
+            male = {}
         }
     },
 

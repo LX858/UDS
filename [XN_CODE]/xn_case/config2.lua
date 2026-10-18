@@ -82,13 +82,6 @@ Config.Itemsell = {
         price = 499,
         type = "item"
     },
-
-    [7] = {
-        name = "hom_trung_thu",
-        label = "Hòm Trung Thu",
-        price = 10,
-        type = "item"
-    },
 }
 
 Config.EnableDebug = false
@@ -3173,6 +3166,11 @@ Config.ClothingItems = {
         component = 6,
         prop = false,
         label = 'Giày'
+    },
+    ['cloth_decals'] = {
+        component = 10,
+        prop = false,
+        label = 'Phụ kiện'
     },
     ['cloth_arms'] = {
         component = 3,

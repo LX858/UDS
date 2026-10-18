@@ -5,40 +5,45 @@ local MySQL = exports['oxmysql']
 local processingRequests = {}
 local COOLDOWN_TIME = 5000 -- 5 giây cooldown
 
--- Helper function để kiểm tra drawable có thể nâng cấp được không
+-- Helper function để kiểm tra drawable có thể nâng cấp / trao đổi được không
 local function isDrawableUpgradeable(drawable, playerGender)
-    --print("Debug: Checking if drawable", drawable, "is upgradeable for gender", playerGender)
+    drawable = tonumber(drawable)
+    if not drawable then return false, nil end
     
-    -- Debug: Kiểm tra config có tồn tại không
-    if not Config.UpgradeLevels then
-        --print("Debug: ERROR - Config.UpgradeLevels is nil!")
+    if not Config.UpgradeLevels or not Config.UpgradeLevels[playerGender] then
         return false, nil
     end
     
-    if not Config.UpgradeLevels[playerGender] then
-        ----print("Debug: ERROR - No config for gender:", playerGender)
-        local availableGenders = {}
-        for k, v in pairs(Config.UpgradeLevels or {}) do
-            table.insert(availableGenders, k)
-        end
-        --print("Debug: Available genders in config:", json.encode(availableGenders))
-        return false, nil
-    end
+    local genderConfig = Config.UpgradeLevels[playerGender]
+    local levelsToCheck = {5, 4, 3, 2}
     
-    --print("Debug: Gender config found for:", playerGender)
-    
-    for level, levelConfig in pairs(Config.UpgradeLevels[playerGender] or {}) do
-        if levelConfig.upgradeable_drawables then
-            for _, upgradeableDrawable in pairs(levelConfig.upgradeable_drawables) do
-                if upgradeableDrawable == drawable then
-                    --print("Debug: Drawable", drawable, "found in level", level, "upgradeable list")
-                    return true, level
+    for _, level in ipairs(levelsToCheck) do
+        local levelConfig = genderConfig[level]
+        if levelConfig then
+            if levelConfig.upgradeable_drawables then
+                for _, d in pairs(levelConfig.upgradeable_drawables) do
+                    if tonumber(d) == drawable then
+                        return true, level
+                    end
+                end
+            end
+            if levelConfig.upgrade_normal_drawables then
+                for _, d in pairs(levelConfig.upgrade_normal_drawables) do
+                    if tonumber(d) == drawable then
+                        return true, level
+                    end
+                end
+            end
+            if levelConfig.upgrade_rare_drawables then
+                for _, d in pairs(levelConfig.upgrade_rare_drawables) do
+                    if tonumber(d) == drawable then
+                        return true, level
+                    end
                 end
             end
         end
     end
     
-    --print("Debug: Drawable", drawable, "is NOT upgradeable")
     return false, nil
 end
 
@@ -71,25 +76,6 @@ local function removePlayerCoin(source, amount)
     local newCoin = currentCoin - amount
     exports.oxmysql:execute('UPDATE players SET coin = ? WHERE citizenid = ?', {newCoin, citizenid})
     return true
-end
-
--- Helper function để kiểm tra drawable có thể trao đổi được không
-local function isDrawableUpgradeable(drawable, playerGender)
-    --print("Debug: Checking if drawable", drawable, "is upgradeable for gender", playerGender)
-    
-    for level, levelConfig in pairs(Config.UpgradeLevels[playerGender] or {}) do
-        if levelConfig.upgradeable_drawables then
-            for _, upgradeableDrawable in pairs(levelConfig.upgradeable_drawables) do
-                if upgradeableDrawable == drawable then
-                    --print("Debug: Drawable", drawable, "found in level", level, "upgradeable list")
-                    return true, level
-                end
-            end
-        end
-    end
-    
-    --print("Debug: Drawable", drawable, "is NOT upgradeable")
-    return false, nil
 end
 
 -- Function helper để tạo requirements với số lượng real-time
@@ -234,16 +220,24 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:getBagData', function(source, c
                 end
             end
             
-            -- ✅ CHỈ CHO ĐỔI BALO CÓ ID VÀ CAPDO (đã được set level)
-            local hasValidMetadata = metadata.id and metadata.Capdo
-            
-            if not hasValidMetadata then
-                --print("Debug: Skipped bag drawable", metadata.drawable, "- missing id or Capdo")
+            local drawableNum = tonumber(metadata.drawable)
+            if not drawableNum then
                 goto continue_bag_loop
             end
             
             -- Kiểm tra xem drawable có thể trao đổi được không với gender hiện tại
-            local isUpgradeable, level = isDrawableUpgradeable(metadata.drawable, gender)
+            local isUpgradeable, level = isDrawableUpgradeable(drawableNum, gender)
+            if not isUpgradeable then
+                goto continue_bag_loop
+            end
+            
+            -- Tự động bổ sung id và Capdo nếu chưa có
+            if not metadata.Capdo then
+                metadata.Capdo = level
+            end
+            if not metadata.id then
+                metadata.id = drawableNum
+            end
             
             -- Kiểm tra metadata.sex nếu có (để lọc theo giới tính)
             local sexMatches = true
@@ -527,6 +521,7 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:startAppraisal', function(sourc
     -- Lấy thông tin balo từ slot
     local inventory = exports.ox_inventory:GetInventory(source, false)
     if not inventory or not inventory.items or not inventory.items[bagSlot] then
+        processingRequests[playerId] = nil
         cb({success = false, message = "Không tìm thấy balo"})
         return
     end
@@ -538,7 +533,13 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:startAppraisal', function(sourc
         return
     end
     
-    local drawable = bagItem.metadata.drawable
+    local drawable = tonumber(bagItem.metadata.drawable)
+    if not drawable then
+        processingRequests[playerId] = nil
+        cb({success = false, message = "Balo không có thông tin drawable"})
+        return
+    end
+    
     local doHiem = bagItem.metadata.DoHiem or 'Rare'
     
     -- Xác định level thực sự dựa theo drawable, không phải metadata.Capdo
@@ -583,7 +584,7 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:startAppraisal', function(sourc
     end
 
     -- Kiểm tra vật phẩm cần thiết
-    local requirements = Config.UpgradeRequirements[doHiem]
+    local requirements = Config.UpgradeRequirementsByLevel[capdo] or Config.UpgradeRequirements[doHiem]
     if requirements then
         for _, req in pairs(requirements) do
             local playerItem = exports.ox_inventory:Search(source, 'count', req.item)
@@ -625,9 +626,9 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:startAppraisal', function(sourc
     if random <= levelConfig.downgrade_chance then
         -- Tụt cấp: Giảm DoHiem 1 bậc + đổi drawable (không đổi Capdo)
         local downgradeDrawables = {}
-        for _, d in pairs(levelConfig.downgrade_drawables) do
-            if d ~= drawable then -- Loại bỏ drawable hiện tại
-                table.insert(downgradeDrawables, d)
+        for _, d in pairs(levelConfig.downgrade_drawables or {}) do
+            if tonumber(d) ~= drawable then -- Loại bỏ drawable hiện tại
+                table.insert(downgradeDrawables, tonumber(d))
             end
         end
         if #downgradeDrawables > 0 then
@@ -642,9 +643,9 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:startAppraisal', function(sourc
     elseif random <= (levelConfig.downgrade_chance + levelConfig.upgrade_normal_chance) then
         -- trao đổi thường: Giữ nguyên DoHiem + đổi drawable
         local normalDrawables = {}
-        for _, d in pairs(levelConfig.upgrade_normal_drawables) do
-            if d ~= drawable then -- Loại bỏ drawable hiện tại
-                table.insert(normalDrawables, d)
+        for _, d in pairs(levelConfig.upgrade_normal_drawables or {}) do
+            if tonumber(d) ~= drawable then -- Loại bỏ drawable hiện tại
+                table.insert(normalDrawables, tonumber(d))
             end
         end
         if #normalDrawables > 0 then
@@ -659,9 +660,9 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:startAppraisal', function(sourc
     elseif random <= (levelConfig.downgrade_chance + levelConfig.upgrade_normal_chance + levelConfig.upgrade_rare_chance) then
         -- trao đổi hiếm: Tăng DoHiem 1 bậc + đổi drawable
         local rareDrawables = {}
-        for _, d in pairs(levelConfig.upgrade_rare_drawables) do
-            if d ~= drawable then -- Loại bỏ drawable hiện tại
-                table.insert(rareDrawables, d)
+        for _, d in pairs(levelConfig.upgrade_rare_drawables or {}) do
+            if tonumber(d) ~= drawable then -- Loại bỏ drawable hiện tại
+                table.insert(rareDrawables, tonumber(d))
             end
         end
         if #rareDrawables > 0 then
@@ -675,11 +676,60 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:startAppraisal', function(sourc
         result.type = 'success'
     else
         -- Không đổi
+        result.newDrawable = drawable
+        result.newCapdo = capdo
+        result.newDoHiem = doHiem
         result.message = "trao đổi không có thay đổi."
         result.type = 'info'
     end
     
-    -- Lưu thông tin để confirm sau
+    -- Chuẩn bị metadata mới cho balo (giữ nguyên các thông tin cũ, cập nhật drawable, id, label, image)
+    local newMetadata = {}
+    for k, v in pairs(bagItem.metadata) do
+        newMetadata[k] = v
+    end
+    if bagItem.metadata.serial then
+        newMetadata.serial = bagItem.metadata.serial
+    end
+    
+    local imageUrl = string.format("%s/%s_%d_%d.%s", 
+        Config.ImageSettings.Url, 
+        gender, 
+        Config.ImageSettings.component_id or 5,
+        result.newDrawable, 
+        Config.ImageSettings.Extension
+    )
+    newMetadata.drawable = result.newDrawable
+    newMetadata.id = result.newDrawable
+    newMetadata.label = string.format("Túi xách %d", result.newDrawable)
+    newMetadata.imageurl = imageUrl
+    newMetadata.image = imageUrl
+    newMetadata.Capdo = result.newCapdo
+    newMetadata.DoHiem = result.newDoHiem
+    
+    -- ✅ CẬP NHẬT BALO TRỰC TIẾP NGAY TẠI SERVER:
+    -- Đảm bảo người chơi không bao giờ bị mất balo kể cả khi tắt UI, bấm ESC, click Xác nhận nhanh, crash hay mất kết nối.
+    local swapSuccess = false
+    if exports.ox_inventory.SetMetadata then
+        exports.ox_inventory:SetMetadata(source, tonumber(bagSlot), newMetadata)
+        local checkInv = exports.ox_inventory:GetInventory(source, false)
+        if checkInv and checkInv.items and checkInv.items[tonumber(bagSlot)] and checkInv.items[tonumber(bagSlot)].metadata and tonumber(checkInv.items[tonumber(bagSlot)].metadata.drawable) == tonumber(result.newDrawable) then
+            swapSuccess = true
+        end
+    end
+    
+    if not swapSuccess then
+        exports.ox_inventory:RemoveItem(source, Config.BagItem, 1, nil, bagSlot)
+        local added = exports.ox_inventory:AddItem(source, Config.BagItem, 1, newMetadata, bagSlot)
+        if not added then
+            added = exports.ox_inventory:AddItem(source, Config.BagItem, 1, newMetadata)
+        end
+        swapSuccess = added
+    end
+    
+    processingRequests[playerId] = nil
+    
+    -- Lưu thông tin để hiển thị kết quả cho client
     result.slot = bagSlot
     result.oldMetadata = bagItem.metadata
     result.gender = gender
@@ -687,20 +737,10 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:startAppraisal', function(sourc
     result.newLevel = result.newCapdo -- Alias cho React
     result.isRare = (result.type == 'success' and result.newDoHiem ~= doHiem) -- Có thay đổi DoHiem không
     
-    -- Xóa balo cũ ngay lập tức
-    exports.ox_inventory:RemoveItem(source, Config.BagItem, 1, bagItem.metadata, bagSlot)
-    
-    -- KHÔNG add balo mới ngay - chờ người chơi nhấn OK
-    
-    -- Unlock sau cooldown time
-    SetTimeout(COOLDOWN_TIME, function()
-        processingRequests[playerId] = nil
-    end)
-    
     cb(result)
 end)
 
--- Callback để confirm và thực sự update balo sau khi nhấn OK
+-- Callback để confirm khi client UI hoàn tất (Balo đã được trao đổi an toàn ở server)
 QBCore.Functions.CreateCallback('xn_thamdinhbalo:confirmAppraisal', function(source, cb, resultData)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then
@@ -708,66 +748,11 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:confirmAppraisal', function(sou
         return
     end
     
-    -- Kiểm tra lock để chống duplicate khi bấm OK nhiều lần
     local playerId = Player.PlayerData.citizenid .. "_confirm"
-    if processingRequests[playerId] then
-        cb({success = false, message = "Đang xử lý, vui lòng đợi..."})
-        return
-    end
+    processingRequests[playerId] = nil
     
-    -- Lock request
-    processingRequests[playerId] = true
-    
-    -- Nhận dữ liệu từ React
-    local newDrawable = resultData.newDrawable
-    local gender = resultData.gender or 'male'
-    local oldMetadata = resultData.oldMetadata or {}
-    
-    -- ✅ GIỮ NGUYÊN 100% METADATA CŨ, CHỈ THAY ĐỔI DRAWABLE VÀ IMAGE
-    local newMetadata = {}
-    
-    -- Copy toàn bộ metadata cũ (bao gồm Capdo, DoHiem, serial, fromGacha...)
-    for k, v in pairs(oldMetadata) do
-        newMetadata[k] = v
-    end
-    
-    -- ✅ ĐẢM BẢO GIỮ SERIAL NẾU CÓ
-    if oldMetadata.serial then
-        newMetadata.serial = oldMetadata.serial
-    end
-    
-    -- Chỉ thay đổi drawable và image
-    newMetadata.drawable = newDrawable
-    newMetadata.id = newDrawable
-    newMetadata.label = string.format("Túi xách %d", newDrawable)
-    newMetadata.imageurl = string.format("%s/%s_5_%d.%s", 
-        Config.ImageSettings.Url, 
-        gender, 
-        newDrawable, 
-        Config.ImageSettings.Extension
-    )
-    newMetadata.image = newMetadata.imageurl
-    
-    -- Capdo và DoHiem giữ nguyên từ oldMetadata
-    
-    -- Debug log
-    if newMetadata.serial then
-        print(string.format("[xn_thamdinhbalo] Appraisal: Preserved serial %s for player %s", newMetadata.serial, Player.PlayerData.citizenid))
-    end
-    
-    -- Thêm item mới vào inventory
-    local success = exports.ox_inventory:AddItem(source, Config.BagItem, 1, newMetadata)
-    
-    -- Unlock sau khi hoàn thành
-    SetTimeout(1000, function()
-        processingRequests[playerId] = nil
-    end)
-    
-    if success then
-        cb({success = true, message = "Đã nhận balo mới"})
-    else
-        cb({success = false, message = "Không thể thêm balo mới"})
-    end
+    -- Balo đã được trao đổi trực tiếp ở server trong startAppraisal, confirm này chỉ báo thành công cho client UI
+    cb({success = true, message = "Đã nhận balo mới"})
 end)
 
 -- Callback trao đổi bằng coin
@@ -841,7 +826,7 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:coinUpgrade', function(source, 
     
     -- Kiểm tra và trừ requirements (vật phẩm cần thiết)
     local doHiem = bagItem.metadata and bagItem.metadata.DoHiem or "Uncommon"
-    local requirements = Config.UpgradeRequirements[doHiem]
+    local requirements = Config.UpgradeRequirementsByLevel[currentLevel] or Config.UpgradeRequirements[doHiem]
     if requirements then
         -- Kiểm tra đủ vật phẩm không
         for _, req in pairs(requirements) do
@@ -856,7 +841,6 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:coinUpgrade', function(source, 
         -- Trừ vật phẩm cần thiết
         for _, req in pairs(requirements) do
             exports.ox_inventory:RemoveItem(source, req.item, req.amount)
-            --print(string.format("Debug: Coin upgrade removed %d %s", req.amount, req.item))
         end
     end
     
@@ -874,8 +858,8 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:coinUpgrade', function(source, 
     -- Thêm normal upgrade options với weight cao hơn (loại bỏ drawable hiện tại)
     if levelConfig.upgrade_normal_drawables then
         for _, drawableItem in pairs(levelConfig.upgrade_normal_drawables) do
-            if drawableItem ~= currentDrawable then -- Không thêm drawable hiện tại
-                table.insert(upgradeOptions, {drawable = drawableItem, type = "normal", level = currentLevel})
+            if tonumber(drawableItem) ~= tonumber(currentDrawable) then -- Không thêm drawable hiện tại
+                table.insert(upgradeOptions, {drawable = tonumber(drawableItem), type = "normal", level = currentLevel})
             end
         end
     end
@@ -883,13 +867,14 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:coinUpgrade', function(source, 
     -- Thêm rare upgrade options với weight thấp hơn (loại bỏ drawable hiện tại)
     if levelConfig.upgrade_rare_drawables then
         for _, drawableItem in pairs(levelConfig.upgrade_rare_drawables) do
-            if drawableItem ~= currentDrawable then -- Không thêm drawable hiện tại
-                table.insert(upgradeOptions, {drawable = drawableItem, type = "rare", level = currentLevel})
+            if tonumber(drawableItem) ~= tonumber(currentDrawable) then -- Không thêm drawable hiện tại
+                table.insert(upgradeOptions, {drawable = tonumber(drawableItem), type = "rare", level = currentLevel})
             end
         end
     end
     
     if #upgradeOptions == 0 then
+        processingRequests[playerId] = nil
         cb({success = false, message = "Không có tùy chọn trao đổi"})
         return
     end
@@ -932,15 +917,50 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:coinUpgrade', function(source, 
         newRarity = currentRarity
     end
     
-    -- Xóa balo cũ ngay lập tức
-    exports.ox_inventory:RemoveItem(source, Config.BagItem, 1, nil, bagSlot)
+    -- Chuẩn bị metadata mới cho balo
+    local newMetadata = {}
+    for k, v in pairs(bagItem.metadata) do
+        newMetadata[k] = v
+    end
+    if bagItem.metadata.serial then
+        newMetadata.serial = bagItem.metadata.serial
+    end
     
-    -- KHÔNG add balo mới ngay - chờ người chơi nhấn OK
+    local imageUrl = string.format('%s/%s_%d_%d.%s', 
+        Config.ImageSettings.Url, 
+        gender, 
+        Config.ImageSettings.component_id or 5,
+        newDrawable, 
+        Config.ImageSettings.Extension
+    )
+    newMetadata.drawable = newDrawable
+    newMetadata.id = newDrawable
+    newMetadata.label = string.format("Túi xách %d", newDrawable)
+    newMetadata.image = imageUrl
+    newMetadata.imageurl = imageUrl
+    newMetadata.Capdo = newLevel
+    newMetadata.DoHiem = newRarity
     
-    -- Unlock sau cooldown time
-    SetTimeout(COOLDOWN_TIME, function()
-        processingRequests[playerId] = nil
-    end)
+    -- ✅ CẬP NHẬT BALO TRỰC TIẾP NGAY TẠI SERVER:
+    local swapSuccess = false
+    if exports.ox_inventory.SetMetadata then
+        exports.ox_inventory:SetMetadata(source, tonumber(bagSlot), newMetadata)
+        local checkInv = exports.ox_inventory:GetInventory(source, false)
+        if checkInv and checkInv.items and checkInv.items[tonumber(bagSlot)] and checkInv.items[tonumber(bagSlot)].metadata and tonumber(checkInv.items[tonumber(bagSlot)].metadata.drawable) == tonumber(newDrawable) then
+            swapSuccess = true
+        end
+    end
+    
+    if not swapSuccess then
+        exports.ox_inventory:RemoveItem(source, Config.BagItem, 1, nil, bagSlot)
+        local added = exports.ox_inventory:AddItem(source, Config.BagItem, 1, newMetadata, bagSlot)
+        if not added then
+            added = exports.ox_inventory:AddItem(source, Config.BagItem, 1, newMetadata)
+        end
+        swapSuccess = added
+    end
+    
+    processingRequests[playerId] = nil
     
     -- Lưu thông tin để hiển thị kết quả
     cb({
@@ -957,14 +977,14 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:coinUpgrade', function(source, 
         coinSpent = coinCost,
         countdownTime = Config.CoinUpgrade.countdown_time,
         slot = bagSlot,
-        oldMetadata = bagItem.metadata, -- ✅ Pass metadata CŨ từ bagItem
+        oldMetadata = bagItem.metadata,
         gender = gender,
-        upgradeType = 'coin', -- Đánh dấu đây là loại coin upgrade
-        isRare = (selectedOption.type == 'rare') -- Có phải rare upgrade không
+        upgradeType = 'coin',
+        isRare = (selectedOption.type == 'rare')
     })
 end)
 
--- Callback để confirm và thực sự update balo coin upgrade sau khi nhấn OK
+-- Callback để confirm khi client UI hoàn tất (Balo đã được trao đổi an toàn ở server)
 QBCore.Functions.CreateCallback('xn_thamdinhbalo:confirmCoinUpgrade', function(source, cb, resultData)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then
@@ -972,64 +992,10 @@ QBCore.Functions.CreateCallback('xn_thamdinhbalo:confirmCoinUpgrade', function(s
         return
     end
     
-    -- Kiểm tra lock để chống duplicate khi bấm OK nhiều lần
     local playerId = Player.PlayerData.citizenid .. "_confirm"
-    if processingRequests[playerId] then
-        cb({success = false, message = "Đang xử lý, vui lòng đợi..."})
-        return
-    end
+    processingRequests[playerId] = nil
     
-    -- Lock request
-    processingRequests[playerId] = true
-    
-    -- Nhận dữ liệu từ React
-    local newDrawable = resultData.newDrawable
-    local gender = resultData.gender or 'male'
-    local oldMetadata = resultData.oldMetadata or {}
-    
-    -- ✅ GIỮ NGUYÊN 100% METADATA CŨ, CHỈ THAY ĐỔI DRAWABLE VÀ IMAGE
-    local newMetadata = {}
-    
-    -- Copy toàn bộ metadata cũ (bao gồm Capdo, DoHiem, serial, fromGacha...)
-    for k, v in pairs(oldMetadata) do
-        newMetadata[k] = v
-    end
-    
-    -- ✅ ĐẢM BẢO GIỮ SERIAL NẾU CÓ
-    if oldMetadata.serial then
-        newMetadata.serial = oldMetadata.serial
-    end
-    
-    -- Chỉ thay đổi drawable và image
-    local imageUrl = string.format('%s/%s_%d_%d.%s', 
-        Config.ImageSettings.Url, 
-        gender, 
-        Config.ImageSettings.component_id,
-        newDrawable, 
-        Config.ImageSettings.Extension
-    )
-    
-    newMetadata.drawable = newDrawable
-    newMetadata.id = newDrawable
-    newMetadata.label = string.format("Túi xách %d", newDrawable)
-    newMetadata.image = imageUrl
-    newMetadata.imageurl = imageUrl
-    
-    -- Capdo và DoHiem giữ nguyên từ oldMetadata
-    
-    -- Thêm balo mới vào inventory
-    local success = exports.ox_inventory:AddItem(source, Config.BagItem, 1, newMetadata)
-    
-    -- Unlock sau khi hoàn thành
-    SetTimeout(1000, function()
-        processingRequests[playerId] = nil
-    end)
-    
-    if success then
-        cb({success = true, message = "Đã nhận balo mới"})
-    else
-        cb({success = false, message = "Không thể thêm balo mới"})
-    end
+    cb({success = true, message = "Đã nhận balo mới"})
 end)
 
 -- Callback xử lý đổi mẫu theo yêu cầu trực tiếp

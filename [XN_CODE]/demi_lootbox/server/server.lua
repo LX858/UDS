@@ -30,7 +30,7 @@ Config.RarityChances = {
 local function rollWinningRarity(case)
     -- Random chính xác đến 0.01% (thang đo 10.000)
     local roll = math.random(1, 10000) / 100 -- Giá trị từ 0.01 đến 100.00
-    
+
     local chances = Config.RarityChances or {
         legendary = 0.5,
         epic = 3.5,
@@ -39,25 +39,35 @@ local function rollWinningRarity(case)
         common = 60.0,
     }
 
-    local cumulative = 0
+    -- Thứ tự từ quý hiếm nhất → thường nhất
     local order = { 'legendary', 'epic', 'rare', 'uncommon', 'common' }
-    
+
+    -- Tính cumulative và tìm rarity được roll trúng
+    local cumulative = 0
+    local rolledRarity = nil
     for _, rarity in ipairs(order) do
         local chance = chances[rarity] or 0
         cumulative = cumulative + chance
         if roll <= cumulative then
-            if case[rarity] and #case[rarity] > 0 then
-                return rarity
-            end
+            rolledRarity = rarity
+            break
         end
     end
 
-    -- Fallback nếu hòm không có phẩm trúng
-    for _, rarity in ipairs(order) do
+    -- Nếu roll trúng rarity có item trong hòm → trả về luôn
+    if rolledRarity and case[rolledRarity] and #case[rolledRarity] > 0 then
+        return rolledRarity
+    end
+
+    -- Fallback: nếu hòm không có item của rarity đã roll,
+    -- tìm xuống rarity thấp hơn (common, uncommon, rare...) thay vì leo lên legendary
+    local fallbackOrder = { 'common', 'uncommon', 'rare', 'epic', 'legendary' }
+    for _, rarity in ipairs(fallbackOrder) do
         if case[rarity] and #case[rarity] > 0 then
             return rarity
         end
     end
+
     return 'common'
 end
 

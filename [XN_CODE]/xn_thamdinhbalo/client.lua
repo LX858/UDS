@@ -383,7 +383,6 @@ RegisterNUICallback('startAppraisal', function(data, cb)
                 type = 'error'
             })
         end
-        cb('ok')
     end, currentSelectedBag, playerGender) -- Truyền gender cho server
 end)
 
@@ -467,7 +466,6 @@ RegisterNUICallback('executeCoinUpgrade', function(data, cb)
                 type = 'error'
             })
         end
-        cb('ok')
     end, currentSelectedBag, playerGender) -- Truyền gender cho server
 end)
 

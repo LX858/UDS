@@ -368,12 +368,12 @@ Citizen.CreateThread(function()
         useZ = false
     })
     
-    -- Farm zone 13 (Tự động cập nhật theo radius trong config.lua)
-    local z13 = FarmRental and FarmRental.FarmZones and FarmRental.FarmZones[13]
-    local farmZone13 = CircleZone:Create(z13 and z13.center or vector3(4859.8813, -4582.9717, 18.0563), (z13 and z13.radius) or 100.0, {
-        name = "farm 13",
-        useZ = false
-    })
+    -- -- Farm zone 13 (Tự động cập nhật theo radius trong config.lua)
+    -- local z13 = FarmRental and FarmRental.FarmZones and FarmRental.FarmZones[13]
+    -- local farmZone13 = CircleZone:Create(z13 and z13.center or vector3(4859.8813, -4582.9717, 18.0563), (z13 and z13.radius) or 100.0, {
+    --     name = "farm 13",
+    --     useZ = false
+    -- })
     
     -- Set up the onPlayerInOut for all zones with zone ID tracking
     local zones = {
@@ -387,9 +387,9 @@ Citizen.CreateThread(function()
         {zone = farmZone8, id = 8},
         {zone = farmZone9, id = 9},
         {zone = farmZone10, id = 10},
-        {zone = farmZone11, id = 11},
-        {zone = farmZone12, id = 12},
-        {zone = farmZone13, id = 13}
+        {zone = farmZone11, id = 11}
+        -- {zone = farmZone12, id = 12},
+        -- {zone = farmZone13, id = 13}
     }
     
     for _, zoneData in ipairs(zones) do

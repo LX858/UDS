@@ -55,6 +55,110 @@ end)
 
 local PlacedBoomboxes = {}
 
+local function IsAdmin(source)
+    if not source or source == 0 then return true end
+    local srcStr = tostring(source)
+    
+    -- 1. Kiểm tra FiveM ACE Permissions (group.admin, group.mod, admin, mod, command, ...)
+    for _, group in ipairs(Config.AdminGroups) do
+        if IsPlayerAceAllowed(srcStr, group) or IsPlayerAceAllowed(srcStr, 'group.' .. group) then
+            return true
+        end
+    end
+
+    if IsPlayerAceAllowed(srcStr, 'command') 
+        or IsPlayerAceAllowed(srcStr, 'admin') 
+        or IsPlayerAceAllowed(srcStr, 'group.admin') 
+        or IsPlayerAceAllowed(srcStr, 'mod') 
+        or IsPlayerAceAllowed(srcStr, 'group.mod') 
+        or IsPlayerAceAllowed(srcStr, 'god') 
+        or IsPlayerAceAllowed(srcStr, 'group.god') then
+        return true
+    end
+
+    -- 2. Kiểm tra PlayerData permissions nếu player đã load nhân vật
+    local Player = exports.qbx_core and exports.qbx_core.GetPlayer and exports.qbx_core:GetPlayer(source)
+    if Player and Player.PlayerData then
+        if Player.PlayerData.permissions then
+            for _, group in ipairs(Config.AdminGroups) do
+                if Player.PlayerData.permissions[group] then return true end
+            end
+        end
+        if Player.PlayerData.permission then
+            for _, group in ipairs(Config.AdminGroups) do
+                if Player.PlayerData.permission == group then return true end
+            end
+        end
+    end
+
+    -- 3. Kiểm tra qua QBCore.Functions.HasPermission nếu có QBCore
+    local QBCore = exports['qb-core'] and exports['qb-core']:GetCoreObject()
+    if QBCore and QBCore.Functions and QBCore.Functions.HasPermission then
+        for _, group in ipairs(Config.AdminGroups) do
+            local ok, has = pcall(function() return QBCore.Functions.HasPermission(source, group) end)
+            if ok and has then return true end
+        end
+    end
+
+    return false
+end
+
+lib.callback.register('1307_Boombox:server:checkIsAdmin', function(source)
+    local adm = IsAdmin(source)
+    Player(source).state:set('isBoomboxAdmin', adm, true)
+    return adm
+end)
+
+local function setupPlayerAdmin(source)
+    if not source or source == 0 then return end
+    local adm = IsAdmin(source)
+    Player(source).state:set('isBoomboxAdmin', adm, true)
+    TriggerClientEvent('1307_Boombox:client:setAdminStatus', source, adm)
+end
+
+RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function()
+    local src = source
+    setupPlayerAdmin(src)
+end)
+
+RegisterNetEvent('qbx_core:server:playerLoaded', function()
+    local src = source
+    setupPlayerAdmin(src)
+end)
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    for _, playerId in ipairs(GetPlayers()) do
+        setupPlayerAdmin(tonumber(playerId))
+    end
+end)
+
+local function isBoomboxOwnerServer(src, netId)
+    local Player = exports.qbx_core:GetPlayer(src)
+    if not Player then return false end
+
+    -- 1. Kiểm tra từ bảng PlacedBoomboxes
+    local boomboxData = PlacedBoomboxes[netId]
+    if boomboxData then
+        if boomboxData.citizenid == Player.PlayerData.citizenid or boomboxData.source == src then
+            return true
+        end
+    end
+
+    -- 2. Kiểm tra StateBag trên Entity
+    if netId and netId ~= 0 then
+        local ent = NetworkGetEntityFromNetworkId(netId)
+        if DoesEntityExist(ent) then
+            local state = Entity(ent).state
+            if state and state.boombox_owner and state.boombox_owner == Player.PlayerData.citizenid then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
 RegisterServerEvent('1307_Boombox:server:Boombox_Active')
 AddEventHandler('1307_Boombox:server:Boombox_Active', function()
     local src = source
@@ -91,11 +195,31 @@ RegisterNetEvent('1307_Boombox:server:registerBoombox', function(netId, itemName
         coords = coords
     }
 
+    local entity = NetworkGetEntityFromNetworkId(netId)
+    if DoesEntityExist(entity) then
+        Entity(entity).state:set('boombox_owner', Player.PlayerData.citizenid, true)
+    else
+        CreateThread(function()
+            local timeout = 50
+            while timeout > 0 and not DoesEntityExist(entity) do
+                Wait(100)
+                entity = NetworkGetEntityFromNetworkId(netId)
+                timeout = timeout - 1
+            end
+            if DoesEntityExist(entity) then
+                Entity(entity).state:set('boombox_owner', Player.PlayerData.citizenid, true)
+            end
+        end)
+    end
+
     Player.Functions.SetMetaData("boombox_active", 1)
 end)
 
 RegisterNetEvent('1307_Boombox:server:playMusic', function(song, entity, coords)
     local src = source
+    if not isBoomboxOwnerServer(src, entity) and not IsAdmin(src) then
+        return exports.qbx_core:Notify(src, 'Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
     xSound:PlayUrlPos(-1, entity, song, Config.DefaultVolume, coords)
     xSound:Distance(-1, entity, Config.radius)
     isPlaying = true
@@ -104,29 +228,63 @@ end)
 RegisterNetEvent('1307_Boombox:server:pickedup', function(entity)
     local src = source
     local Player = exports.qbx_core:GetPlayer(src)
+    if not Player then return end
+
+    if not isBoomboxOwnerServer(src, entity) and not IsAdmin(src) then
+        return exports.qbx_core:Notify(src, 'Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
+
     xSound:Destroy(-1, entity)
     PlacedBoomboxes[entity] = nil
+    Player.Functions.SetMetaData("boombox_active", 0)
 end)
 
 RegisterNetEvent('1307_Boombox:server:stopMusic', function(data)
     local src = source
+    if not isBoomboxOwnerServer(src, data) and not IsAdmin(src) then
+        return exports.qbx_core:Notify(src, 'Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
     xSound:Destroy(-1, data)
 end)
 
 RegisterNetEvent('1307_Boombox:server:pauseMusic', function(data)
     local src = source
+    if not isBoomboxOwnerServer(src, data) and not IsAdmin(src) then
+        return exports.qbx_core:Notify(src, 'Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
     xSound:Pause(-1, data)
 end)
 
 RegisterNetEvent('1307_Boombox:server:resumeMusic', function(data)
     local src = source
+    if not isBoomboxOwnerServer(src, data) and not IsAdmin(src) then
+        return exports.qbx_core:Notify(src, 'Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
     xSound:Resume(-1, data)
 end)
 
 RegisterNetEvent('1307_Boombox:server:changeVolume', function(volume, entity)
     local src = source
+    if not isBoomboxOwnerServer(src, entity) and not IsAdmin(src) then
+        return exports.qbx_core:Notify(src, 'Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
     if not tonumber(volume) then return end
     xSound:setVolume(-1, entity, volume)
+end)
+
+AddEventHandler('playerDropped', function()
+    local src = source
+    for netId, data in pairs(PlacedBoomboxes) do
+        if data.source == src then
+            xSound:Destroy(-1, netId)
+            local ent = NetworkGetEntityFromNetworkId(netId)
+            if DoesEntityExist(ent) then
+                DeleteEntity(ent)
+            end
+            TriggerClientEvent('1307_Boombox:client:forceDeleteEntity', -1, netId, data.coords)
+            PlacedBoomboxes[netId] = nil
+        end
+    end
 end)
 
 --============================== NHẶT BOOMBOX THEO TÊN OBJECT ========================================
@@ -160,37 +318,6 @@ end)
 -- ===================================================================================
 -- ADMIN FEATURES: KIỂM TRA THÔNG TIN & XÓA PROP BOOMBOX
 -- ===================================================================================
-
-local function IsAdmin(source)
-    if not source or source == 0 then return true end
-    
-    if exports.qbx_core and exports.qbx_core.HasGroup and exports.qbx_core:HasGroup(source, Config.AdminGroups) then
-        return true
-    end
-
-    if exports.qbx_core and exports.qbx_core.HasPermission then
-        for _, group in ipairs(Config.AdminGroups) do
-            if exports.qbx_core:HasPermission(source, group) then
-                return true
-            end
-        end
-    end
-
-    local QBCore = exports['qb-core'] and exports['qb-core']:GetCoreObject()
-    if QBCore and QBCore.Functions and QBCore.Functions.HasPermission then
-        for _, group in ipairs(Config.AdminGroups) do
-            if QBCore.Functions.HasPermission(source, group) then
-                return true
-            end
-        end
-    end
-
-    if IsPlayerAceAllowed(source, 'command') or IsPlayerAceAllowed(source, 'admin') or IsPlayerAceAllowed(source, 'group.admin') then
-        return true
-    end
-
-    return false
-end
 
 lib.callback.register('1307_Boombox:server:getBoomboxInfo', function(source, netId)
     local src = source

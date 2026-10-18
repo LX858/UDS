@@ -143,7 +143,7 @@ AddEventHandler('clothes:changeslotclothes', function(metadata, slot, name, labe
 
     local componentIndex = -1
     for i, componentName in ipairs(clothesComponentNames) do
-        if componentName == name then
+        if componentName == name or (componentName == 'cloth_decals' and name == 'cloth_decal') then
             componentIndex = i
             break
         end
@@ -209,7 +209,8 @@ local defaultClothingWoman = {
     [12] = { draw = 15, text = 0 },
     [13] = { draw = 35, text = 0 },
     [14] = { draw = 15, text = 0 },
-    [15] = { draw = 15, text = 0 }
+    [15] = { draw = 15, text = 0 },
+    [16] = { draw = 0, text = 0 }
 }
 
 local defaultClothingMen = {
@@ -227,7 +228,8 @@ local defaultClothingMen = {
     [12] = { draw = 61, text = 0 },
     [13] = { draw = 34, text = 0 },
     [14] = { draw = 15, text = 0 },
-    [15] = { draw = 15, text = 0 }
+    [15] = { draw = 15, text = 0 },
+    [16] = { draw = 0, text = 0 }
 }
 
 
@@ -251,7 +253,13 @@ function CheckAndReloadClothing(source)
             local itemInSlot = exports.ox_inventory:GetSlot(player.PlayerData.source, item.clothesSlotID)
             
             -- Nếu slot trống nhưng trước đó có quần áo
-            if not itemInSlot and clothingMonitor[source] and clothingMonitor[source][item.clothesSlotID] then
+            local isItemValid = (itemInSlot and (itemInSlot.name == item.itemname or (item.itemname == 'cloth_decals' and itemInSlot.name == 'cloth_decal')))
+            if item.clothesSlotID == (componentMapping and componentMapping.earrings and componentMapping.earrings.clothesSlotID or 16) and itemInSlot then
+                if itemInSlot.name == 'cloth_ears' or itemInSlot.name == 'cloth_decals' or itemInSlot.name == 'cloth_decal' then
+                    isItemValid = true
+                end
+            end
+            if (not isItemValid) and clothingMonitor[source] and clothingMonitor[source][item.clothesSlotID] then
                 needsReload = true
                 table.insert(missingItems, {
                     component = item.component,
@@ -355,7 +363,7 @@ function CheckClothingDurability(source)
         if item.clothesSlotID and item.clothesSlotID ~= componentMapping.clothes.clothesSlotID then
             local itemInSlot = exports.ox_inventory:GetSlot(player.PlayerData.source, item.clothesSlotID)
             
-            if itemInSlot and itemInSlot.metadata and itemInSlot.metadata.durability ~= nil then
+            if itemInSlot and itemInSlot.metadata and itemInSlot.metadata.durability ~= nil and (itemInSlot.name == item.itemname or (item.itemname == 'cloth_decals' and itemInSlot.name == 'cloth_decal')) then
                 local durability = tonumber(itemInSlot.metadata.durability)
                 
                 -- Kiểm tra xem item có trong danh sách loại trừ không
@@ -614,12 +622,10 @@ AddEventHandler('clothes:reloadPlayerClothes', function(clientGender)
     
     -- Components that are SKIN-related and should NEVER be modified by clothes system
     -- Component 0 = Face shape (NOT modified)
-    -- Component 2 = Hair style (NOT modified) 
-    -- Component 10 = Decals/tattoos (NOT modified)
+    -- Component 2 = Hair style (NOT modified)
     local protectedComponents = {
         [0] = true,  -- Face - NEVER touch
         [2] = true,  -- Hair - NEVER touch
-        [10] = true, -- Decals - NEVER touch
     }
     
     Citizen.CreateThread(function()
@@ -647,13 +653,14 @@ AddEventHandler('clothes:reloadPlayerClothes', function(clientGender)
 
                 -- Validate gender: item must match player's current gender
                 local isValidGender = false
+                local isMatchingItem = false
                 if itemInSlot and itemInSlot.metadata then
                     local itemGender = itemInSlot.metadata.sex or "male"
                     isValidGender = (itemGender == playerGender)
-                    -- PERF FIX: Đã tắt print debug trong hot-path để tránh I/O bottleneck
+                    isMatchingItem = (itemInSlot.name == item.itemname or (item.itemname == 'cloth_decals' and itemInSlot.name == 'cloth_decal'))
                 end
 
-                if itemInSlot and itemInSlot.metadata and isValidGender then
+                if itemInSlot and itemInSlot.metadata and isValidGender and isMatchingItem then
                     -- Có quần áo trong slot VÀ giới tính khớp - load lên người
                     if item.prop then
                         local props = {
@@ -939,13 +946,26 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
             end
         end
 
+        -- Kiểm tra xem toSlotNumber có phải là slot quần áo không
+        local isClothingSlot = false
+        local allowedForSlot = false
+        local slotLabels = {}
+
         for _, mapping in pairs(componentMapping) do
             if toSlotNumber == mapping.clothesSlotID then
-                if itemName ~= mapping.itemname then
-                    TriggerClientEvent('QBCore:Notify', source_, Config.Notification.reservedto .. mapping.label)
-                    return false
+                isClothingSlot = true
+                table.insert(slotLabels, mapping.label)
+                if itemName == mapping.itemname or (mapping.itemname == 'cloth_decals' and itemName == 'cloth_decal') then
+                    allowedForSlot = true
+                    break
                 end
             end
+        end
+
+        if isClothingSlot and not allowedForSlot then
+            local labelStr = table.concat(slotLabels, " / ")
+            TriggerClientEvent('QBCore:Notify', source_, Config.Notification.reservedto .. labelStr)
+            return false
         end
 
         if czSlotsfrom == componentMapping.clothes.clothesSlotID then 
@@ -990,7 +1010,8 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
             local cSlotFromIndex = -1
 
             for index, searchingClothingName in ipairs(clothesComponentNames) do
-                if CurrentItemNames[1] == searchingClothingName or CurrentItemNames[2] == searchingClothingName then
+                if CurrentItemNames[1] == searchingClothingName or CurrentItemNames[2] == searchingClothingName
+                   or ((searchingClothingName == 'cloth_decals') and (CurrentItemNames[1] == 'cloth_decal' or CurrentItemNames[2] == 'cloth_decal')) then
                     cItemMoved = true
                     cItemMovedIndex = index
                     break
@@ -1027,8 +1048,74 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                     canCC = true
                 end
 
-                if(CurrentItemNames[1] == CurrentItemNames[2]) then
-                    if (cSlotFromIndex == cItemMovedIndex) then
+                local isItem1Ears = (CurrentItemNames[1] == 'cloth_ears')
+                local isItem2Ears = (CurrentItemNames[2] == 'cloth_ears')
+                local isItem1Decal = (CurrentItemNames[1] == 'cloth_decals' or CurrentItemNames[1] == 'cloth_decal')
+                local isItem2Decal = (CurrentItemNames[2] == 'cloth_decals' or CurrentItemNames[2] == 'cloth_decal')
+                local sharedSlot = (componentMapping and componentMapping.earrings and componentMapping.earrings.clothesSlotID) or (calculateSlot and calculateSlot(16)) or 16
+                local isSharedSlotSwap = ((isItem1Ears and isItem2Decal) or (isItem1Decal and isItem2Ears)) and (toSlotMoved == sharedSlot or fromSlotMoved == sharedSlot)
+
+                if isSharedSlotSwap then
+                    if (canCC) then
+                        local incomingName, incomingMetadata
+                        if toSlotMoved == sharedSlot then
+                            incomingName = CurrentItemNames[1]
+                            incomingMetadata = CurrentItemMetadata[1]
+                        else
+                            incomingName = CurrentItemNames[2]
+                            incomingMetadata = CurrentItemMetadata[2]
+                        end
+
+                        incomingMetadata = incomingMetadata or {}
+
+                        if incomingMetadata.durability ~= nil then
+                            if tonumber(incomingMetadata.durability) == 0 then
+                                TriggerClientEvent('QBCore:Notify', source_, "Quần áo đã hỏng và không thể sử dụng!", 'error')
+                                return false
+                            end
+                        end
+
+                        local realGender = getRealPedGender(source_)
+                        if incomingMetadata.sex and realGender and incomingMetadata.sex ~= realGender then
+                            TriggerClientEvent('QBCore:Notify', source_, "Bạn không thể mặc quần áo của giới tính khác!", 'error')
+                            return false
+                        end
+
+                        if incomingName == 'cloth_ears' then
+                            -- Mặc khuyên tai, gỡ decal
+                            TriggerClientEvent('setPedProp', source_, {
+                                texture = incomingMetadata.texture or 0,
+                                drawable = incomingMetadata.drawable or -1,
+                                prop_id = 2,
+                                sex = incomingMetadata.sex
+                            })
+                            TriggerClientEvent('setPedComponent', source_, {
+                                texture = 0,
+                                drawable = 0,
+                                component_id = 10
+                            })
+                        else
+                            -- Mặc decal, gỡ khuyên tai
+                            TriggerClientEvent('setPedComponent', source_, {
+                                texture = incomingMetadata.texture or 0,
+                                drawable = incomingMetadata.drawable or 0,
+                                component_id = 10,
+                                sex = incomingMetadata.sex
+                            })
+                            TriggerClientEvent('setPedProp', source_, {
+                                texture = 0,
+                                drawable = -1,
+                                prop_id = 2
+                            })
+                        end
+
+                        triggerSavePlayerIfFreemode(source_)
+                        GetPlayerClothesAndStock(source_)
+                    else
+                        return false
+                    end
+                elseif (CurrentItemNames[1] == CurrentItemNames[2] or (isItem1Decal and isItem2Decal)) then
+                    if (fromSlotMoved == clothesSlotID[cItemMovedIndex]) then
                         if (canCC) then
                             -- Kiểm tra durability cho item thứ 2 (đang swap vào)
                             if CurrentItemMetadata[2] and CurrentItemMetadata[2].durability ~= nil then
@@ -1064,6 +1151,15 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                                     sex = CurrentItemMetadata[2].sex
                                 }
                                 TriggerClientEvent('setPedComponent', source_, components)
+
+                                -- Mặc decal -> gỡ khuyên tai
+                                if clothesComponentNames[cItemMovedIndex] == 'cloth_decals' then
+                                    TriggerClientEvent('setPedProp', source_, {
+                                        texture = 0,
+                                        drawable = -1,
+                                        prop_id = 2
+                                    })
+                                end
                             else
                                 local props = {
                                     texture = CurrentItemMetadata[2].texture,
@@ -1072,12 +1168,22 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                                     sex = CurrentItemMetadata[2].sex
                                 }
                                 TriggerClientEvent('setPedProp', source_, props)
+
+                                -- Mặc khuyên tai -> gỡ decal
+                                if clothesComponentNames[cItemMovedIndex] == 'cloth_ears' then
+                                    TriggerClientEvent('setPedComponent', source_, {
+                                        texture = 0,
+                                        drawable = 0,
+                                        component_id = 10
+                                    })
+                                end
                             end
                             triggerSavePlayerIfFreemode(source_)
+                            GetPlayerClothesAndStock(source_)
                         else
                             return false
                         end
-                    elseif(cSlotToIndex == cItemMovedIndex) then
+                    elseif (toSlotMoved == clothesSlotID[cItemMovedIndex]) then
                         if (canCC) then
                             -- Kiểm tra durability cho item thứ 1 (đang swap vào)
                             if CurrentItemMetadata[1] and CurrentItemMetadata[1].durability ~= nil then
@@ -1113,6 +1219,15 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                                     sex = CurrentItemMetadata[1].sex
                                 }
                                 TriggerClientEvent('setPedComponent', source_, components)
+
+                                -- Mặc decal -> gỡ khuyên tai
+                                if clothesComponentNames[cItemMovedIndex] == 'cloth_decals' then
+                                    TriggerClientEvent('setPedProp', source_, {
+                                        texture = 0,
+                                        drawable = -1,
+                                        prop_id = 2
+                                    })
+                                end
                             else
                                 local props = {
                                     texture = CurrentItemMetadata[1].texture,
@@ -1121,9 +1236,19 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                                     sex = CurrentItemMetadata[1].sex
                                 }
                                 TriggerClientEvent('setPedProp', source_, props)
+
+                                -- Mặc khuyên tai -> gỡ decal
+                                if clothesComponentNames[cItemMovedIndex] == 'cloth_ears' then
+                                    TriggerClientEvent('setPedComponent', source_, {
+                                        texture = 0,
+                                        drawable = 0,
+                                        component_id = 10
+                                    })
+                                end
                             end
 
                             triggerSavePlayerIfFreemode(source_)
+                            GetPlayerClothesAndStock(source_)
                         else
                             return false
                         end
@@ -1153,7 +1278,7 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
             local MovedFromCslot = false
 
             for index, searchingClothingName in ipairs(clothesComponentNames) do
-                if CurrentItemName == searchingClothingName then
+                if CurrentItemName == searchingClothingName or (searchingClothingName == 'cloth_decals' and CurrentItemName == 'cloth_decal') then
                     MovedCitem = true
                     MovedCitemIndex = index
                     break
@@ -1189,7 +1314,8 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                     canCC = true
                 end
                 if (MovedToCslot) then
-                    if (MovedCitemIndex == MovedToCslotIndex) then
+                    local isMatchingSlot = (clothesSlotID[MovedCitemIndex] == toSlotMoved)
+                    if (isMatchingSlot) then
                         if (canCC) then
                             -- Kiểm tra durability trước khi mặc quần áo
                             if CurrentItemMetadata and CurrentItemMetadata.durability ~= nil then
@@ -1220,6 +1346,15 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                                     sex = CurrentItemMetadata.sex
                                 }
                                 TriggerClientEvent('setPedComponent', source_, components)
+
+                                -- Mặc decal (component 10) chia sẻ slot 16 với khuyên tai -> gỡ khuyên tai
+                                if clothesComponentNames[MovedCitemIndex] == 'cloth_decals' then
+                                    TriggerClientEvent('setPedProp', source_, {
+                                        texture = 0,
+                                        drawable = -1,
+                                        prop_id = 2
+                                    })
+                                end
                             else
                                 local props = {
                                     texture = CurrentItemMetadata.texture,
@@ -1228,6 +1363,15 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                                     sex = CurrentItemMetadata.sex
                                 }
                                 TriggerClientEvent('setPedProp', source_, props)
+
+                                -- Mặc khuyên tai (prop 2) chia sẻ slot 16 với decal -> gỡ decal
+                                if clothesComponentNames[MovedCitemIndex] == 'cloth_ears' then
+                                    TriggerClientEvent('setPedComponent', source_, {
+                                        texture = 0,
+                                        drawable = 0,
+                                        component_id = 10
+                                    })
+                                end
                             end
                             triggerSavePlayerIfFreemode(source_)
                         else
@@ -1242,7 +1386,7 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                             return false
                         end
                     end
-                elseif (MovedFromCslot) then
+                elseif (MovedFromCslot and fromSlotMoved == clothesSlotID[MovedCitemIndex]) then
                     if (payload.fromInventory ~= payload.toInventory and payload.fromType == 'player' and payload.toType == 'player') then
                         local fromSource = payload.fromInventory
                         local ped = GetPlayerPed(fromSource)
@@ -1410,7 +1554,7 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
 
         -- Check if it's a clothing item
         for index, searchingClothingName in ipairs(clothesComponentNames) do
-            if CurrentItemName == searchingClothingName then
+            if CurrentItemName == searchingClothingName or (searchingClothingName == 'cloth_decals' and CurrentItemName == 'cloth_decal') then
                 MovedCitem = true
                 MovedCitemIndex = index
                 break
@@ -1419,7 +1563,7 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
 
         -- Check if moved from clothing slot
         for _, searchingClothingSlot in ipairs(clothesSlotID) do
-            if fromSlotMoved == searchingClothingSlot then
+            if fromSlotMoved == searchingClothingSlot and fromSlotMoved == clothesSlotID[MovedCitemIndex] then
                 MovedFromCslot = true
                 break
             end
@@ -1529,8 +1673,8 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                 for _, item in pairs(componentMapping) do
                     if item.clothesSlotID ~= componentMapping.clothes.clothesSlotID then
                         local itemInSlot = exports.ox_inventory:GetSlot(source_, item.clothesSlotID)
-                        if itemInSlot then 
-                            exports.ox_inventory:RemoveItem(source_, item.itemname, 1, itemInSlot.metadata, item.clothesSlotID)
+                        if itemInSlot and (itemInSlot.name == item.itemname or (item.itemname == 'cloth_decals' and itemInSlot.name == 'cloth_decal')) then 
+                            exports.ox_inventory:RemoveItem(source_, itemInSlot.name, 1, itemInSlot.metadata, item.clothesSlotID)
                         end 
                     end
                 end
@@ -1548,7 +1692,7 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
         local isClothingItem = false
         local clothingItemIndex = -1
         for index, searchingClothingName in ipairs(clothesComponentNames) do
-            if CurrentItemName == searchingClothingName then
+            if CurrentItemName == searchingClothingName or (searchingClothingName == 'cloth_decals' and CurrentItemName == 'cloth_decal') then
                 isClothingItem = true
                 clothingItemIndex = index
                 break
@@ -1560,7 +1704,7 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
             -- Kiểm tra xem slot đích có phải là slot dành cho loại quần áo này không
             local isCorrectSlot = false
             for _, mapping in pairs(componentMapping) do
-                if toSlotMoved == mapping.clothesSlotID and CurrentItemName == mapping.itemname then
+                if toSlotMoved == mapping.clothesSlotID and (CurrentItemName == mapping.itemname or (mapping.itemname == 'cloth_decals' and CurrentItemName == 'cloth_decal')) then
                     isCorrectSlot = true
                     break
                 end
@@ -1605,7 +1749,7 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
 
         -- Check if it's a clothing item
         for index, searchingClothingName in ipairs(clothesComponentNames) do
-            if CurrentItemName == searchingClothingName then
+            if CurrentItemName == searchingClothingName or (searchingClothingName == 'cloth_decals' and CurrentItemName == 'cloth_decal') then
                 MovedCitem = true
                 MovedCitemIndex = index
                 break
@@ -1614,7 +1758,7 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
 
         -- Check if moved from clothing slot
         for _, searchingClothingSlot in ipairs(clothesSlotID) do
-            if fromSlotMoved == searchingClothingSlot then
+            if fromSlotMoved == searchingClothingSlot and fromSlotMoved == clothesSlotID[MovedCitemIndex] then
                 MovedFromCslot = true
                 break
             end
@@ -1704,8 +1848,8 @@ local checkMovingItems = exports.ox_inventory:registerHook('swapItems', function
                 for _, item in pairs(componentMapping) do
                     if item.clothesSlotID ~= componentMapping.clothes.clothesSlotID then
                         local itemInSlot = exports.ox_inventory:GetSlot(fromSource, item.clothesSlotID)
-                        if itemInSlot then 
-                            exports.ox_inventory:RemoveItem(fromSource, item.itemname, 1, itemInSlot.metadata, item.clothesSlotID)
+                        if itemInSlot and (itemInSlot.name == item.itemname or (item.itemname == 'cloth_decals' and itemInSlot.name == 'cloth_decal')) then 
+                            exports.ox_inventory:RemoveItem(fromSource, itemInSlot.name, 1, itemInSlot.metadata, item.clothesSlotID)
                         end 
                     end
                 end
@@ -1940,7 +2084,7 @@ function GetPlayerClothes(source)
     for _, item in pairs(componentMapping) do
         if item.clothesSlotID ~= componentMapping.clothes.clothesSlotID then
             local itemInSlot = exports.ox_inventory:GetSlot(player.PlayerData.source, item.clothesSlotID)
-            if itemInSlot and itemInSlot.metadata then
+            if itemInSlot and itemInSlot.metadata and (itemInSlot.name == item.itemname or (item.itemname == 'cloth_decals' and itemInSlot.name == 'cloth_decal')) then
                 local metadata = itemInSlot.metadata
                 local itemData = {
                     name = item.itemname,
@@ -1992,8 +2136,8 @@ function ClothesMoved(source, toSlot)
 
         for _, item in pairs(componentMapping) do
             local itemInSlot = exports.ox_inventory:GetSlot(player.PlayerData.source, item.clothesSlotID)
-            if itemInSlot then 
-                exports.ox_inventory:RemoveItem(player.PlayerData.source, item.itemname, 1, itemInSlot.metadata, item.clothesSlotID)
+            if itemInSlot and (itemInSlot.name == item.itemname or (item.itemname == 'cloth_decals' and itemInSlot.name == 'cloth_decal')) then 
+                exports.ox_inventory:RemoveItem(player.PlayerData.source, itemInSlot.name, 1, itemInSlot.metadata, item.clothesSlotID)
             end 
         end
 
@@ -2192,8 +2336,8 @@ AddEventHandler('clothes:defaultoutfit', function()
     for _, item in pairs(componentMapping) do
         if item.clothesSlotID ~= componentMapping.clothes.clothesSlotID then
             local itemInSlot = exports.ox_inventory:GetSlot(xPlayer.PlayerData.source, item.clothesSlotID)
-            if itemInSlot then 
-                exports.ox_inventory:RemoveItem(xPlayer.PlayerData.source, item.itemname, 1, itemInSlot.metadata, item.clothesSlotID)
+            if itemInSlot and (itemInSlot.name == item.itemname or (item.itemname == 'cloth_decals' and itemInSlot.name == 'cloth_decal')) then 
+                exports.ox_inventory:RemoveItem(xPlayer.PlayerData.source, itemInSlot.name, 1, itemInSlot.metadata, item.clothesSlotID)
             end 
         end
     end

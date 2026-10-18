@@ -82,6 +82,7 @@ function getSkinParts(type)
 		[5] = {'bags_1', 'bags_2'},
 		[3] = {'arms', 'arms_2'},
 		[7] = {'chain_1', 'chain_2'},
+		[10] = {'decals_1', 'decals_2'},
 	}
 	return parts[type] and parts[type][1], parts[type] and parts[type][2]
 end
@@ -109,6 +110,7 @@ function getComponentType(component_id)
         [7] = "chain",
         [8] = "shirt",
         [9] = "vest",
+        [10] = "decal",
         [11] = "torso"
     }
     return mapping[component_id]
@@ -196,7 +198,7 @@ exports('clothes', function(data)
                 end
 
                 for category, mapping in pairs(componentMapping) do
-                    if mapping.itemname == data.name then
+                    if mapping.itemname == data.name or (mapping.itemname == 'cloth_decals' and data.name == 'cloth_decal') then
                         local component = mapping.component
                         local isProp = mapping.prop
                         local expectedDrawable = data.metadata.drawable
@@ -220,7 +222,7 @@ exports('clothes', function(data)
                 if canUseIlleniumForPed(cache.ped) then
                     local component = nil
                     for category, mapping in pairs(componentMapping) do
-                        if mapping.itemname == data.name then
+                        if mapping.itemname == data.name or (mapping.itemname == 'cloth_decals' and data.name == 'cloth_decal') then
                             component = mapping
                             break
                         end
@@ -243,6 +245,17 @@ exports('clothes', function(data)
                                     texture = data.metadata.texture
                                 }
                             })
+
+                            -- Nếu đeo khuyên tai (prop 2) chia sẻ slot 16 với decal -> gỡ decal (component 10 về 0)
+                            if component.component == 2 and component.prop then
+                                exports['illenium-appearance']:setPedComponents(cache.ped, {
+                                    {
+                                        component_id = 10,
+                                        drawable = 0,
+                                        texture = 0
+                                    }
+                                })
+                            end
                         else
                             local componentType = getComponentType(component.component)
                             if componentType and Config.Clothes[componentType] then
@@ -259,6 +272,17 @@ exports('clothes', function(data)
                                     texture = data.metadata.texture
                                 }
                             })
+
+                            -- Nếu mặc decal (component 10) chia sẻ slot 16 với khuyên tai -> gỡ khuyên tai (prop 2 về -1)
+                            if component.component == 10 and not component.prop then
+                                exports['illenium-appearance']:setPedProps(cache.ped, {
+                                    {
+                                        prop_id = 2,
+                                        drawable = -1,
+                                        texture = -1
+                                    }
+                                })
+                            end
                         end
                         TriggerServerEvent('RefreshArmsAndTShirt')
                         local appearance = exports['illenium-appearance']:getPedAppearance(cache.ped)
@@ -269,7 +293,7 @@ exports('clothes', function(data)
 
                     local component = nil
                     for category, mapping in pairs(componentMapping) do
-                        if mapping.itemname == data.name then
+                        if mapping.itemname == data.name or (mapping.itemname == 'cloth_decals' and data.name == 'cloth_decal') then
                             component = mapping
                             break
                         end
@@ -294,8 +318,14 @@ exports('clothes', function(data)
                         if shouldUseNativeOnlyForCustomPed(ped) then
                             if component.prop then
                                 applyPropNative(ped, component.component, data.metadata.drawable, data.metadata.texture)
+                                if component.component == 2 and component.prop then
+                                    applyComponentNative(ped, 10, 0, 0)
+                                end
                             else
                                 applyComponentNative(ped, component.component, data.metadata.drawable, data.metadata.texture)
+                                if component.component == 10 and not component.prop then
+                                    applyPropNative(ped, 2, -1, 0)
+                                end
                             end
                         else
                             local skinPart, skinColor = getSkinParts(data.metadata.type)
@@ -305,7 +335,13 @@ exports('clothes', function(data)
                                     if v.name == skinPart then
                                         TriggerEvent('skinchanger:change', skinPart, data.metadata.drawable)
                                         TriggerEvent('skinchanger:change', skinColor, data.metadata.texture)
-                
+                                        if component.component == 10 and not component.prop then
+                                            TriggerEvent('skinchanger:change', 'ears_1', -1)
+                                            TriggerEvent('skinchanger:change', 'ears_2', 0)
+                                        elseif component.component == 2 and component.prop then
+                                            TriggerEvent('skinchanger:change', 'decals_1', 0)
+                                            TriggerEvent('skinchanger:change', 'decals_2', 0)
+                                        end
                                         TriggerEvent('skinchanger:getSkin', function(skin)
                                             TriggerServerEvent('esx_skin:save', skin)
                                         end)

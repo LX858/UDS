@@ -76,7 +76,7 @@ Config.VehicleActions = {
 Config.PatrolPoints = {
     {
         id = 1,
-        name = "Bãi đu đủ",
+        name = "Bãi trồng trái phép",
         coords = vector3(1231.5006, -86.8380, 59.6442),
         radius = 100.0,
         sprite = 140,
@@ -92,14 +92,6 @@ Config.PatrolPoints = {
     },
     {
         id = 3,
-        name = "bãi hoa",
-        coords = vector3(1481.9066, -2354.6516, 71.9142),
-        radius = 100.0,
-        sprite = 140,
-        cooldown = 30 -- 15 phút
-    },
-    {
-        id = 4,
         name = "bãi dò kim loại",
         coords = vector3(-1171.4543, 33.4847, 51.4955),
         radius = 100.0,

@@ -24,6 +24,7 @@ lib.callback.register('tipi-hud:getInformation', function()
 end)
 
 Citizen.CreateThread(function()
+    Wait(10000)
     while true do
         local data = {}
         local players = getPlayers()

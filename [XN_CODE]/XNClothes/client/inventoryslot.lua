@@ -3,7 +3,6 @@
 local protectedSkinComponents = {
     [0] = true,   -- Face shape
     [2] = true,   -- Hair style
-    [10] = true,  -- Decals/tattoos
 }
 
 local MALE_FREEMODE_MODEL = joaat('mp_m_freemode_01')
@@ -107,6 +106,15 @@ RegisterNetEvent('setPedComponent', function(components)
         else 
             exports["illenium-appearance"]:setPedComponent(PlayerPedId(), components)
         end
+        
+        -- Decal (component 10) dùng chung slot 16 với Khuyên tai (prop 2): khi mặc decal thì gỡ khuyên tai
+        if components.component_id == 10 and components.drawable and tonumber(components.drawable) > 0 then
+            exports["illenium-appearance"]:setPedProp(PlayerPedId(), {
+                prop_id = 2,
+                drawable = -1,
+                texture = 0
+            })
+        end
     
         -- Save appearance - but only if skipClothingAnimation is false (not during bulk reload)
         -- This prevents saving incomplete appearance during spawn
@@ -120,6 +128,9 @@ RegisterNetEvent('setPedComponent', function(components)
         else
             SetPedComponentVariation(playerPed, components.component_id, components.drawable, components.texture, 0)
         end
+        if components.component_id == 10 and components.drawable and tonumber(components.drawable) > 0 then
+            ClearPedProp(playerPed, 2)
+        end
     else
         QBCore.Functions.TriggerCallback('esx_skin:getPlayerSkin', function(skin)
             if components.component_id == 11 and components.drawable == 15 then
@@ -129,8 +140,16 @@ RegisterNetEvent('setPedComponent', function(components)
                     TriggerEvent('skinchanger:loadClothes', skin)
                 end
             else
-                skin[skinPart] = components.drawable
-                skin[skinColor] = components.texture
+                if skinPart and skinPart ~= '' then
+                    skin[skinPart] = components.drawable
+                end
+                if skinColor and skinColor ~= '' then
+                    skin[skinColor] = components.texture
+                end
+                if components.component_id == 10 and components.drawable and tonumber(components.drawable) > 0 then
+                    skin['ears_1'] = -1
+                    skin['ears_2'] = 0
+                end
                 TriggerEvent('skinchanger:loadClothes', skin)
             end
             
@@ -196,17 +215,37 @@ RegisterNetEvent('setPedProp', function(props)
 
     if canUseIlleniumForPed(playerPed) then
         exports["illenium-appearance"]:setPedProp(PlayerPedId(), props)
+        -- Khuyên tai (prop 2) dùng chung slot 16 với Decal (component 10): khi đeo khuyên tai thì reset decal về 0
+        if props.prop_id == 2 and props.drawable and tonumber(props.drawable) >= 0 then
+            exports["illenium-appearance"]:setPedComponent(PlayerPedId(), {
+                component_id = 10,
+                drawable = 0,
+                texture = 0
+            })
+        end
+
+        if not skipClothingAnimation then
+            local appearance = exports["illenium-appearance"]:getPedAppearance(PlayerPedId())
+            TriggerServerEvent('illenium-appearance:server:saveAppearance', appearance)
+        end
     elseif shouldUseNativeOnlyForCustomPed(playerPed) then
         if drawable == -1 then
             ClearPedProp(playerPed, props.prop_id)
         else
             SetPedPropIndex(playerPed, props.prop_id, drawable, texture, true)
+            if props.prop_id == 2 then
+                SetPedComponentVariation(playerPed, 10, 0, 0, 0)
+            end
         end
     else
         local propName, propColor = getPropParts(props.prop_id)
         QBCore.Functions.TriggerCallback('esx_skin:getPlayerSkin', function(skin)
             skin[propName] = props.drawable
             skin[propColor] = props.texture
+            if props.prop_id == 2 and props.drawable and tonumber(props.drawable) >= 0 then
+                skin['decals_1'] = 0
+                skin['decals_2'] = 0
+            end
             TriggerEvent('skinchanger:loadClothes', skin)
             TriggerServerEvent('esx_skin:save', skin)
         end)
@@ -440,6 +479,7 @@ function getComponentType(component_id)
         [7] = "chain",
         [8] = "shirt",
         [9] = "vest",
+        [10] = "decal",
         [11] = "torso"
     }
     return mapping[component_id]

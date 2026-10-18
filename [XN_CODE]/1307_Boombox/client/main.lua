@@ -8,12 +8,94 @@ local sudung_boombox_5 = false
 local sudung_boombox_6 = false
 local streamMode = false -- Trạng thái stream mode để tắt âm thanh boombox
 
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    local result = lib.callback.await('1307_Boombox:server:CheckMission', 2000, "boombox_active")
-    if not result then
-        return 
+local myCitizenId = nil
+local isUserAdmin = false
+
+local function getMyCitizenId()
+    if myCitizenId then return myCitizenId end
+    if QBX and QBX.PlayerData and QBX.PlayerData.citizenid then
+        myCitizenId = QBX.PlayerData.citizenid
+        return myCitizenId
     end
-    Check_Task_BoomBox = result
+    if exports.qbx_core and exports.qbx_core.GetPlayerData then
+        local pData = exports.qbx_core:GetPlayerData()
+        if pData and pData.citizenid then
+            myCitizenId = pData.citizenid
+            return myCitizenId
+        end
+    end
+    return nil
+end
+
+local function isBoomboxOwner(entity)
+    if not entity or not DoesEntityExist(entity) then return false end
+
+    -- 1. Kiểm tra đối tượng vừa đặt của người chơi này
+    if check_use_boombox and currentData then
+        if NetworkGetEntityIsNetworked(entity) and NetworkGetNetworkIdFromEntity(entity) == currentData then
+            return true
+        end
+    end
+
+    -- 2. Kiểm tra StateBag gán CitizenID của chủ sở hữu
+    local myCid = getMyCitizenId()
+    if myCid then
+        local state = Entity(entity).state
+        if state and state.boombox_owner and state.boombox_owner == myCid then
+            return true
+        end
+    end
+
+    return false
+end
+
+-- Kiểm tra quyền Admin tức thì qua biến cache hoặc StateBag của FiveM (O(1), không tốn hiệu năng khi target)
+local function isPlayerAdmin()
+    return isUserAdmin or (LocalPlayer and LocalPlayer.state and LocalPlayer.state.isBoomboxAdmin == true)
+end
+
+-- Lắng nghe StateBag từ server khi quyền admin thay đổi
+AddStateBagChangeHandler('isBoomboxAdmin', ('player:%s'):format(GetPlayerServerId(PlayerId())), function(_, _, value)
+    isUserAdmin = value == true
+end)
+
+RegisterNetEvent('1307_Boombox:client:setAdminStatus', function(status)
+    isUserAdmin = status == true
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    myCitizenId = QBX and QBX.PlayerData and QBX.PlayerData.citizenid
+    local result = lib.callback.await('1307_Boombox:server:CheckMission', 2000, "boombox_active")
+    if result then
+        Check_Task_BoomBox = result
+    end
+    local adm = lib.callback.await('1307_Boombox:server:checkIsAdmin', 2000)
+    if adm ~= nil then
+        isUserAdmin = adm
+    end
+end)
+
+RegisterNetEvent('qbx_core:client:playerLoaded', function()
+    myCitizenId = QBX and QBX.PlayerData and QBX.PlayerData.citizenid
+    local adm = lib.callback.await('1307_Boombox:server:checkIsAdmin', 2000)
+    if adm ~= nil then
+        isUserAdmin = adm
+    end
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
+    myCitizenId = nil
+    isUserAdmin = false
+end)
+
+-- Chỉ chạy một lần duy nhất lúc script khởi động để đồng bộ trạng thái ban đầu
+CreateThread(function()
+    Wait(500)
+    myCitizenId = getMyCitizenId()
+    local adm = lib.callback.await('1307_Boombox:server:checkIsAdmin', 2000)
+    if adm ~= nil then
+        isUserAdmin = adm
+    end
 end)
 
 local function loadAnimDict(dict)
@@ -39,6 +121,9 @@ CreateThread(function()
             distance = 2.0,
             icon = "fas fa-music",
             label = "Tương tác loa",
+            canInteract = function(entity, distance, coords, name, bone)
+                return isBoomboxOwner(entity)
+            end,
             onSelect = function(data)
                 TriggerEvent('1307_Boombox:client:playMusic', data)
             end
@@ -48,6 +133,9 @@ CreateThread(function()
             distance = 2.5,
             icon = "fas fa-shield-halved",
             label = "🛡️ Kiểm tra thông tin (Admin)",
+            canInteract = function(entity, distance, coords, name, bone)
+                return isPlayerAdmin()
+            end,
             onSelect = function(data)
                 TriggerEvent('1307_Boombox:client:adminInspect', data.entity)
             end
@@ -100,7 +188,11 @@ for k,v in pairs(Config.Boombox) do
                     SetEntityHeading(object, (heading + 180.0) % 360.0)
                     FreezeEntityPosition(object, true)
                     currentData = NetworkGetNetworkIdFromEntity(object)
-                    exports.qbx_core:Notify('Âm lượng đã được đặt mặc định là 0.05<br>Lưu ý: Đi quá xa thì Boombox sẽ tự động xóa', 'warning', 10000)
+                    local myCid = getMyCitizenId()
+                    if myCid then
+                        Entity(object).state:set('boombox_owner', myCid, true)
+                    end
+                    exports.qbx_core:Notify('Âm lượng đã được đặt mặc định là 0.05 Lưu ý: Đi quá xa thì Boombox sẽ tự động xóa', 'warning', 10000)
                     sudung_boombox_1 = true
                     TriggerServerEvent("1307_Boombox:server:RemoveItem", CurrentZone.itemname, 1)
                     check_use_boombox = true
@@ -117,72 +209,83 @@ for k,v in pairs(Config.Boombox) do
     end)
 end
 RegisterNetEvent('1307_Boombox:client:playMusic', function(data)
-    if data and data.entity then
-        currentData = NetworkGetNetworkIdFromEntity(data.entity)
+    local entity = data and data.entity
+    if not entity or not DoesEntityExist(entity) then
+        return exports.qbx_core:Notify('Không tìm thấy đối tượng Boombox!', 'error', 5000)
     end
-    if QBX.PlayerData.metadata["boombox_active"] == 1 then
-        local allowedItems = {
-            {
-                title = '🎶 | PHÁT NHẠC',
-                description = 'Nhập URL Youtube',
-                onSelect = function(option)
-                    TriggerEvent('1307_Boombox:client:musicMenu')
-                end
-            },
-            {
-                title = '⏹️ | DỪNG PHÁT NHẠC',
-                description = 'Dừng bài hát đang phát',
-                onSelect = function(option)
-                    TriggerServerEvent('1307_Boombox:server:stopMusic', currentData)
-                    exports.qbx_core:Notify('Đã dừng phát nhạc!', 'info', 5000)
-                end
-            },
-            {
-                title = '⏸️ | TẠM DỪNG PHÁT NHẠC',
-                description = 'Tạm dừng nhạc hiện đang phát',
-                onSelect = function(option)
-                    TriggerServerEvent('1307_Boombox:server:pauseMusic', currentData)
-                    exports.qbx_core:Notify('Đã tạm dừng nhạc!', 'info', 5000)
-                end
-            },
-            {
-                title = '▶️ | TIẾP TỤC PHÁT NHẠC',
-                description = 'Tiếp tục phát nhạc đã tạm dừng',
-                onSelect = function(option)
-                    TriggerServerEvent('1307_Boombox:server:resumeMusic', currentData)
-                    exports.qbx_core:Notify('Đã tiếp tục phát nhạc!', 'info', 5000)
-                end
-            },
-            {
-                title = '🔈 | THAY ĐỔI ÂM LƯỢNG',
-                description = 'Thay đổi âm lượng của loa',
-                onSelect = function(option)
-                    TriggerEvent('1307_Boombox:client:changeVolume')
-                end
-            },
-            {
-                title = '❌ | NHẶT LÊN',
-                description = 'Dừng phát nhạc và nhặt lên',
-                onSelect = function(option)
-                    TriggerEvent('1307_Boombox:client:pickupBoombox')
-                end
-            },
+
+    if not isBoomboxOwner(entity) then
+        return exports.qbx_core:Notify('Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
+
+    currentData = NetworkGetNetworkIdFromEntity(entity)
+    check_use_boombox = true
+
+    local allowedItems = {
+        {
+            title = '🎶 | PHÁT NHẠC',
+            description = 'Nhập URL Youtube',
+            onSelect = function(option)
+                TriggerEvent('1307_Boombox:client:musicMenu')
+            end
+        },
+        {
+            title = '⏹️ | DỪNG PHÁT NHẠC',
+            description = 'Dừng bài hát đang phát',
+            onSelect = function(option)
+                TriggerServerEvent('1307_Boombox:server:stopMusic', currentData)
+                exports.qbx_core:Notify('Đã dừng phát nhạc!', 'info', 5000)
+            end
+        },
+        {
+            title = '⏸️ | TẠM DỪNG PHÁT NHẠC',
+            description = 'Tạm dừng nhạc hiện đang phát',
+            onSelect = function(option)
+                TriggerServerEvent('1307_Boombox:server:pauseMusic', currentData)
+                exports.qbx_core:Notify('Đã tạm dừng nhạc!', 'info', 5000)
+            end
+        },
+        {
+            title = '▶️ | TIẾP TỤC PHÁT NHẠC',
+            description = 'Tiếp tục phát nhạc đã tạm dừng',
+            onSelect = function(option)
+                TriggerServerEvent('1307_Boombox:server:resumeMusic', currentData)
+                exports.qbx_core:Notify('Đã tiếp tục phát nhạc!', 'info', 5000)
+            end
+        },
+        {
+            title = '🔈 | THAY ĐỔI ÂM LƯỢNG',
+            description = 'Thay đổi âm lượng của loa',
+            onSelect = function(option)
+                TriggerEvent('1307_Boombox:client:changeVolume')
+            end
+        },
+        {
+            title = '❌ | NHẶT LÊN',
+            description = 'Dừng phát nhạc và nhặt lên',
+            onSelect = function(option)
+                TriggerEvent('1307_Boombox:client:pickupBoombox')
+            end
+        },
+    }
+    lib.registerContext({
+        id = '1307_Boombox',
+        title = "💿 | MÁY NGHE NHẠC",
+        options = {
+            { readOnly = true, title = "Hãy chọn Option bạn muốn !", description = "" },
+            table.unpack(allowedItems)
         }
-        lib.registerContext({
-            id = '1307_Boombox',
-            title = "💿 | MÁY NGHE NHẠC",
-            options = {
-                { readOnly = true, title = "Hãy chọn Option bạn muốn !", description = "" },
-                table.unpack(allowedItems)
-            }
-        })
-        lib.showContext('1307_Boombox')
-    else
-        exports.qbx_core:Notify('Bạn không có quyền sử dụng Boombox này!', 'error', 5000)
-    end
+    })
+    lib.showContext('1307_Boombox')
 end)
 
 RegisterNetEvent('1307_Boombox:client:musicMenu', function()
+    if not currentData or not NetworkDoesNetworkIdExist(currentData) then return end
+    local ent = NetworkGetEntityFromNetworkId(currentData)
+    if not DoesEntityExist(ent) or not isBoomboxOwner(ent) then
+        return exports.qbx_core:Notify('Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
+
     local input = lib.inputDialog("Nhập Link bài hát", {
         {
             type = "input",
@@ -195,11 +298,16 @@ RegisterNetEvent('1307_Boombox:client:musicMenu', function()
     if not CheckInput then 
         return 
     end
-    TriggerServerEvent('1307_Boombox:server:playMusic', CheckInput, currentData, GetEntityCoords(NetworkGetEntityFromNetworkId(currentData)))
-
+    TriggerServerEvent('1307_Boombox:server:playMusic', CheckInput, currentData, GetEntityCoords(ent))
 end)
 
 RegisterNetEvent('1307_Boombox:client:changeVolume', function()
+    if not currentData or not NetworkDoesNetworkIdExist(currentData) then return end
+    local ent = NetworkGetEntityFromNetworkId(currentData)
+    if not DoesEntityExist(ent) or not isBoomboxOwner(ent) then
+        return exports.qbx_core:Notify('Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
+
     local input = lib.inputDialog("Âm lượng nhạc", {
         {
             type = "slider",
@@ -218,13 +326,18 @@ RegisterNetEvent('1307_Boombox:client:changeVolume', function()
     end
     -- Chuyển đổi giá trị từ 0-20 về 0.0-1.0 cho âm lượng thực tế
     local volumeLevel = CheckInput / 20
-    TriggerServerEvent('1307_Boombox:server:changeVolume', volumeLevel, currentData, GetEntityCoords(NetworkGetEntityFromNetworkId(currentData)))
-
+    TriggerServerEvent('1307_Boombox:server:changeVolume', volumeLevel, currentData, GetEntityCoords(ent))
 end)
 
 RegisterNetEvent('1307_Boombox:client:pickupBoombox', function()
+    if not currentData or not NetworkDoesNetworkIdExist(currentData) then
+        return exports.qbx_core:Notify('Không tìm thấy đối tượng Boombox!', 'error', 5000)
+    end
     local obj = NetworkGetEntityFromNetworkId(currentData)
-    local objCoords = GetEntityCoords()
+    if not DoesEntityExist(obj) or not isBoomboxOwner(obj) then
+        return exports.qbx_core:Notify('Bạn không phải là chủ sở hữu của Boombox này!', 'error', 5000)
+    end
+
     NetworkRequestControlOfEntity(obj)
     loadAnimDict("anim@heists@narcotics@trash")
     TaskPlayAnim(PlayerPedId(), "anim@heists@narcotics@trash", "pickup", 8.0, -8.0, -1, 1, 0, false, false, false)
@@ -262,56 +375,48 @@ RegisterCommand('muteboombox', function()
     end
 end, false)
 
--- Lệnh dừng phát bài hát hiện tại trên Boombox của mình (cho tất cả mọi người xung quanh)
--- RegisterCommand('dungnhac', function()
---     if currentData then
---         TriggerServerEvent('1307_Boombox:server:stopMusic', currentData)
---         exports.qbx_core:Notify('Đã dừng phát nhạc Boombox!', 'info', 5000)
---     else
---         exports.qbx_core:Notify('Bạn không có Boombox nào đang phát!', 'error', 5000)
---     end
--- end, false)
-
-
 CreateThread(function()
 	while true do
-        if check_use_boombox then
+        if check_use_boombox and currentData and NetworkDoesNetworkIdExist(currentData) then
             local Ped = PlayerPedId()
             local pCoord = GetEntityCoords(Ped)
             local obj = NetworkGetEntityFromNetworkId(currentData)
-            local objCoords = GetEntityCoords(obj)
-            if #(pCoord - objCoords) > 25.0 then
-                exports.qbx_core:Notify('Bạn đang đi quá xa Boombox nếu tiếp tục đi Boombox sẽ bị xóa', 'warning', 5000)
-            end
-            if #(pCoord - objCoords) > 30.0 then
-                NetworkRequestControlOfEntity(obj)
-                Wait(700)
-                SetEntityAsMissionEntity(obj,false,true)
-                DeleteEntity(obj)
-                TriggerServerEvent("1307_Boombox:server:pickedup", currentData)
-                if sudung_boombox_1 == true then
-                    check_use_boombox = false
-                    sudung_boombox_1 = false
-                elseif sudung_boombox_2 == true then
-                    check_use_boombox = false
-                    sudung_boombox_2 = false
-                elseif sudung_boombox_3 == true then
-                    check_use_boombox = false
-                    sudung_boombox_3 = false
-                elseif sudung_boombox_4 == true then
-                    check_use_boombox = false
-                    sudung_boombox_4 = false
-                elseif sudung_boombox_5 == true then
-                    check_use_boombox = false
-                    sudung_boombox_5 = false
-                elseif sudung_boombox_6 == true then
-                    check_use_boombox = false
-                    sudung_boombox_6 = false
+            if DoesEntityExist(obj) then
+                local objCoords = GetEntityCoords(obj)
+                local dist = #(pCoord - objCoords)
+                if dist > 25.0 and dist <= 30.0 then
+                    exports.qbx_core:Notify('Bạn đang đi quá xa Boombox nếu tiếp tục đi Boombox sẽ bị xóa', 'warning', 5000)
                 end
-                currentData = nil
-                Wait(500)
-                ClearPedTasks(PlayerPedId())
-                exports.qbx_core:Notify('Boombox bị xóa do bạn đã đi quá xa!', 'error', 5000)
+                if dist > 30.0 then
+                    NetworkRequestControlOfEntity(obj)
+                    Wait(700)
+                    SetEntityAsMissionEntity(obj,false,true)
+                    DeleteEntity(obj)
+                    TriggerServerEvent("1307_Boombox:server:pickedup", currentData)
+                    if sudung_boombox_1 == true then
+                        check_use_boombox = false
+                        sudung_boombox_1 = false
+                    elseif sudung_boombox_2 == true then
+                        check_use_boombox = false
+                        sudung_boombox_2 = false
+                    elseif sudung_boombox_3 == true then
+                        check_use_boombox = false
+                        sudung_boombox_3 = false
+                    elseif sudung_boombox_4 == true then
+                        check_use_boombox = false
+                        sudung_boombox_4 = false
+                    elseif sudung_boombox_5 == true then
+                        check_use_boombox = false
+                        sudung_boombox_5 = false
+                    elseif sudung_boombox_6 == true then
+                        check_use_boombox = false
+                        sudung_boombox_6 = false
+                    end
+                    currentData = nil
+                    Wait(500)
+                    ClearPedTasks(PlayerPedId())
+                    exports.qbx_core:Notify('Boombox bị xóa do bạn đã đi quá xa!', 'error', 5000)
+                end
             end
         end
         Wait(1000)
@@ -323,6 +428,10 @@ end)
 -- ===================================================================================
 
 RegisterNetEvent('1307_Boombox:client:adminInspect', function(entity)
+    if not isPlayerAdmin() then
+        return exports.qbx_core:Notify('Bạn không có quyền Admin để xem thông tin Boombox!', 'error', 5000)
+    end
+
     if not entity or not DoesEntityExist(entity) then
         return exports.qbx_core:Notify('Không tìm thấy đối tượng Boombox!', 'error', 5000)
     end

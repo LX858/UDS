@@ -1,14 +1,15 @@
 openRegister = function(job, id)
     local nearbyList = {}
+    local Peds = {}
     local nearbyPeds = getPlayersFromCoords(GetEntityCoords(cache.ped), Config.workshops[job].registers[id].playersRadius)
     for _, v in pairs(nearbyPeds) do
-        v.source = GetPlayerServerId(v)
+        table.insert(Peds, {ped = v, source = GetPlayerServerId(v)})
     end
-    local results = lib.callback.await("mt_workshops:server:getInfoPlayers", false, nearbyPeds)
+    local results = lib.callback.await("mt_workshops:server:getInfoPlayers", false, Peds)
     if not results then notify(locale('notify_error_register_no_nearby'), 'error') return end
 
-    for _, v in pairs(nearbyPeds) do
-        local dist = #(GetEntityCoords(GetPlayerPed(v)) - GetEntityCoords(cache.ped))
+    for _, v in pairs(Peds) do
+        local dist = #(GetEntityCoords(GetPlayerPed(v.ped)) - GetEntityCoords(cache.ped))
         if results[v.source] then
             nearbyList[#nearbyList+1] = { value = v.source, label = tostring(results[v.source].text..' ('..math.floor(dist+0.05)..'m)') }
         end

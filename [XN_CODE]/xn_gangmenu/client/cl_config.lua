@@ -9,13 +9,12 @@ Config.Cap_Do = {
     [1] = {
         ["exp"] = 1000,
         ["max_member"] = 20,
-        ["phi_nangcap"] = 5000000,
+        ["phi_nangcap"] = 10000000,
         ["require_items"] = {
-            { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 1200 },
-            { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 1200 },
-            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 100 },
-            { item = 'afk_rare_reward', alt_items = {'the_afk', 'afk_item'}, label = 'Thẻ AFK', amount = 300 },
-            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 2000 },
+            { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 400 },
+            { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 400 },
+            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 30 },
+            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 700 },
         },
         ["nhiemvu"] = {
             [1] = {
@@ -34,26 +33,21 @@ Config.Cap_Do = {
                 ['sodiem'] = '1',
             },
             [4] = {
-                ['vatpham'] = 'afk_rare_reward',
-                ['soluong'] = 2,
-                ['sodiem'] = '1',
-            },
-            [5] = {
                 ['vatpham'] = 'tinhthach',
                 ['soluong'] = 5,
                 ['sodiem'] = '1',
             },
-            [6] = {
+            [5] = {
                 ['vatpham'] = 'bandage',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [7] = {
+            [6] = {
                 ['vatpham'] = 'la_hoamynhan',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [8] = {
+            [7] = {
                 ['vatpham'] = 'ladudu_tuoi',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
@@ -66,8 +60,8 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['require_items'] = {
                     { item = 'bandage', amount = 1, label = 'Băng Gạc' },
-                    { item = 'traidudu', amount = 3, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
-                    { item = 'hoa_mynhan', amount = 3, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
+                    { item = 'traidudu', amount = 1, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
+                    { item = 'hoa_mynhan', amount = 1, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
                 },
             },
             [2] = {
@@ -75,18 +69,18 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['cash'] = 5000,
                 ['require_items'] = {
-                    { item = 'tinhthach', amount = 5, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 5, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'ladudu_tuoi', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 2, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'ladudu_tuoi', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
             [3] = {
                 ['vatpham'] = 'medlangbam',
                 ['grade'] = 0,
                 ['require_items'] = {
-                    { item = 'ladudu_tuoi', amount = 3, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 3, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'tinhthach', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'ladudu_tuoi', amount = 1, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 1, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
         },
@@ -112,13 +106,12 @@ Config.Cap_Do = {
     [2] = {
         ["exp"] = 10000,
         ["max_member"] = 30,
-        ["phi_nangcap"] = 2000000,
+        ["phi_nangcap"] = 12000000,
         ["require_items"] = {
-            { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 2400 },
-            { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 2400 },
-            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 200 },
-            { item = 'afk_rare_reward', alt_items = {'the_afk', 'afk_item'}, label = 'Thẻ AFK', amount = 500 },
-            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 4000 },
+            { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 800 },
+            { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 800 },
+            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 70 },
+            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 1300 },
         },
         ["nhiemvu"] = {
             [1] = {
@@ -137,26 +130,21 @@ Config.Cap_Do = {
                 ['sodiem'] = '1',
             },
             [4] = {
-                ['vatpham'] = 'afk_rare_reward',
-                ['soluong'] = 2,
-                ['sodiem'] = '1',
-            },
-            [5] = {
                 ['vatpham'] = 'tinhthach',
                 ['soluong'] = 5,
                 ['sodiem'] = '1',
             },
-            [6] = {
+            [5] = {
                 ['vatpham'] = 'bandage',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [7] = {
+            [6] = {
                 ['vatpham'] = 'la_hoamynhan',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [8] = {
+            [7] = {
                 ['vatpham'] = 'ladudu_tuoi',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
@@ -169,8 +157,8 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['require_items'] = {
                     { item = 'bandage', amount = 1, label = 'Băng Gạc' },
-                    { item = 'traidudu', amount = 3, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
-                    { item = 'hoa_mynhan', amount = 3, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
+                    { item = 'traidudu', amount = 1, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
+                    { item = 'hoa_mynhan', amount = 1, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
                 },
             },
             [2] = {
@@ -178,18 +166,18 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['cash'] = 5000,
                 ['require_items'] = {
-                    { item = 'tinhthach', amount = 5, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 5, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'ladudu_tuoi', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 2, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'ladudu_tuoi', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
             [3] = {
                 ['vatpham'] = 'medlangbam',
                 ['grade'] = 0,
                 ['require_items'] = {
-                    { item = 'ladudu_tuoi', amount = 3, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 3, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'tinhthach', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'ladudu_tuoi', amount = 1, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 1, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
         },
@@ -215,13 +203,12 @@ Config.Cap_Do = {
     [3] = {
         ["exp"] = 20000,
         ["max_member"] = 40,
-        ["phi_nangcap"] = 4000000,
+        ["phi_nangcap"] = 20000000,
         ["require_items"] = {
-            { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 4800 },
-            { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 4800 },
-            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 300 },
-            { item = 'afk_rare_reward', alt_items = {'the_afk', 'afk_item'}, label = 'Thẻ AFK', amount = 1000 },
-            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 8000 },
+            { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 1600 },
+            { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 1600 },
+            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 100 },
+            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 2700 },
         },
         ["nhiemvu"] = {
             [1] = {
@@ -240,26 +227,21 @@ Config.Cap_Do = {
                 ['sodiem'] = '1',
             },
             [4] = {
-                ['vatpham'] = 'afk_rare_reward',
-                ['soluong'] = 2,
-                ['sodiem'] = '1',
-            },
-            [5] = {
                 ['vatpham'] = 'tinhthach',
                 ['soluong'] = 5,
                 ['sodiem'] = '1',
             },
-            [6] = {
+            [5] = {
                 ['vatpham'] = 'bandage',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [7] = {
+            [6] = {
                 ['vatpham'] = 'la_hoamynhan',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [8] = {
+            [7] = {
                 ['vatpham'] = 'ladudu_tuoi',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
@@ -272,8 +254,8 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['require_items'] = {
                     { item = 'bandage', amount = 1, label = 'Băng Gạc' },
-                    { item = 'traidudu', amount = 3, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
-                    { item = 'hoa_mynhan', amount = 3, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
+                    { item = 'traidudu', amount = 1, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
+                    { item = 'hoa_mynhan', amount = 1, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
                 },
             },
             [2] = {
@@ -281,18 +263,18 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['cash'] = 5000,
                 ['require_items'] = {
-                    { item = 'tinhthach', amount = 5, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 5, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'ladudu_tuoi', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 2, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'ladudu_tuoi', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
             [3] = {
                 ['vatpham'] = 'medlangbam',
                 ['grade'] = 0,
                 ['require_items'] = {
-                    { item = 'ladudu_tuoi', amount = 3, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 3, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'tinhthach', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'ladudu_tuoi', amount = 1, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 1, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
         },
@@ -318,13 +300,12 @@ Config.Cap_Do = {
     [4] = {
         ["exp"] = 40000,
         ["max_member"] = 50,
-        ["phi_nangcap"] = 8000000,
+        ["phi_nangcap"] = 32000000,
         ["require_items"] = {
-            { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 9600 },
-            { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 9600 },
-            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 400 },
-            { item = 'afk_rare_reward', alt_items = {'the_afk', 'afk_item'}, label = 'Thẻ AFK', amount = 1500 },
-            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 16000 },
+            { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 3200 },
+            { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 3200 },
+            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 130 },
+            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 5300 },
         },
         ["nhiemvu"] = {
             [1] = {
@@ -343,26 +324,21 @@ Config.Cap_Do = {
                 ['sodiem'] = '1',
             },
             [4] = {
-                ['vatpham'] = 'afk_rare_reward',
-                ['soluong'] = 2,
-                ['sodiem'] = '1',
-            },
-            [5] = {
                 ['vatpham'] = 'tinhthach',
                 ['soluong'] = 5,
                 ['sodiem'] = '1',
             },
-            [6] = {
+            [5] = {
                 ['vatpham'] = 'bandage',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [7] = {
+            [6] = {
                 ['vatpham'] = 'la_hoamynhan',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [8] = {
+            [7] = {
                 ['vatpham'] = 'ladudu_tuoi',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
@@ -375,8 +351,8 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['require_items'] = {
                     { item = 'bandage', amount = 1, label = 'Băng Gạc' },
-                    { item = 'traidudu', amount = 3, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
-                    { item = 'hoa_mynhan', amount = 3, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
+                    { item = 'traidudu', amount = 1, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
+                    { item = 'hoa_mynhan', amount = 1, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
                 },
             },
             [2] = {
@@ -384,18 +360,18 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['cash'] = 5000,
                 ['require_items'] = {
-                    { item = 'tinhthach', amount = 5, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 5, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'ladudu_tuoi', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 2, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'ladudu_tuoi', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
             [3] = {
                 ['vatpham'] = 'medlangbam',
                 ['grade'] = 0,
                 ['require_items'] = {
-                    { item = 'ladudu_tuoi', amount = 3, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 3, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'tinhthach', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'ladudu_tuoi', amount = 1, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 1, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
         },
@@ -421,7 +397,7 @@ Config.Cap_Do = {
     [5] = {
         ["exp"] = 60000,
         ["max_member"] = 60,
-        ["phi_nangcap"] = 10000000,
+        ["phi_nangcap"] = 50000000,
         ["nhiemvu"] = {
             [1] = {
                 ['vatpham'] = 'hoa_mynhan',
@@ -439,26 +415,21 @@ Config.Cap_Do = {
                 ['sodiem'] = '1',
             },
             [4] = {
-                ['vatpham'] = 'afk_rare_reward',
-                ['soluong'] = 2,
-                ['sodiem'] = '1',
-            },
-            [5] = {
                 ['vatpham'] = 'tinhthach',
                 ['soluong'] = 5,
                 ['sodiem'] = '1',
             },
-            [6] = {
+            [5] = {
                 ['vatpham'] = 'bandage',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [7] = {
+            [6] = {
                 ['vatpham'] = 'la_hoamynhan',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
             },
-            [8] = {
+            [7] = {
                 ['vatpham'] = 'ladudu_tuoi',
                 ['soluong'] = 1,
                 ['sodiem'] = '1',
@@ -471,8 +442,8 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['require_items'] = {
                     { item = 'bandage', amount = 1, label = 'Băng Gạc' },
-                    { item = 'traidudu', amount = 3, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
-                    { item = 'hoa_mynhan', amount = 3, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
+                    { item = 'traidudu', amount = 1, alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ' },
+                    { item = 'hoa_mynhan', amount = 1, alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân' },
                 },
             },
             [2] = {
@@ -480,18 +451,18 @@ Config.Cap_Do = {
                 ['grade'] = 0,
                 ['cash'] = 5000,
                 ['require_items'] = {
-                    { item = 'tinhthach', amount = 5, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 5, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'ladudu_tuoi', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 2, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'ladudu_tuoi', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
             [3] = {
                 ['vatpham'] = 'medlangbam',
                 ['grade'] = 0,
                 ['require_items'] = {
-                    { item = 'ladudu_tuoi', amount = 3, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
-                    { item = 'la_hoamynhan', amount = 3, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
-                    { item = 'tinhthach', amount = 5, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
+                    { item = 'ladudu_tuoi', amount = 1, alt_items = {'tinh_thach'}, label = 'Tinh Thạch' },
+                    { item = 'la_hoamynhan', amount = 1, alt_items = {'hoa_mynhan', 'the_hoa_mn', 'hoamynhan'}, label = 'Lá Hoa Mỹ Nhân' },
+                    { item = 'tinhthach', amount = 2, alt_items = {'traidudu', 'the_du_du', 'dudu'}, label = 'Lá Đu Đủ Tươi' },
                 },
             },
         },

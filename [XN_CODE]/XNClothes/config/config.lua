@@ -126,13 +126,13 @@ Config.DefaultOutfitWoman = {
 
 Config.Coords = { 
     -- { x = 219.8566, y = -944.4186, z = 28.6353, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
-    { x = 72.3, y = -1399.1, z = 28.4, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat", "hat"} },
-    { x = -703.8, y = -152.3, z = 36.4, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat", "hat"} },
-    { x = -167.9, y = -299.0, z = 38.7, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat", "hat"} },
+    { x = 72.3, y = -1399.1, z = 28.4, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
+    { x = -703.8, y = -152.3, z = 36.4, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
+    { x = -167.9, y = -299.0, z = 38.7, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = 428.7, y = -800.1, z = 28.5, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = -829.4, y = -1073.7, z = 10.3, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = -1447.8, y = -242.5, z = 48.8, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
-    { x = 11.6, y = 6514.2, z = 30.9, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "shoes"} },
+    { x = 11.6, y = 6514.2, z = 30.9, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "shoes", "decal"} },
     { x = 123.6, y = -219.4, z = 53.6, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = 1696.3, y = 4829.3, z = 41.1, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = 618.1, y = 2759.6, z = 41.1, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
@@ -233,7 +233,8 @@ Config.UIToItemMapping = {
     ['hat'] = 'cloth_helmet',
     ['glasses'] = 'cloth_glasses',
     ['watch'] = 'cloth_watches',
-    ['bracelets'] = 'cloth_bracelets'
+    ['bracelets'] = 'cloth_bracelets',
+    ['decal'] = 'cloth_decals'
 }
 
 Config.DefaultPrice = {
@@ -251,6 +252,7 @@ Config.DefaultPrice = {
     chain = 1000,
     watch = 1000,
     bag = 1000,
+    decal = 1000,
 }
 
 -- Giá đổi màu (texture) dựa trên độ hiếm
@@ -263,7 +265,7 @@ Config.TextureChangePrice = {
     legendary = 5000    -- Legendary (đỏ)
 }
 
-local function calculateSlot(baseSlot)
+function calculateSlot(baseSlot)
     return baseSlot
 end
 
@@ -271,6 +273,7 @@ local minSlot = 999
 local maxSlot = 0
 componentMapping = {
     hat = { component = 0, prop = true, itemname = 'cloth_helmet', clothesSlotID = calculateSlot(6), camera = 'head', label = 'Mũ' },
+    decal = { component = 10, prop = false, itemname = 'cloth_decals', clothesSlotID = calculateSlot(16), camera = 'body', label = 'Phụ kiện' },
     mask = { component = 1, prop = false, itemname = 'cloth_mask', clothesSlotID = calculateSlot(7), camera = 'head', label = 'Mặt nạ' },
     glasses = { component = 1, prop = true, itemname = 'cloth_glasses', clothesSlotID = calculateSlot(8), camera = 'head', label = 'Kính' },
     chain = { component = 7, prop = false, itemname = 'cloth_chain', clothesSlotID = calculateSlot(9), camera = 'default', label = 'Dây chuyền' },
@@ -399,8 +402,12 @@ Config.Clothes = {
         dict = "nmt_3_rcm-10",
         anim = "cs_nigel_dual-10"
     },
-
-
+    ["decal"] = {
+        male = 0,
+        female = 0,
+        dict = "clothingshirt",
+        anim = "try_shirt_positive_d"
+    },
 }
 
 Config.DefaultClothes = {
@@ -481,6 +488,11 @@ Config.DefaultClothes = {
         components = {
             { component = 7, default_male = -1, default_female = -1, prop = true }
         }
+    },
+    decal = {
+        components = {
+            { component = 10, default_male = 0, default_female = 0 }
+        }
     }
 }
 
@@ -499,7 +511,8 @@ clothesComponentID = {
     4,  -- Quần
     6,  -- Giày dép
     3,  -- Cánh tay (thân hoặc các phụ kiện có thể nhìn thấy)
-    14  -- Quần áo
+    14, -- Quần áo
+    10  -- Decals (Hình dán)
 }
 
 
@@ -518,7 +531,8 @@ clothesComponentNames = {
     "cloth_pants",     -- Quần dài
     "cloth_shoes",     -- Giày
     "cloth_arms",      -- Tay (phụ kiện hoặc phần thân)
-    "clothes"          -- Quần áo
+    "clothes",         -- Quần áo
+    "cloth_decals"     -- Decals (Hình dán)
 }
 
 
@@ -537,5 +551,6 @@ clothesSlotID = {
     calculateSlot(13), -- Quần
     calculateSlot(21), -- Giày
     calculateSlot(10), -- Tay (phần áo hoặc phụ kiện hiển thị)
-    calculateSlot(14)  -- Trang phục
+    calculateSlot(14), -- Trang phục
+    calculateSlot(16)  -- Decals (dùng chung slot 16 với Khuyên tai)
 }

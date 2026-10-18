@@ -149,6 +149,17 @@ return {
             -- export = 'XNClothes.clothes'
         }
     },
+    ["cloth_decals"] = {
+        label = 'Phụ kiện',
+        weight = 0.05,
+        stack = false,
+        close = false,
+        -- degrade = 720,
+        durability = 100,
+        client = {
+            -- export = 'XNClothes.clothes'
+        }
+    },
     ["cloth_bracelets"] = {
         label = 'Vòng tay',
         weight = 0.01,
@@ -6534,7 +6545,7 @@ return {
 
     ["cong_thuc_machete"] = {
         label = "Công thức Machete",
-        weight = 1500,
+        weight = 100,
         stack = true,
         close = true,
         description = "Bản thiết kế cho một chiếc Machete",
