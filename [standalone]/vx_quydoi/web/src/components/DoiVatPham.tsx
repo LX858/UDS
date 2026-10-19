@@ -70,13 +70,13 @@ const DoiVatPham = observer(({weapons, clothing, disabled = false, onExchange, o
         )}
         <Box
           className="items-grid-slot"
-          rHeight={category === 'clothes' ? 330 : 365}
-          rMargin={[category === 'clothes' ? 64 : 25, 0, 0]}
+          rHeight={370}
+          rMargin={[category === 'clothes' ? 40 : 25, 0, 0, 55]}
         >
           <TradeGrid
             items={items}
             columns={4}
-            height={category === 'clothes' ? 330 : 365}
+            height={370}
             emptyMessage="Chưa có vật phẩm trong danh mục này."
             disabled={disabled}
             onExchange={onExchange}

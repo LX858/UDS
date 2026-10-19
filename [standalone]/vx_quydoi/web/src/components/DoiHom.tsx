@@ -10,11 +10,11 @@ type DoiHomProps = {
 };
 
 const DoiHom = observer(({items, disabled = false, onExchange}: DoiHomProps) => (
-  <Box rMargin={[28, 0, 0]}>
+  <Box rMargin={[28, 0, 0, 44]}>
     <TradeGrid
       items={items}
       columns={5}
-      height={420}
+      height={370}
       emptyMessage="Chưa có hòm để quy đổi."
       disabled={disabled}
       onExchange={onExchange}
