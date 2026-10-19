@@ -2446,22 +2446,4 @@ end)
             end
         end)
     end)
-    exports('GetProcurementStations', function()
-        if GetInvokingResource() ~= 'lr_trucker_job' then return {} end
-        local stations = {}
-        for location, station in ipairs(Config.GasStations or {}) do
-            local coords = station.pedcoords
-            if coords then
-                stations[#stations + 1] = {
-                    businessId = 'gas_station_' .. tostring(location),
-                    location = location,
-                    label = tostring(station.label or ('Trạm xăng #' .. tostring(location))),
-                    x = coords.x + 0.0, y = coords.y + 0.0, z = coords.z + 0.0,
-                    h = (coords.w or coords.h or 0.0) + 0.0,
-                }
-            end
-        end
-        return stations
-    end)
-
 end -- For Config.PlayerOwnedGasStationsEnabled check, don't remove!

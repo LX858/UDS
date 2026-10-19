@@ -2,108 +2,9 @@ local QBCore = exports['qb-core']:GetCoreObject()
 DATA = {}
 TriggerEvent('QBCore:GetObject', function(obj) QBCore = obj end)
 
-local DeliveryReservations = {}
-local DeliveryReservationsLoaded = false
-local EconomyLocks = {}
-
-local function IsCleanSellitemCategory(category)
-    local integration = Config.TruckerIntegration
-    return integration and integration.CleanCategories
-        and integration.CleanCategories[category] == true
-end
-
-local function UsesStockPricing(category)
-    return type(category) == 'string' and category ~= 'choden'
-end
-
-local function IsTruckerjobEnabled()
-    return Config.EnableTruckerjob == true
-end
-
-local function GetDeliveryOwner()
-    local integration = Config.TruckerIntegration or {}
-    return integration.AllowedResource or 'lr_trucker_job'
-end
-
-local function WithEconomyLock(itemName, callback)
-    while EconomyLocks[itemName] do Wait(0) end
-    EconomyLocks[itemName] = true
-    local results = table.pack(xpcall(callback, debug.traceback))
-    EconomyLocks[itemName] = nil
-    if not results[1] then
-        print(('^1[XN-SELLITEM]^7 Economy operation failed for %s: %s'):format(itemName, results[2]))
-        return false, 'ECONOMY_ERROR'
-    end
-    return table.unpack(results, 2, results.n)
-end
-
-local function LoadDeliveryReservations()
-    if DeliveryReservationsLoaded then return end
-    local rows = MySQL.query.await([[
-        SELECT reservation_id, owner_resource, category, item_name, amount, status
-        FROM xn_sellitem_delivery_reservations
-        WHERE status IN ('pending', 'delivered', 'cancelled')
-    ]], {}) or {}
-    DeliveryReservations = {}
-    for _, row in ipairs(rows) do
-        DeliveryReservations[row.reservation_id] = {
-            id = row.reservation_id,
-            owner = row.owner_resource,
-            category = row.category,
-            itemName = row.item_name,
-            amount = math.max(0, math.floor(tonumber(row.amount) or 0)),
-            status = row.status,
-        }
-    end
-    DeliveryReservationsLoaded = true
-end
-
-local function GetReservedAmount(itemName)
-    local reserved = 0
-    for _, reservation in pairs(DeliveryReservations) do
-        if reservation.itemName == itemName and reservation.status == 'pending' then
-            reserved = reserved + reservation.amount
-        end
-    end
-    return reserved
-end
-
-local function GetMovementConfig(itemData)
-    local amountToChange = math.max(1, math.floor(tonumber(itemData.AmountToChange) or 50))
-    local range = itemData.RangeChange
-    if type(range) ~= 'table' then range = { 1, 4 } end
-    local minimum = math.max(0, math.floor(tonumber(range[1]) or 1))
-    local maximum = math.max(minimum, math.floor(tonumber(range[2]) or 4))
-    return amountToChange, minimum, maximum
-end
-
-local function MovePriceAcrossStockBands(itemData, oldAmount, newAmount)
-    local amountToChange, minimum, maximum = GetMovementConfig(itemData)
-    local oldBand = math.floor(math.max(0, oldAmount) / amountToChange)
-    local newBand = math.floor(math.max(0, newAmount) / amountToChange)
-    local crossings = math.abs(newBand - oldBand)
-    if crossings == 0 then return itemData.Price end
-
-    local price = itemData.Price
-    local direction = newBand > oldBand and -1 or 1
-    for _ = 1, crossings do
-        price = price + direction * math.random(minimum, maximum)
-    end
-    return math.max(itemData.Min, math.min(itemData.Max, price))
-end
-
-local function BroadcastStockChange(itemName, itemData)
-    TriggerClientEvent('xn-sellitem:update', -1, itemName, itemData)
-    TriggerEvent('xn-sellitem:stockChanged', itemName, itemData)
-end
-
 -- Export function để lấy DATA từ các resource khác
 exports('GetDATA', function()
     return DATA
-end)
-
-exports('IsTruckerjobEnabled', function()
-    return IsTruckerjobEnabled()
 end)
 
 QBCore.Functions.CreateCallback('xn-sellitem:server:nCheckItem', function(source, cb)
@@ -212,7 +113,7 @@ function InitEconomy()
                     Max = dbConfig and dbConfig.Max or itemData.Max,
                     RangeChange = rangeChange,
                     AmountToChange = amountToChange,
-                    CurrentAmount = (dbConfig and tonumber(dbConfig.CurrentAmount)) or 0,
+                    CurrentAmount = 0,
                     Label = dbConfig and dbConfig.Label or itemData.Label,
                     Status = 'equal',
                     Category = categoryName, -- Lưu category để dùng sau
@@ -224,18 +125,17 @@ function InitEconomy()
                 local priceSteps = GetPriceSteps(newData.Min, newData.Max)
                 
                 if dbConfig and dbConfig.CurrentPrice and dbConfig.CurrentPrice > 0 then
-                    -- Chỉ chợ đen dùng giá theo 6 mốc; hàng khác giữ đúng giá đã lưu.
-                    newData.Price = UsesStockPricing(categoryName)
-                        and dbConfig.CurrentPrice or SnapToNearestStep(dbConfig.CurrentPrice, priceSteps)
+                    -- Snap giá database về bước gần nhất trong 6 bước
+                    newData.Price = SnapToNearestStep(dbConfig.CurrentPrice, priceSteps)
                     useDbPrice = true
                 end
                 
                 if not useDbPrice then
-                    -- Hàng nguồn mới bắt đầu ở giá tham chiếu; sau đó biến động theo tồn kho.
-                    newData.Price = itemData.ReferencePrice or RandomPriceFromSteps(priceSteps, nil)
+                    -- Random giá theo 6 bước cố định từ Min đến Max
+                    newData.Price = RandomPriceFromSteps(priceSteps, nil)
                 end
                 
-                -- Lưu giá khởi tạo hoặc giá chợ đen đã snap để restart tải đúng.
+                -- Lưu giá đã snap/random vào DB để restart lần sau tải đúng
                 if dbConfig then
                     UpdateItemPrice(categoryName, itemName, newData.Price)
                 end
@@ -280,10 +180,9 @@ function InitEconomy()
                     local priceSteps = GetPriceSteps(dbConfig.Min, dbConfig.Max)
                     local price
                     
-                    -- Chỉ snap giá chợ đen; hàng theo tồn kho giữ giá đã lưu.
+                    -- Nếu có CurrentPrice trong DB, snap về bước gần nhất
                     if dbConfig.CurrentPrice and dbConfig.CurrentPrice > 0 then
-                        price = UsesStockPricing(categoryName)
-                            and dbConfig.CurrentPrice or SnapToNearestStep(dbConfig.CurrentPrice, priceSteps)
+                        price = SnapToNearestStep(dbConfig.CurrentPrice, priceSteps)
                     else
                         price = RandomPriceFromSteps(priceSteps, nil)
                     end
@@ -297,7 +196,7 @@ function InitEconomy()
                         Max = dbConfig.Max,
                         RangeChange = rangeChange,
                         AmountToChange = amountToChange,
-                        CurrentAmount = tonumber(dbConfig.CurrentAmount) or 0,
+                        CurrentAmount = 0,
                         Label = dbConfig.Label,
                         Status = 'equal',
                         Category = categoryName -- Fix: cần có Category để UpdateLeaderboard hoạt động
@@ -357,8 +256,7 @@ function InitEconomy()
                     
                     -- Lấy giá hiện tại từ DATA (đã được random trong bước 1)
                     local priceSteps = GetPriceSteps(itemData.Min, itemData.Max)
-                    local currentPrice = DATA[itemName] and DATA[itemName].Price
-                        or itemData.ReferencePrice or RandomPriceFromSteps(priceSteps, nil)
+                    local currentPrice = DATA[itemName] and DATA[itemName].Price or RandomPriceFromSteps(priceSteps, nil)
                     
                     -- Tạo item vào database
                     local success = CreateItemConfig(categoryName, itemName, itemData, currentPrice)
@@ -389,9 +287,6 @@ function InitEconomy()
             print("^2[SELLITEM]^7 No new items to sync - all items exist in database")
         end
         
-        -- Sau khi tất cả DATA đã được populate, load các chuyến giao đang giữ hàng.
-        LoadDeliveryReservations()
-
         -- Sau khi tất cả DATA đã được populate, rebuild admin cache với giá đúng
         BuildAdminItemsCache()
         
@@ -410,40 +305,43 @@ function InitEconomy()
     end)
 
     if Config.TuDong_ThayDoiGia then
-        -- Chỉ chợ đen dùng lịch đổi giá; các nhóm khác theo tồn kho.
+        -- @thread For Environment Looping
         Citizen.CreateThread(function()
             while true do
                 Citizen.Wait(Config.ThoiGian_CapNhat * 60000)
-                local changed = false
-                for k, itemData in pairs(DATA) do
-                    -- Lịch cũ chỉ áp dụng cho chợ đen.
-                    if itemData.Category == 'choden' then
-                        Wait(100)
-                        local oldPrice = DATA[k].Price
-                        local priceSteps = GetPriceSteps(DATA[k].Min, DATA[k].Max)
-                        DATA[k].Price = RandomPriceFromSteps(priceSteps, oldPrice)
+                for k, v in pairs(DATA) do
+                    Wait(100)
+                    
+                    local oldPrice = DATA[k].Price
+                    
+                    -- Tính 6 bước giá
+                    local priceSteps = GetPriceSteps(DATA[k].Min, DATA[k].Max)
+                    
+                    -- Random giá mới từ 6 bước, TRỪ giá hiện tại
+                    DATA[k].Price = RandomPriceFromSteps(priceSteps, oldPrice)
 
-                        local center = round((DATA[k].Min + DATA[k].Max) / 2)
-                        if DATA[k].Price > center then
-                            DATA[k].Status = 'up'
-                        elseif DATA[k].Price < center then
-                            DATA[k].Status = 'down'
-                        else
-                            DATA[k].Status = 'equal'
-                        end
-
-                        DATA[k].CurrentAmount = 0
-                        if DATA[k].Category then
-                            UpdateItemPrice(DATA[k].Category, k, DATA[k].Price)
-                        end
-                        TriggerClientEvent('xn-sellitem:update', -1, k, DATA[k])
-                        changed = true
+                    local center = round((DATA[k].Min + DATA[k].Max) / 2)
+                    if DATA[k].Price > center then
+                        DATA[k].Status = 'up'
+                    elseif DATA[k].Price < center then
+                        DATA[k].Status = 'down'
+                    else
+                        DATA[k].Status = 'equal'
+                    end
+                    
+                    DATA[k].CurrentAmount = 0
+                    
+                    -- Lưu giá mới vào database
+                    if DATA[k].Category then
+                        UpdateItemPrice(DATA[k].Category, k, DATA[k].Price)
                     end
                 end
 
-                if changed then
-                    TriggerClientEvent('QBCore:Notify', -1, '📊 Giá chợ đen vừa biến động!', 'primary', 5000)
-                end
+                -- @send Update all prices for all users
+                TriggerClientEvent('xn-sellitem:setPrices', -1, DATA)
+                
+                -- Thông báo cho tất cả người chơi
+                TriggerClientEvent('QBCore:Notify', -1, '📊 Có biến động giá cả thị trường!', 'primary', 5000)
 
                 -- TriggerClientEvent("chat:addMessage", -1, {
                 --     type = "NGƯỜI THU MUA",
@@ -501,23 +399,7 @@ local function UpdateLeaderboard(citizenId, playerName, category, points)
 end
 
 local function GetPoliceCount()
-    local numCops = 0
-
-    local success2, qbxCops2 = pcall(function()
-        return exports.qbx_core:GetDutyCountType('police')
-    end)
-
-    if success2 and qbxCops2 and qbxCops2 > 0 then
-        numCops = qbxCops2
-    else
-        local players = QBCore.Functions.GetQBPlayers()
-        for k, v in pairs(players) do
-            if v.PlayerData.job.name == 'police' and v.PlayerData.job.onduty then
-                numCops = numCops + 1
-            end
-        end
-    end
-    return numCops
+    return GlobalState['police_count'] or 0
 end
 
 local SellCooldowns = {}
@@ -603,11 +485,11 @@ local function CommitItemCooldown(citizenId, item, amount, itemEco)
     record.amount = record.amount + amount
 end
 
-local function ProcessLegacyPriceDropOnSell(itemName, amountSold)
+local function ProcessPriceDropOnSell(itemName, amountSold)
     local itemData = DATA[itemName]
     if not itemData then return end
 
-    -- Tăng amount_sold trong database cho cơ chế chợ đen.
+    -- Tăng amount_sold trong database
     UpdateItemAmountSold(itemData.Category, itemName, amountSold)
 
     -- Đảm bảo CurrentAmount tồn tại
@@ -675,270 +557,6 @@ local function ProcessLegacyPriceDropOnSell(itemName, amountSold)
     end
 end
 
-local function ProcessPriceDropOnSell(itemName, amountSold)
-    local itemData = DATA[itemName]
-    if not itemData then return end
-
-    -- Chợ đen dùng cơ chế cũ; các nhóm khác lưu giá, tồn và thống kê cùng nhau.
-    if not UsesStockPricing(itemData.Category) then
-        return ProcessLegacyPriceDropOnSell(itemName, amountSold)
-    end
-
-    amountSold = math.max(0, math.floor(tonumber(amountSold) or 0))
-    if amountSold == 0 then return end
-    WithEconomyLock(itemName, function()
-        local oldAmount = math.max(0, math.floor(tonumber(itemData.CurrentAmount) or 0))
-        local newAmount = oldAmount + amountSold
-        local oldPrice = itemData.Price
-        local newPrice = MovePriceAcrossStockBands(itemData, oldAmount, newAmount)
-        if not UpdateItemEconomyState(itemData.Category, itemName, newPrice, newAmount, amountSold) then
-            error('could not persist stock-priced sale economy state')
-        end
-        itemData.CurrentAmount = newAmount
-        itemData.Price = newPrice
-        itemData.Status = newPrice < oldPrice and 'down' or 'equal'
-        BroadcastStockChange(itemName, itemData)
-    end)
-end
-
-local function IsAuthorizedDeliveryCaller()
-    return GetInvokingResource() == GetDeliveryOwner()
-end
-
-exports('GetCleanDeliveryCandidates', function()
-    if not IsTruckerjobEnabled() or not IsAuthorizedDeliveryCaller() then return {} end
-    if not DeliveryReservationsLoaded then LoadDeliveryReservations() end
-    local candidates = {}
-    for itemName, itemData in pairs(DATA) do
-        if IsCleanSellitemCategory(itemData.Category) then
-            local currentAmount = math.max(0, math.floor(tonumber(itemData.CurrentAmount) or 0))
-            local availableAmount = math.max(0, currentAmount - GetReservedAmount(itemName))
-            if availableAmount > 0 then
-                candidates[#candidates + 1] = {
-                    itemName = itemName,
-                    category = itemData.Category,
-                    label = itemData.Label,
-                    price = itemData.Price,
-                    CurrentAmount = currentAmount,
-                    currentAmount = currentAmount,
-                    availableAmount = availableAmount,
-                    amountToChange = math.max(1, math.floor(tonumber(itemData.AmountToChange) or 50)),
-                    rangeChange = itemData.RangeChange or { 1, 4 },
-                }
-            end
-        end
-    end
-    table.sort(candidates, function(first, second)
-        local firstPressure = first.availableAmount / first.amountToChange
-        local secondPressure = second.availableAmount / second.amountToChange
-        if firstPressure == secondPressure then return first.availableAmount > second.availableAmount end
-        return firstPressure > secondPressure
-    end)
-    return candidates
-end)
-
--- Catalog for business procurement. Unlike GetCleanDeliveryCandidates this
--- includes zero-stock items so businesses can create orders that wait for stock.
-exports('GetBusinessDeliveryCatalog', function()
-    if not IsTruckerjobEnabled() then return {} end
-    if not IsAuthorizedDeliveryCaller() then return {} end
-    if not DeliveryReservationsLoaded then LoadDeliveryReservations() end
-    local catalog = {}
-    for itemName, itemData in pairs(DATA) do
-        if IsCleanSellitemCategory(itemData.Category) then
-            local currentAmount = math.max(0, math.floor(tonumber(itemData.CurrentAmount) or 0))
-            catalog[#catalog + 1] = {
-                itemName = itemName,
-                category = itemData.Category,
-                label = itemData.Label,
-                price = math.max(0, math.floor(tonumber(itemData.Price) or 0)),
-                currentAmount = currentAmount,
-                availableAmount = math.max(0, currentAmount - GetReservedAmount(itemName)),
-            }
-        end
-    end
-    table.sort(catalog, function(first, second)
-        if first.category == second.category then return first.label < second.label end
-        return first.category < second.category
-    end)
-    return catalog
-end)
-
-exports('ReserveCleanDelivery', function(request)
-    if not IsTruckerjobEnabled() then return { success = false, error = 'TRUCKER_DISABLED' } end
-    if not IsAuthorizedDeliveryCaller() then return { success = false, error = 'UNAUTHORIZED' } end
-    if type(request) ~= 'table' then return { success = false, error = 'INVALID_REQUEST' } end
-    local reservationId = type(request.reservationId) == 'string' and request.reservationId or ''
-    local itemName = type(request.itemName) == 'string' and request.itemName or ''
-    local amount = math.floor(tonumber(request.amount) or 0)
-    if reservationId == '' or #reservationId > 64 or itemName == '' or amount <= 0 then
-        return { success = false, error = 'INVALID_REQUEST' }
-    end
-
-    return WithEconomyLock(itemName, function()
-        if not DeliveryReservationsLoaded then LoadDeliveryReservations() end
-        local existing = DeliveryReservations[reservationId]
-        if existing then
-            local matches = existing.itemName == itemName and existing.amount == amount
-            return { success = matches and existing.status == 'pending', error = matches and '' or 'RESERVATION_CONFLICT' }
-        end
-        local itemData = DATA[itemName]
-        if not itemData or not IsCleanSellitemCategory(itemData.Category) then
-            return { success = false, error = 'ITEM_UNAVAILABLE' }
-        end
-        local available = math.max(0, (itemData.CurrentAmount or 0) - GetReservedAmount(itemName))
-        if available < amount then return { success = false, error = 'STOCK_UNAVAILABLE' } end
-
-        local owner = GetDeliveryOwner()
-        local inserted = MySQL.update.await([[
-            INSERT INTO xn_sellitem_delivery_reservations
-                (reservation_id, owner_resource, category, item_name, amount, status)
-            VALUES (?, ?, ?, ?, ?, 'pending')
-        ]], { reservationId, owner, itemData.Category, itemName, amount })
-        if tonumber(inserted) ~= 1 then return { success = false, error = 'DATABASE_ERROR' } end
-        DeliveryReservations[reservationId] = {
-            id = reservationId, owner = owner, category = itemData.Category,
-            itemName = itemName, amount = amount, status = 'pending',
-        }
-        TriggerEvent('xn-sellitem:stockChanged', itemName, itemData)
-        return { success = true, error = '', reservationId = reservationId }
-    end)
-end)
-
-exports('SettleCleanDelivery', function(request)
-    if not IsAuthorizedDeliveryCaller() then return { success = false, error = 'UNAUTHORIZED' } end
-    if type(request) ~= 'table' then return { success = false, error = 'INVALID_REQUEST' } end
-    local reservationId = type(request.reservationId) == 'string' and request.reservationId or ''
-    local delivered = request.delivered == true
-    if reservationId == '' then return { success = false, error = 'INVALID_REQUEST' } end
-    if not DeliveryReservationsLoaded then LoadDeliveryReservations() end
-    local initial = DeliveryReservations[reservationId]
-    if not initial then return { success = false, error = 'RESERVATION_NOT_FOUND' } end
-
-    return WithEconomyLock(initial.itemName, function()
-        local reservation = DeliveryReservations[reservationId]
-        if not reservation then return { success = false, error = 'RESERVATION_NOT_FOUND' } end
-        local targetStatus = delivered and 'delivered' or 'cancelled'
-        if reservation.status ~= 'pending' then
-            return { success = reservation.status == targetStatus, error = reservation.status == targetStatus and '' or 'ALREADY_SETTLED' }
-        end
-
-        local itemData = DATA[reservation.itemName]
-        if not itemData then return { success = false, error = 'ITEM_UNAVAILABLE' } end
-        local oldAmount = math.max(0, math.floor(tonumber(itemData.CurrentAmount) or 0))
-        local newAmount = delivered and math.max(0, oldAmount - reservation.amount) or oldAmount
-        local oldPrice = itemData.Price
-        local newPrice = delivered and MovePriceAcrossStockBands(itemData, oldAmount, newAmount) or oldPrice
-        local queries = {
-            {
-                query = 'UPDATE xn_sellitem_delivery_reservations SET status = ? WHERE reservation_id = ? AND status = \'pending\'',
-                values = { targetStatus, reservationId },
-            }
-        }
-        if delivered then
-            queries[#queries + 1] = {
-                query = 'UPDATE xn_sellitem_config SET current_amount = ?, current_price = ? WHERE category = ? AND item_name = ?',
-                values = { newAmount, newPrice, reservation.category, reservation.itemName },
-            }
-        end
-        local success = MySQL.transaction.await(queries)
-        if not success then return { success = false, error = 'DATABASE_ERROR' } end
-
-        reservation.status = targetStatus
-        if delivered then
-            itemData.CurrentAmount = newAmount
-            itemData.Price = newPrice
-            itemData.Status = newPrice > oldPrice and 'up' or 'equal'
-            if DatabaseConfig[reservation.category] and DatabaseConfig[reservation.category][reservation.itemName] then
-                DatabaseConfig[reservation.category][reservation.itemName].CurrentAmount = newAmount
-                DatabaseConfig[reservation.category][reservation.itemName].CurrentPrice = newPrice
-            end
-            BroadcastStockChange(reservation.itemName, itemData)
-        else
-            TriggerEvent('xn-sellitem:stockChanged', reservation.itemName, itemData)
-        end
-        return { success = true, error = '', amount = reservation.amount, currentAmount = newAmount, price = newPrice }
-    end)
-end)
-
-exports('ReleaseDeliveryReservations', function(owner)
-    if not IsAuthorizedDeliveryCaller() then return { success = false, error = 'UNAUTHORIZED' } end
-    owner = type(owner) == 'string' and owner or GetDeliveryOwner()
-    if owner ~= GetDeliveryOwner() then return { success = false, error = 'UNAUTHORIZED' } end
-    if not DeliveryReservationsLoaded then LoadDeliveryReservations() end
-    local changedItems = {}
-    local updated = MySQL.update.await([[
-        UPDATE xn_sellitem_delivery_reservations SET status = 'cancelled'
-        WHERE owner_resource = ? AND status = 'pending'
-    ]], { owner })
-    for _, reservation in pairs(DeliveryReservations) do
-        if reservation.owner == owner and reservation.status == 'pending' then
-            reservation.status = 'cancelled'
-            changedItems[reservation.itemName] = true
-        end
-    end
-    for itemName in pairs(changedItems) do
-        TriggerEvent('xn-sellitem:stockChanged', itemName, DATA[itemName])
-    end
-    return { success = true, error = '', released = tonumber(updated) or 0 }
-end)
-
--- Run NPC hold cleanup in the database owner's script host. Calling the SQL
--- export from lr_trucker_job:Stop can outlive the caller during resource restart.
-local function NpcHoldIds(owner)
-    local pending = {}
-    for reservationId, reservation in pairs(DeliveryReservations) do
-        if reservation.owner == owner and reservation.status == 'pending'
-          and (reservationId:sub(1, 9) == 'npc-hold-'
-            or (reservationId:sub(1, 6) == 'order-' and reservationId:sub(-4) == ':npc')) then
-            pending[#pending + 1] = reservationId
-        end
-    end
-    return pending
-end
-
-local function ReleaseNpcHolds(owner, pending)
-    local changedItems, released, success = {}, 0, true
-    for _, reservationId in ipairs(pending) do
-        local changed = MySQL.update.await([[
-            UPDATE xn_sellitem_delivery_reservations SET status = 'cancelled'
-            WHERE reservation_id = ? AND owner_resource = ? AND status = 'pending'
-        ]], { reservationId, owner })
-        if changed == nil then
-            success = false
-            print(('^1[XN-SELLITEM]^7 Could not release NPC hold %s'):format(reservationId))
-        elseif tonumber(changed) == 1 then
-            local reservation = DeliveryReservations[reservationId]
-            if reservation and reservation.status == 'pending' then
-                reservation.status = 'cancelled'
-                changedItems[reservation.itemName] = true
-            end
-            released = released + 1
-        end
-    end
-    for itemName in pairs(changedItems) do
-        TriggerEvent('xn-sellitem:stockChanged', itemName, DATA[itemName])
-    end
-    return { success = success, error = success and '' or 'DATABASE_ERROR', released = released }
-end
-
-exports('ReleaseNpcDeliveryReservations', function()
-    if not IsAuthorizedDeliveryCaller() then return { success = false, error = 'UNAUTHORIZED' } end
-    if not DeliveryReservationsLoaded then LoadDeliveryReservations() end
-    return ReleaseNpcHolds(GetDeliveryOwner(), NpcHoldIds(GetDeliveryOwner()))
-end)
-
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetDeliveryOwner() then return end
-    -- Capture IDs before yielding. A fast restart must not release new holds.
-    local pending = NpcHoldIds(resourceName)
-    if #pending == 0 then return end
-    CreateThread(function()
-        local ok, errorMessage = pcall(ReleaseNpcHolds, resourceName, pending)
-        if not ok then print(('^1[XN-SELLITEM]^7 NPC hold cleanup failed: %s'):format(errorMessage)) end
-    end)
-end)
-
 local PendingRouletteSales, PendingRoulettePayouts = {}, {}
 
 local function AddCashWithFallback(xPlayer, amount, reason)
@@ -955,11 +573,9 @@ local function IsPlayerNearSellCategory(playerId, category, maxDistance)
     local playerPed = GetPlayerPed(playerId)
     if not playerPed or playerPed == 0 then return false end
 
-    local categoryItems = Config.Items[category]
-    if not categoryItems then return false end
     local playerCoords = GetEntityCoords(playerPed)
     for _, location in pairs(Config.Locations) do
-        if location.Items == categoryItems or location.ExtraItems == categoryItems then
+        if location.Items == Config.Items[category] then
             local locationCoords = vector3(location.Coords.x, location.Coords.y, location.Coords.z)
             if #(playerCoords - locationCoords) <= (maxDistance or 5.0) then
                 return true
@@ -1277,11 +893,6 @@ exports['monitors']:RegisterProtectedEvent('xn-sellitem:cfx:action', function(pl
         return
     end
 
-    if not IsPlayerNearSellCategory(playerId, itemEco.Category, 5.0) then
-        TriggerClientEvent('QBCore:Notify', playerId, 'Bạn phải đứng gần đúng người thu mua để bán hàng', 'error')
-        return
-    end
-
     -- Kiểm tra điều kiện Cảnh sát cho Chợ Đen (choden)
     if itemEco.Category == 'choden' then
         local policeCount = GetPoliceCount()
@@ -1405,11 +1016,6 @@ exports['monitors']:RegisterProtectedEvent('xn-sellitem:cfx:action-all', functio
     -- Kiểm tra item có trong config không
     if not itemEco then
         TriggerClientEvent("QBCore:Notify", playerId, "Item này không thể bán tại đây", "error")
-        return
-    end
-
-    if not IsPlayerNearSellCategory(playerId, itemEco.Category, 5.0) then
-        TriggerClientEvent('QBCore:Notify', playerId, 'Bạn phải đứng gần đúng người thu mua để bán hàng', 'error')
         return
     end
 
@@ -1567,7 +1173,7 @@ QBCore.Commands.Add('resetprices', 'Reset tất cả giá về random (Admin)', 
             local priceSteps = GetPriceSteps(itemData.Min, itemData.Max)
             local newPrice = RandomPriceFromSteps(priceSteps, nil)
             itemData.Price = newPrice
-            if not UsesStockPricing(itemData.Category) then itemData.CurrentAmount = 0 end
+            itemData.CurrentAmount = 0
             
             local center = round((itemData.Min + itemData.Max) / 2)
             if newPrice > center then

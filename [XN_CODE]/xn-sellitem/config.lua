@@ -1,23 +1,11 @@
 Config = {}
-Config.EnableTruckerjob = true -- Chỉ điều khiển tích hợp với lr_trucker_job
 
 -- SỐ CẢNH SÁT ONLINE YÊU CẦU ĐỂ BÁN HÀNG TẠI CHỢ ĐEN (choden)
 Config.ChodenRequiredCops = 0
 
--- Lịch đổi giá chỉ dành cho choden; các nhóm khác đổi giá theo tồn kho.
+-- BẬT/TẮT TỰ ĐỘNG CẬP NHẬT GIÁ MỖI GIỜ
 Config.TuDong_ThayDoiGia = true -- Bật = true, Tắt = false
 Config.ThoiGian_CapNhat = 30 -- Tính theo phút
-
-Config.TruckerIntegration = {
-    AllowedResource = 'lr_trucker_job',
-    CleanCategories = {
-        fish = true,
-        phelieu = true,
-        mining = true,
-        nuoithu = true,
-        traicay = true,
-    }
-}
 
 -- MINIGAME ROULETTE X2 KHI BÁN HẢI SẢN
 Config.RouletteSell = {
@@ -149,16 +137,6 @@ Config.Items = {
         },
     },
     ['mining'] = {
-        ['dau_tho'] = {
-            Label = 'Dầu thô',
-            ReferencePrice = 300,
-            Min = 240,
-            Max = 360,
-            RandomWhenStart = true,
-            RangeChange = {1, 4},
-            AmountToChange = 50
-        },
-
         -- ['than'] = {
         --     Label = 'Than',
         --     Min = 300,
@@ -203,26 +181,6 @@ Config.Items = {
         -- },
     },
     ['nuoithu'] = {
-        ['conheo'] = {
-            Label = 'Heo',
-            ReferencePrice = 600,
-            Min = 480,
-            Max = 720,
-            RandomWhenStart = true,
-            RangeChange = {1, 4},
-            AmountToChange = 50
-        },
-
-        ['conbo'] = {
-            Label = 'Bò',
-            ReferencePrice = 800,
-            Min = 640,
-            Max = 960,
-            RandomWhenStart = true,
-            RangeChange = {1, 4},
-            AmountToChange = 50
-        },
-
         -- ['conbo'] = {
         --     Label = 'Con Bò',
         --     Min = 700,
@@ -243,35 +201,6 @@ Config.Items = {
         -- },
     },
      ['traicay'] = {
-        ['luanuoc'] = {
-            Label = 'Lúa nước',
-            ReferencePrice = 300,
-            Min = 240,
-            Max = 360,
-            RandomWhenStart = true,
-            RangeChange = {1, 4},
-            AmountToChange = 300
-        },
-
-        ['la_che'] = {
-            Label = 'Lá chè',
-            ReferencePrice = 250,
-            Min = 200,
-            Max = 300,
-            RandomWhenStart = true,
-            RangeChange = {1, 4},
-            AmountToChange = 250
-        },
-
-        ['luami'] = {
-            Label = 'Lúa mì',
-            Min = 60,
-            Max = 100,
-            RandomWhenStart = true,
-            RangeChange = {1, 4},
-            AmountToChange = 300
-        },
-
         ['coconut'] = {
             Label = 'Quả dừa',
             Min = 50,
@@ -292,21 +221,6 @@ Config.Items = {
         },
     },
 }
-
--- Một điểm thu mua có thể phục vụ thêm danh mục mà vẫn giữ bảng item gốc
--- làm reference để đồng bộ item quản trị tạo sau khi resource đã chạy.
-function Config.GetLocationItems(location)
-    local items = location and location.Items or {}
-    local extraItems = location and location.ExtraItems
-    if not extraItems then return items end
-
-    local combined = {}
-    for itemName, itemData in pairs(items) do combined[itemName] = itemData end
-    for itemName, itemData in pairs(extraItems) do
-        if combined[itemName] == nil then combined[itemName] = itemData end
-    end
-    return combined
-end
 
 Config.Locations = {
     {
@@ -356,13 +270,12 @@ Config.Locations = {
             Sprite = 356,
             Color = 11,
             Scale = 0.7,
-            Label = 'THƯƠNG LÁI MUA NÔNG SẢN & NUÔI THÚ',
+            Label = 'THƯƠNG LÁI MUA NÔNG SẢN',
             ShortRange = false,
         },
         Coords = vec4(213.4228, -945.4520, 31.8079, 335.0612),
-        NPCText = 'THƯƠNG LÁI MUA NÔNG SẢN & NUÔI THÚ',
+        NPCText = 'THƯƠNG LÁI MUA NÔNG SẢN',
         Items = Config.Items['traicay'],
-        ExtraItems = Config.Items['nuoithu'],
         TargetName = "fram_dolly"
     },
     {

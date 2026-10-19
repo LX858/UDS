@@ -68,7 +68,6 @@ function InitLoop()
         table.insert(LOC, {
             Coords = v.Coords,
             Items = v.Items,
-            ExtraItems = v.ExtraItems,
             NPCText = v.NPCText
         })
     end
@@ -214,7 +213,7 @@ function OpenOrRefreshUI(locIdx)
         end
 
         local currentLoc = LOC[LOCCLOSETO] or LOC[1]
-        local locItems = Config.GetLocationItems(currentLoc)
+        local locItems = (currentLoc and currentLoc.Items) or {}
         local locText = (currentLoc and currentLoc.NPCText) or 'Thu mua'
 
         for itemName, amount in pairs(PlyInv) do
@@ -781,8 +780,6 @@ RegisterNetEvent('xn-sellitem:syncNewItem', function(category, itemName, itemDat
             -- Items đã tự động update vì là reference
             LOC[k].Items = Config.Items[category]
             -- print('^2[SELLITEM]^7 Updated location: ' .. location.NPCText)
-        elseif location.ExtraItems == Config.Items[category] then
-            LOC[k].ExtraItems = Config.Items[category]
         end
     end
     

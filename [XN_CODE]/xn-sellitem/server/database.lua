@@ -44,7 +44,6 @@ function LoadConfigFromDatabase()
                 RandomWhenStart = row.random_when_start == 1,
                 CurrentPrice = row.current_price,
                 AmountSold = row.amount_sold,
-                CurrentAmount = tonumber(row.current_amount) or 0,
                 RangeChange = { row.range_change_min or 1, row.range_change_max or 4 },
                 AmountToChange = amountToChange
             }
@@ -86,9 +85,9 @@ end
 function CreateItemConfig(category, itemName, data, initialPrice)
     local query = [[
         INSERT INTO xn_sellitem_config 
-        (category, item_name, label, min_price, max_price, current_price, amount_sold, current_amount,
+        (category, item_name, label, min_price, max_price, current_price, amount_sold, 
          random_when_start, range_change_min, range_change_max, amount_to_change)
-        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, 1, 4, ?)
+        VALUES (?, ?, ?, ?, ?, ?, 0, ?, 1, 4, ?)
     ]]
     
     local amountToChange = tonumber(data.AmountToChange)
@@ -122,7 +121,6 @@ function CreateItemConfig(category, itemName, data, initialPrice)
             RandomWhenStart = data.RandomWhenStart,
             CurrentPrice = initialPrice or data.Min,
             AmountSold = 0,
-            CurrentAmount = 0,
             RangeChange = { 1, 4 },
             AmountToChange = amountToChange
         }
@@ -182,8 +180,7 @@ function SaveItemConfig(category, itemName, data)
             RangeChange = data.RangeChange or (DatabaseConfig[category] and DatabaseConfig[category][itemName] and DatabaseConfig[category][itemName].RangeChange) or { 1, 4 },
             AmountToChange = amountToChange,
             CurrentPrice = (DatabaseConfig[category] and DatabaseConfig[category][itemName] and DatabaseConfig[category][itemName].CurrentPrice) or data.Min,
-            AmountSold = (DatabaseConfig[category] and DatabaseConfig[category][itemName] and DatabaseConfig[category][itemName].AmountSold) or 0,
-            CurrentAmount = (DatabaseConfig[category] and DatabaseConfig[category][itemName] and DatabaseConfig[category][itemName].CurrentAmount) or 0
+            AmountSold = (DatabaseConfig[category] and DatabaseConfig[category][itemName] and DatabaseConfig[category][itemName].AmountSold) or 0
         }
         
         -- print('^2[XN-SELLITEM]^7 Đã cập nhật config cho item: ^3' .. itemName)
@@ -196,26 +193,6 @@ function SaveItemConfig(category, itemName, data)
         -- print('^1[XN-SELLITEM]^7 Lỗi khi cập nhật config cho item: ^3' .. itemName)
         return false
     end
-end
-
--- Cập nhật đồng thời giá, tồn kho hiện tại và thống kê đã bán.
-function UpdateItemEconomyState(category, itemName, currentPrice, currentAmount, amountSoldDelta)
-    currentAmount = math.max(0, math.floor(tonumber(currentAmount) or 0))
-    amountSoldDelta = math.max(0, math.floor(tonumber(amountSoldDelta) or 0))
-    local changed = MySQL.update.await([[
-        UPDATE xn_sellitem_config
-        SET current_price = ?, current_amount = ?, amount_sold = amount_sold + ?
-        WHERE category = ? AND item_name = ?
-    ]], { currentPrice, currentAmount, amountSoldDelta, category, itemName })
-
-    if tonumber(changed) ~= 1 then return false end
-    if DatabaseConfig[category] and DatabaseConfig[category][itemName] then
-        local config = DatabaseConfig[category][itemName]
-        config.CurrentPrice = currentPrice
-        config.CurrentAmount = currentAmount
-        config.AmountSold = (config.AmountSold or 0) + amountSoldDelta
-    end
-    return true
 end
 
 -- Xóa item khỏi database
@@ -309,7 +286,6 @@ function BuildAdminItemsCache()
                 randomWhenStart = itemData.RandomWhenStart,
                 currentPrice = currentPrice,
                 amountSold = itemData.AmountSold,
-                currentAmount = itemData.CurrentAmount or 0,
                 amountToChange = itemData.AmountToChange or 50
             })
         end
@@ -340,7 +316,6 @@ exports('LoadConfigFromDatabase', LoadConfigFromDatabase)
 exports('SaveItemConfig', SaveItemConfig)
 exports('UpdateItemPrice', UpdateItemPrice)
 exports('UpdateItemAmountSold', UpdateItemAmountSold)
-exports('UpdateItemEconomyState', UpdateItemEconomyState)
 exports('ResetItemAmountSold', ResetItemAmountSold)
 exports('GetAllItemsForAdmin', GetAllItemsForAdmin)
 exports('BuildAdminItemsCache', BuildAdminItemsCache)

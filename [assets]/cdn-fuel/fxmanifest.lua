@@ -19,7 +19,6 @@ server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/fuel_sv.lua',
     'server/station_sv.lua',
-    'server/procurement_sv.lua',
     'server/electric_sv.lua',
 }
 
