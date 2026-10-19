@@ -28,6 +28,12 @@ return {
         [`tribike2`] = true,      -- Tri-Cycles Race Bike 2
         [`tribike3`] = true,      -- Tri-Cycles Race Bike 3
         [`whippet`] = true,       -- Whippet Race Bike
+        [`phantom`] = true,
+        [`phantom2`] = true,
+        [`speedo`] = true,
+        [`mule`] = true,
+        [`benson`] = true,
+        [`forklift`] = true,
     },
 
     -- Những cánh cửa cụ thể luôn bị khóa bất kể điều gì
