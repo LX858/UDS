@@ -35,6 +35,13 @@ Config.TraderNpc = {
 }
 -- The server is authoritative for every recipe. The NUI only receives the
 -- display data and sends an entry id plus quantity when the player confirms.
+-- Add recipes to chests, items, or outfits in the order they should appear.
+-- Every recipe uses the same card in the UI; no position or special flag is needed.
+-- Example item recipe (use item names registered in ox_inventory):
+-- { id = "example", name = "Vật phẩm mẫu", image = "example_item",
+--   reward = { item = "example_item", amount = 1 },
+--   costs = { { item = "example_token", amount = 10 } } },
+-- image accepts an item name, a local ./assets/... path, or an image URL.
 Config.Trades = {
   chests = {
     {
@@ -133,7 +140,6 @@ Config.Trades = {
       id = "vehicle-r35",
       name = "Vé Đổi Xe R35",
       image = "./assets/vedoixe.png",
-      special = true,
       maxQuantity = 1,
       reward = { item = "ve_doi_xe_r35", amount = 1 },
       costs = {
@@ -144,7 +150,6 @@ Config.Trades = {
       id = "vehicle-rongngao",
       name = "Vé Đổi Xe Rồng Ngáo",
       image = "./assets/rongngao.png",
-      special = true,
       maxQuantity = 1,
       reward = { item = "ve_doi_xe_rongngao", amount = 1 },
       costs = {

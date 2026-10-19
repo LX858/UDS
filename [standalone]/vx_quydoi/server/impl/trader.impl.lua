@@ -350,7 +350,6 @@ function Impl:GetCatalog(source)
         image = entry.image,
         badge = entry.badge,
         gender = entry.gender,
-        special = entry.special,
         vehicleModel = entry.reward and entry.reward.type == "vehicle" and entry.reward.model or nil,
         rewardAmount = entry.reward and entry.reward.type == "vehicle"
           and 1

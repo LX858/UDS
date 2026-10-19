@@ -31,14 +31,10 @@
 .trader-main-tab,
 .items-category-button,
 .gender-button,
-.weapon-entry,
-.clothing-entry,
-.outfit-view-button,
-.outfit-exchange-button,
 .outfit-preview-back,
 .outfit-preview-close,
-.exchange-image-button,
-.items-exchange-action,
+.trade-card-exchange,
+.trade-card-preview,
 .trader-confirm-button,
 .trader-dialog-close {
   box-sizing: border-box;
@@ -69,94 +65,124 @@
 .trader-main-tab:active,
 .items-category-button:active,
 .gender-button:active,
-.outfit-view-button:active,
-.outfit-exchange-button:active,
 .outfit-preview-back:active,
 .outfit-preview-close:active,
-.exchange-image-button:active,
-.items-exchange-action:active,
 .trader-confirm-button:active {
   transform: translateY(2%) scale(0.98);
 }
 
 .trader-content { position: absolute; }
 
-.chest-grid {
+.trade-grid {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  align-content: center;
-  margin: 0 auto;
+  align-content: start;
+  justify-content: start;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-color: #b52b16 rgba(255, 230, 177, 0.58);
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
-.chest-entry {
+.trade-grid::-webkit-scrollbar,
+.trade-card-costs::-webkit-scrollbar { width: 7px; }
+
+.trade-grid::-webkit-scrollbar-track,
+.trade-card-costs::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(255, 230, 177, 0.58);
+}
+
+.trade-grid::-webkit-scrollbar-thumb,
+.trade-card-costs::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #b52b16;
+}
+
+.trade-card {
   display: flex;
-  min-width: 0;
+  box-sizing: border-box;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  border: 2px solid rgba(156, 65, 28, 0.55);
+  border-radius: 8px;
+  background: rgba(255, 239, 197, 0.78);
+  box-shadow: inset 0 1px 0 rgba(255, 253, 231, 0.9), 0 3px 8px rgba(85, 29, 9, 0.14);
   text-align: center;
 }
 
-.chest-art-wrap {
+.trade-card-media {
   position: relative;
   display: grid;
+  flex: 0 0 auto;
   place-items: center;
 }
 
-.chest-art {
-  filter: drop-shadow(0 0.32vw 0.26vw rgba(103, 27, 8, 0.28));
-  transition: transform 170ms ease;
+.trade-card-media.is-outfit { background: url('/assets/outfitbg.png') no-repeat center / contain; }
+
+.trade-card-art {
+  object-fit: contain;
+  filter: drop-shadow(0 0.25vw 0.18vw rgba(65, 22, 8, 0.22));
 }
 
-.chest-entry:hover .chest-art { transform: translateY(-4%) scale(1.04); }
-
-.chest-badge {
+.trade-card-preview {
   position: absolute !important;
-  right: -12%;
-  bottom: 8%;
-  border: 1px solid #f5b83e;
-  border-radius: 999px;
-  background: #a51f12;
-  color: #fff2c4;
-  box-shadow: 0 0.12vw 0.22vw rgba(92, 24, 8, 0.24);
-  white-space: nowrap;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
 }
 
-.chest-title {
+.trade-card-preview:hover { filter: brightness(1.15); }
+
+.trade-card-name {
+  display: -webkit-box;
+  flex: 0 0 auto;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.trade-card-costs {
+  flex: 0 0 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-color: #b52b16 rgba(255, 230, 177, 0.58);
+  scrollbar-width: thin;
+}
+
+.trade-card-cost {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.chest-cost-row { text-align: center; }
-.chest-cost-row .is-ready { color: #4f6f14; }
-.chest-cost-row .is-missing { color: #b21b11; }
+.trade-card-cost.is-ready { color: #4f6f14; }
+.trade-card-cost.is-missing { color: #a51f12; }
 
-.exchange-image-button,
-.items-exchange-action,
-.exchange-mini {
+.trade-card-exchange {
   display: grid;
+  flex: 0 0 auto;
   place-items: center;
+  margin-top: auto;
   background: url('/assets/quydoi.png') no-repeat center / contain;
-  color: #fff1aa;
-  text-align: center;
-  text-shadow: 0 1px 1px #6b1209;
-  transition: transform 120ms ease, filter 120ms ease;
+  cursor: pointer;
+  transition: filter 120ms ease, transform 120ms ease;
 }
 
-.exchange-image-button.is-disabled { filter: grayscale(0.45) opacity(0.72); }
-
-.exchange-image-button.is-disabled,
-.exchange-mini.is-disabled,
-.outfit-exchange-button.is-disabled,
-.items-exchange-action.is-disabled {
+.trade-card-exchange:hover { filter: brightness(1.12) saturate(1.08); }
+.trade-card-exchange:active { transform: translateY(2%) scale(0.98); }
+.trade-card-exchange.is-disabled {
   cursor: not-allowed;
   filter: grayscale(0.55) opacity(0.58);
 }
-
-.exchange-image-button:hover,
-.items-exchange-action:hover,
-.trader-confirm-button:hover { filter: brightness(1.12) saturate(1.08); }
 
 .items-layout { display: flex; }
 
@@ -203,7 +229,9 @@
   align-items: center;
   justify-content: center;
   background: no-repeat center / contain;
+  color: #ffe7ad;
   text-align: center;
+  text-shadow: 0 1px 2px #5c1c0d;
   text-transform: uppercase;
   transition: transform 140ms ease, filter 140ms ease;
 }
@@ -212,226 +240,10 @@
 .gender-button--right { background-image: url('/assets/rightbtn3.png'); }
 
 .gender-button.is-active {
-  color: #a11f11;
+  color: #fff4cc;
   filter: saturate(1.25);
   transform: translateY(-6%);
 }
-
-.weapon-grid {
-  display: grid;
-  align-items: start;
-  justify-content: center;
-  margin-right: auto !important;
-  margin-left: auto !important;
-}
-
-.weapon-entry {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid transparent;
-  background: transparent;
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-
-.weapon-entry:hover,
-.weapon-entry.is-selected {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-}
-
-.weapon-entry:hover { transform: translateY(-1%); }
-
-.weapon-special-entry {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  border: 3px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-
-.weapon-special-entry:hover,
-.weapon-special-entry.is-selected {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-}
-
-.weapon-special-entry:hover { transform: translateY(-1%); }
-
-.weapon-special-list {
-  position: absolute !important;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: visible;
-}
-
-.weapon-special-art {
-  object-fit: contain;
-  filter: drop-shadow(0 0.36vw 0.2vw rgba(65, 22, 8, 0.25));
-  transition: transform 160ms ease;
-}
-
-.weapon-special-entry:hover .weapon-special-art { transform: scale(1.025); }
-
-.weapon-art { filter: drop-shadow(0 0.36vw 0.2vw rgba(65, 22, 8, 0.25)); }
-
-.weapon-name,
-.clothing-name {
-  overflow: hidden;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.weapon-name { text-transform: uppercase; }
-
-.trade-cost-requirement {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: center;
-  color: #251108;
-  text-transform: uppercase;
-}
-
-.trade-cost-requirement.is-missing { color: #9f1f11; }
-
-.trade-cost-image {
-  flex: 0 0 auto;
-  object-fit: contain;
-  filter: drop-shadow(0 0.12vw 0.1vw rgba(49, 20, 8, 0.28));
-}
-
-.trade-cost-label {
-  overflow: hidden;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.exchange-mini {
-  color: #fff3b0;
-  text-shadow: 0 1px 1px #6c170d;
-}
-
-.clothing-grid {
-  display: grid;
-  height: 300px !important;
-  max-height: 300px !important;
-  align-content: start;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  justify-content: center;
-  padding-right: 10px;
-  scrollbar-color: #b52b16 rgba(255, 230, 177, 0.58);
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-}
-
-.clothing-grid::-webkit-scrollbar {
-  width: 9px;
-}
-
-.clothing-grid::-webkit-scrollbar-track {
-  border: 1px solid rgba(157, 75, 22, 0.22);
-  border-radius: 999px;
-  background: rgba(255, 230, 177, 0.58);
-  box-shadow: inset 0 0 3px rgba(123, 47, 12, 0.16);
-}
-
-.clothing-grid::-webkit-scrollbar-thumb {
-  border: 2px solid rgba(255, 225, 173, 0.7);
-  border-radius: 999px;
-  background: linear-gradient(#d94a20, #9d1e10);
-  box-shadow: 0 0 2px rgba(91, 22, 7, 0.42);
-}
-
-.clothing-grid::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(#e45a27, #b52412);
-}
-
-.clothing-entry {
-  min-width: 0;
-  background: transparent;
-  transition: transform 140ms ease, filter 140ms ease;
-}
-
-.clothing-entry:hover {
-  transform: translateY(-1.5%);
-  filter: brightness(1.05);
-}
-
-.clothing-frame {
-  position: relative;
-  background: url('/assets/outfitbg.png') no-repeat center / 100% 100%;
-  transition: filter 140ms ease;
-}
-
-.clothing-entry.is-selected .clothing-frame {
-  filter: brightness(1.08) drop-shadow(0 0.18vw 0.2vw rgba(145, 31, 12, 0.34));
-}
-
-.clothing-art {
-  position: absolute !important;
-  top: 3%;
-  left: 50%;
-  object-fit: contain;
-  filter: drop-shadow(0 0.26vw 0.16vw rgba(49, 20, 8, 0.25));
-  transform: translateX(-50%);
-}
-
-.outfit-view-button {
-  position: absolute !important;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  filter: drop-shadow(0 0.14vw 0.12vw rgba(88, 21, 7, 0.35));
-  transition: filter 120ms ease, transform 120ms ease;
-}
-
-.outfit-view-button:hover {
-  filter: brightness(1.13) saturate(1.12) drop-shadow(0 0.18vw 0.14vw rgba(88, 21, 7, 0.38));
-  transform: scale(1.06);
-}
-
-.outfit-view-button:active { transform: scale(0.96); }
-
-.outfit-exchange-button {
-  position: absolute !important;
-  left: 50%;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  background: url('/assets/quydoi.png') no-repeat center / contain;
-  color: #fff1aa;
-  text-align: center;
-  text-shadow: 0 1px 1px #6b1209;
-  transform: translateX(-50%);
-  transition: filter 120ms ease, transform 120ms ease;
-}
-
-.outfit-exchange-button:hover { filter: brightness(1.13) saturate(1.08); }
-
-.outfit-exchange-button:active {
-  transform: translateX(-50%) translateY(2%) scale(0.98);
-}
-
-.clothing-view-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.clothing-name { color: #251108; }
 
 .outfit-preview {
   position: absolute !important;
@@ -495,11 +307,6 @@
 }
 
 .outfit-preview-close:hover { filter: brightness(1.12) saturate(1.08); }
-
-.items-exchange-action {
-  position: absolute;
-  margin: 0;
-}
 
 .trader-empty {
   display: grid;

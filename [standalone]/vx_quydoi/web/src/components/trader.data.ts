@@ -12,7 +12,6 @@ export type TradeEntry = {
   costs: TradeCost[];
   rewardAmount?: number;
   maxQuantity?: number;
-  special?: boolean;
   vehicleModel?: string;
   badge?: string;
   gender?: 'male' | 'female';
@@ -78,7 +77,6 @@ export const DEV_TRADE_CATALOG: TradeCatalog = {
       image: './assets/vedoixe.png',
       rewardAmount: 1,
       maxQuantity: 1,
-      special: true,
       vehicleModel: 'r35',
       costs: [{item: 'the_outfit', label: 'Thẻ Trang Phục', owned: 999, required: 999}],
     },
@@ -88,7 +86,6 @@ export const DEV_TRADE_CATALOG: TradeCatalog = {
       image: './assets/rongngao.png',
       rewardAmount: 1,
       maxQuantity: 1,
-      special: true,
       vehicleModel: 'rongngao',
       costs: [{item: 'the_outfit', label: 'Thẻ Trang Phục', owned: 999, required: 399}],
     },

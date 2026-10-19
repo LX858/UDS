@@ -1,0 +1,54 @@
+@layer components {
+	.mp-dr-embed,
+	.mp-dr-embed-shell,
+	.mp-dr-inline-shell {
+		font-family: 'Montserrat', 'Segoe UI', sans-serif;
+		color: #ffffff;
+	}
+
+	.mp-dr-inline-shell {
+		background: transparent !important;
+	}
+
+	.mp-dr-embed .tipi-panel {
+		box-shadow: none;
+	}
+
+	/* Scroll mượt hơn trong Tipi_menu CEF — ẩn scrollbar, tắt animation liên tục */
+	.mp-dr-embed .cal-shell,
+	.mp-dr-embed .tipi-scroll,
+	.mp-daily-embed-host .cal-shell,
+	.mp-daily-embed-host .tipi-scroll {
+		scrollbar-width: none !important;
+		-ms-overflow-style: none !important;
+		overscroll-behavior: contain;
+	}
+
+	.mp-dr-embed .cal-shell::-webkit-scrollbar,
+	.mp-dr-embed .tipi-scroll::-webkit-scrollbar,
+	.mp-daily-embed-host .cal-shell::-webkit-scrollbar,
+	.mp-daily-embed-host .tipi-scroll::-webkit-scrollbar {
+		display: none !important;
+		width: 0 !important;
+		height: 0 !important;
+	}
+
+	.mp-dr-inline .cal-cell-img-today,
+	.mp-dr-inline .cal-cell-stars--active,
+	.mp-dr-embed .cal-cell-img-today,
+	.mp-dr-embed .cal-cell-stars--active {
+		animation: none !important;
+		filter: none !important;
+	}
+
+	.mp-dr-inline .cal-cell,
+	.mp-dr-embed .cal-cell {
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
+	}
+
+	.mp-dr-inline .cal-grid,
+	.mp-dr-embed .cal-grid {
+		gap: 8px;
+	}
+}
