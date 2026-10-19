@@ -26,7 +26,7 @@ const TradeGrid = ({
 
   return (
     <Box
-      className="trade-grid bg-black"
+      className="trade-grid"
       rWidth={columns === 5 ? 900 : 786}
       rHeight={height}
       rGridTemplateColumns={[columns, 165]}
