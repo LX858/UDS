@@ -10,6 +10,7 @@ end
 
 function vector3(x, y, z) return { x = x, y = y, z = z } end
 function vector4(x, y, z, w) return { x = x, y = y, z = z, w = w } end
+vec4 = vector4
 function GetPlayerPed() return 1 end
 function DoesEntityExist() return true end
 function GetEntityCoords() return vector3(0, 0, 0) end
@@ -196,6 +197,14 @@ for _, business in ipairs({
 end
 snapshot.business = previousBusiness
 GetEntityCoords = function() return vector3(0, 0, 0) end
+
+config.BusinessOrders.OrderQuantities = { 50, 100, 150, 200 }
+local invalidQuantity, invalidMessage = board:Create(1, player, "restaurant_shop", {
+  { itemId = "coconut", quantity = 49 },
+})
+assertEqual(invalidQuantity, false, "server accepted a custom business quantity")
+assertEqual(invalidMessage, "Chỉ được chọn một trong các mức số lượng cố định")
+config.BusinessOrders.OrderQuantities = nil
 
 local created, message = board:Create(1, player, "restaurant_shop", {
   { itemId = "coconut", quantity = 2 },

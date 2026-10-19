@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import {
-  Box, Building2, Minus, Moon, PackageCheck, Plus, ShoppingCart,
+  Box, Building2, Moon, PackageCheck, ShoppingCart,
   Sun, Truck, WalletCards, X,
 } from 'lucide-react';
 import {useMemo, useState} from 'react';
@@ -8,6 +8,8 @@ import type {TruckerSnapshot} from './model';
 import {formatConversion, formatMoney} from './model';
 import type {TruckerController} from './useTruckerController';
 import type {TruckerTheme} from './useTruckerTheme';
+
+const ORDER_QUANTITIES = [50, 100, 150, 200] as const;
 
 export function ProcurementPortal({
   snapshot,
@@ -47,11 +49,8 @@ export function ProcurementPortal({
     && summary.total <= context.balance
     && context.sourceOnline;
 
-  const adjust = (itemId: string, delta: number) => {
-    setCart(current => ({
-      ...current,
-      [itemId]: Math.max(0, Math.min(10000, (current[itemId] ?? 0) + delta)),
-    }));
+  const chooseQuantity = (itemId: string, quantity: number) => {
+    setCart(current => ({...current, [itemId]: current[itemId] === quantity ? 0 : quantity}));
   };
 
   return (
@@ -120,21 +119,20 @@ export function ProcurementPortal({
                         Kho: {item.available}
                       </span>
                     </div>
-                    <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-muted p-2">
-                      <button type="button" aria-label={`Giảm ${item.label}`} disabled={busy || quantity <= 0}
-                        onClick={() => adjust(item.itemId, -1)} className="trucker-button grid h-10 w-10 place-items-center rounded-lg bg-card disabled:opacity-40">
-                        <Minus className="h-4 w-4" />
-                      </button>
-                      <label className="min-w-0 flex-1 text-center">
-                        <span className="sr-only">Số lượng {item.label}</span>
-                        <input type="number" min={0} max={10000} value={quantity} disabled={busy}
-                          onChange={event => setCart(current => ({...current, [item.itemId]: Math.max(0, Math.min(10000, Math.floor(Number(event.target.value) || 0)))}))}
-                          className="h-10 w-full rounded-lg border border-border bg-background px-2 text-center text-base font-extrabold outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-                      </label>
-                      <button type="button" aria-label={`Tăng ${item.label}`} disabled={busy}
-                        onClick={() => adjust(item.itemId, 1)} className="trucker-button grid h-10 w-10 place-items-center rounded-lg bg-card disabled:opacity-40">
-                        <Plus className="h-4 w-4" />
-                      </button>
+                    <div className="mt-4 rounded-xl bg-muted p-2">
+                      <p className="mb-2 px-1 text-xs font-bold text-muted-foreground">Chọn số lượng cố định</p>
+                      <div className="grid grid-cols-4 gap-2" role="group" aria-label={`Số lượng ${item.label}`}>
+                        {ORDER_QUANTITIES.map(option => (
+                          <button key={option} type="button" disabled={busy}
+                            aria-label={`${option} ${item.label}`} aria-pressed={quantity === option}
+                            onClick={() => chooseQuantity(item.itemId, option)}
+                            className={`trucker-button min-h-10 rounded-lg px-2 text-sm font-extrabold disabled:opacity-40 ${quantity === option
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-card text-foreground hover:bg-accent'}`}>
+                            {option}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </article>
                 );

@@ -60,6 +60,7 @@ end
 
 function vector3(x, y, z) return v3(x, y, z) end
 function vector4(x, y, z, w) return v4(x, y, z, w) end
+vec4 = vector4
 function GetHashKey(model) return hashes[model] or 9999 end
 function GetPlayerRoutingBucket() return 0 end
 function GetPlayerPed(playerSource) return playerPeds[playerSource] or 0 end

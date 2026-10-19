@@ -221,6 +221,15 @@ function BusinessOrderBoard:Create(playerSource, player, businessId, requestedLi
   if #requestedLines < 1 or #requestedLines > self.config.MaxLines then
     return false, "Mỗi đơn phải có từ 1 đến 6 mặt hàng"
   end
+  if self.config.OrderQuantities then
+    local allowed = {}
+    for _, quantity in ipairs(self.config.OrderQuantities) do allowed[quantity] = true end
+    for _, requested in ipairs(requestedLines) do
+      if not allowed[requested.quantity] then
+        return false, "Chỉ được chọn một trong các mức số lượng cố định"
+      end
+    end
+  end
   local catalog, sourceOnline = self:CatalogFor(business)
   if not sourceOnline then return false, "Nguồn xn-sellitem đang gián đoạn" end
   local byId = {}

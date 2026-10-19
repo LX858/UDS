@@ -14,6 +14,7 @@ dofile("shared/core/class.lua")
 
 function vector3(x, y, z) return { x = x, y = y, z = z } end
 function vector4(x, y, z, w) return { x = x, y = y, z = z, w = w } end
+vec4 = vector4
 function SetLocale(locale) return locale end
 dofile("config.lua")
 Config.Routes = { Config.Routes[1] }

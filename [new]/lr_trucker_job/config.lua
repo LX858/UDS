@@ -92,6 +92,7 @@ Config = {
   BusinessOrders = {
     Enabled = true,
     PageSize = 20,
+    OrderQuantities = { 50, 100, 150, 200 },
     MaxLines = 6,
     MaxPackages = 21,
     MaxUnits = 250,
