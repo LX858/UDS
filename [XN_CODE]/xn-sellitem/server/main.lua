@@ -12,6 +12,10 @@ local function IsCleanSellitemCategory(category)
         and integration.CleanCategories[category] == true
 end
 
+local function UsesStockPricing(category)
+    return type(category) == 'string' and category ~= 'choden'
+end
+
 local function IsTruckerjobEnabled()
     return Config.EnableTruckerjob == true
 end
@@ -220,8 +224,8 @@ function InitEconomy()
                 local priceSteps = GetPriceSteps(newData.Min, newData.Max)
                 
                 if dbConfig and dbConfig.CurrentPrice and dbConfig.CurrentPrice > 0 then
-                    -- Hàng sạch giữ đúng giá động đã lưu; hàng thường tiếp tục dùng các mốc cũ.
-                    newData.Price = IsCleanSellitemCategory(categoryName)
+                    -- Chỉ chợ đen dùng giá theo 6 mốc; hàng khác giữ đúng giá đã lưu.
+                    newData.Price = UsesStockPricing(categoryName)
                         and dbConfig.CurrentPrice or SnapToNearestStep(dbConfig.CurrentPrice, priceSteps)
                     useDbPrice = true
                 end
@@ -231,7 +235,7 @@ function InitEconomy()
                     newData.Price = itemData.ReferencePrice or RandomPriceFromSteps(priceSteps, nil)
                 end
                 
-                -- Lưu giá đã snap/random vào DB để restart lần sau tải đúng
+                -- Lưu giá khởi tạo hoặc giá chợ đen đã snap để restart tải đúng.
                 if dbConfig then
                     UpdateItemPrice(categoryName, itemName, newData.Price)
                 end
@@ -276,9 +280,9 @@ function InitEconomy()
                     local priceSteps = GetPriceSteps(dbConfig.Min, dbConfig.Max)
                     local price
                     
-                    -- Nếu có CurrentPrice trong DB, snap về bước gần nhất
+                    -- Chỉ snap giá chợ đen; hàng theo tồn kho giữ giá đã lưu.
                     if dbConfig.CurrentPrice and dbConfig.CurrentPrice > 0 then
-                        price = IsCleanSellitemCategory(categoryName)
+                        price = UsesStockPricing(categoryName)
                             and dbConfig.CurrentPrice or SnapToNearestStep(dbConfig.CurrentPrice, priceSteps)
                     else
                         price = RandomPriceFromSteps(priceSteps, nil)
@@ -406,15 +410,15 @@ function InitEconomy()
     end)
 
     if Config.TuDong_ThayDoiGia then
-        -- @thread For Environment Looping
+        -- Chỉ chợ đen dùng lịch đổi giá; các nhóm khác theo tồn kho.
         Citizen.CreateThread(function()
             while true do
                 Citizen.Wait(Config.ThoiGian_CapNhat * 60000)
-                for k, v in pairs(DATA) do
-                    Wait(100)
-                    
-                    -- Giá hàng sạch chỉ biến động theo tồn kho; không reset tồn theo chu kỳ.
-                    if not IsCleanSellitemCategory(DATA[k].Category) then
+                local changed = false
+                for k, itemData in pairs(DATA) do
+                    -- Lịch cũ chỉ áp dụng cho chợ đen.
+                    if itemData.Category == 'choden' then
+                        Wait(100)
                         local oldPrice = DATA[k].Price
                         local priceSteps = GetPriceSteps(DATA[k].Min, DATA[k].Max)
                         DATA[k].Price = RandomPriceFromSteps(priceSteps, oldPrice)
@@ -432,14 +436,14 @@ function InitEconomy()
                         if DATA[k].Category then
                             UpdateItemPrice(DATA[k].Category, k, DATA[k].Price)
                         end
+                        TriggerClientEvent('xn-sellitem:update', -1, k, DATA[k])
+                        changed = true
                     end
                 end
 
-                -- @send Update all prices for all users
-                TriggerClientEvent('xn-sellitem:setPrices', -1, DATA)
-                
-                -- Thông báo cho tất cả người chơi
-                TriggerClientEvent('QBCore:Notify', -1, '📊 Có biến động giá cả thị trường!', 'primary', 5000)
+                if changed then
+                    TriggerClientEvent('QBCore:Notify', -1, '📊 Giá chợ đen vừa biến động!', 'primary', 5000)
+                end
 
                 -- TriggerClientEvent("chat:addMessage", -1, {
                 --     type = "NGƯỜI THU MUA",
@@ -603,7 +607,7 @@ local function ProcessLegacyPriceDropOnSell(itemName, amountSold)
     local itemData = DATA[itemName]
     if not itemData then return end
 
-    -- Tăng amount_sold trong database
+    -- Tăng amount_sold trong database cho cơ chế chợ đen.
     UpdateItemAmountSold(itemData.Category, itemName, amountSold)
 
     -- Đảm bảo CurrentAmount tồn tại
@@ -675,8 +679,8 @@ local function ProcessPriceDropOnSell(itemName, amountSold)
     local itemData = DATA[itemName]
     if not itemData then return end
 
-    -- Tăng amount_sold trong database
-    if not IsCleanSellitemCategory(itemData.Category) then
+    -- Chợ đen dùng cơ chế cũ; các nhóm khác lưu giá, tồn và thống kê cùng nhau.
+    if not UsesStockPricing(itemData.Category) then
         return ProcessLegacyPriceDropOnSell(itemName, amountSold)
     end
 
@@ -688,7 +692,7 @@ local function ProcessPriceDropOnSell(itemName, amountSold)
         local oldPrice = itemData.Price
         local newPrice = MovePriceAcrossStockBands(itemData, oldAmount, newAmount)
         if not UpdateItemEconomyState(itemData.Category, itemName, newPrice, newAmount, amountSold) then
-            error('could not persist clean sale economy state')
+            error('could not persist stock-priced sale economy state')
         end
         itemData.CurrentAmount = newAmount
         itemData.Price = newPrice
@@ -951,9 +955,11 @@ local function IsPlayerNearSellCategory(playerId, category, maxDistance)
     local playerPed = GetPlayerPed(playerId)
     if not playerPed or playerPed == 0 then return false end
 
+    local categoryItems = Config.Items[category]
+    if not categoryItems then return false end
     local playerCoords = GetEntityCoords(playerPed)
     for _, location in pairs(Config.Locations) do
-        if location.Items == Config.Items[category] then
+        if location.Items == categoryItems or location.ExtraItems == categoryItems then
             local locationCoords = vector3(location.Coords.x, location.Coords.y, location.Coords.z)
             if #(playerCoords - locationCoords) <= (maxDistance or 5.0) then
                 return true
@@ -1271,6 +1277,11 @@ exports['monitors']:RegisterProtectedEvent('xn-sellitem:cfx:action', function(pl
         return
     end
 
+    if not IsPlayerNearSellCategory(playerId, itemEco.Category, 5.0) then
+        TriggerClientEvent('QBCore:Notify', playerId, 'Bạn phải đứng gần đúng người thu mua để bán hàng', 'error')
+        return
+    end
+
     -- Kiểm tra điều kiện Cảnh sát cho Chợ Đen (choden)
     if itemEco.Category == 'choden' then
         local policeCount = GetPoliceCount()
@@ -1394,6 +1405,11 @@ exports['monitors']:RegisterProtectedEvent('xn-sellitem:cfx:action-all', functio
     -- Kiểm tra item có trong config không
     if not itemEco then
         TriggerClientEvent("QBCore:Notify", playerId, "Item này không thể bán tại đây", "error")
+        return
+    end
+
+    if not IsPlayerNearSellCategory(playerId, itemEco.Category, 5.0) then
+        TriggerClientEvent('QBCore:Notify', playerId, 'Bạn phải đứng gần đúng người thu mua để bán hàng', 'error')
         return
     end
 
@@ -1551,7 +1567,7 @@ QBCore.Commands.Add('resetprices', 'Reset tất cả giá về random (Admin)', 
             local priceSteps = GetPriceSteps(itemData.Min, itemData.Max)
             local newPrice = RandomPriceFromSteps(priceSteps, nil)
             itemData.Price = newPrice
-            if not IsCleanSellitemCategory(itemData.Category) then itemData.CurrentAmount = 0 end
+            if not UsesStockPricing(itemData.Category) then itemData.CurrentAmount = 0 end
             
             local center = round((itemData.Min + itemData.Max) / 2)
             if newPrice > center then

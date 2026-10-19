@@ -4,7 +4,7 @@ Config.EnableTruckerjob = true -- Chỉ điều khiển tích hợp với lr_tru
 -- SỐ CẢNH SÁT ONLINE YÊU CẦU ĐỂ BÁN HÀNG TẠI CHỢ ĐEN (choden)
 Config.ChodenRequiredCops = 0
 
--- BẬT/TẮT TỰ ĐỘNG CẬP NHẬT GIÁ MỖI GIỜ
+-- Lịch đổi giá chỉ dành cho choden; các nhóm khác đổi giá theo tồn kho.
 Config.TuDong_ThayDoiGia = true -- Bật = true, Tắt = false
 Config.ThoiGian_CapNhat = 30 -- Tính theo phút
 
@@ -293,6 +293,21 @@ Config.Items = {
     },
 }
 
+-- Một điểm thu mua có thể phục vụ thêm danh mục mà vẫn giữ bảng item gốc
+-- làm reference để đồng bộ item quản trị tạo sau khi resource đã chạy.
+function Config.GetLocationItems(location)
+    local items = location and location.Items or {}
+    local extraItems = location and location.ExtraItems
+    if not extraItems then return items end
+
+    local combined = {}
+    for itemName, itemData in pairs(items) do combined[itemName] = itemData end
+    for itemName, itemData in pairs(extraItems) do
+        if combined[itemName] == nil then combined[itemName] = itemData end
+    end
+    return combined
+end
+
 Config.Locations = {
     {
         Blip = {
@@ -341,12 +356,13 @@ Config.Locations = {
             Sprite = 356,
             Color = 11,
             Scale = 0.7,
-            Label = 'THƯƠNG LÁI MUA NÔNG SẢN',
+            Label = 'THƯƠNG LÁI MUA NÔNG SẢN & NUÔI THÚ',
             ShortRange = false,
         },
         Coords = vec4(213.4228, -945.4520, 31.8079, 335.0612),
-        NPCText = 'THƯƠNG LÁI MUA NÔNG SẢN',
+        NPCText = 'THƯƠNG LÁI MUA NÔNG SẢN & NUÔI THÚ',
         Items = Config.Items['traicay'],
+        ExtraItems = Config.Items['nuoithu'],
         TargetName = "fram_dolly"
     },
     {
