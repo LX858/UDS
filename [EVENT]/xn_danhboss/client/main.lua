@@ -197,41 +197,17 @@ RegisterNetEvent('xn_danhboss:died', function(netId)
     end
 end)
 
--- Damage attribution: track boss hp drop right after my own hits
-
-local lastHitAt = 0
-local pendingDealt = 0
+-- Report my hits on the boss; the server computes the damage (neons_ddame zeroes real damage).
 
 AddEventHandler('gameEventTriggered', function(name, args)
     if name ~= 'CEventNetworkEntityDamage' then return end
     local ped = resolvePed()
-    if ped ~= 0 and args[1] == ped and args[2] == cache.ped then
-        lastHitAt = GetGameTimer()
-    end
-end)
+    if ped == 0 or args[1] ~= ped or args[2] ~= cache.ped then return end
 
-CreateThread(function()
-    local lastHealth = nil
-    local lastReport = 0
-    while true do
-        Wait(150)
-        local ped = resolvePed()
-        if ped == 0 then
-            lastHealth = nil
-        else
-            local health = GetEntityHealth(ped)
-            local now = GetGameTimer()
-            if lastHealth and health < lastHealth and now - lastHitAt < 1500 then
-                pendingDealt = pendingDealt + (lastHealth - health)
-            end
-            lastHealth = health
-            if pendingDealt > 0 and now - lastReport > 1500 then
-                TriggerServerEvent('xn_danhboss:dealt', pendingDealt)
-                pendingDealt = 0
-                lastReport = now
-            end
-        end
-    end
+    local weapon = args[7]
+    local found, bone = GetPedLastDamageBone(ped)
+    local isHead = found and (bone == 31086 or bone == 12844 or bone == 39317) or false
+    TriggerServerEvent('xn_danhboss:damageBoss', weapon, isHead, GetWeaponDamage(weapon, 0))
 end)
 
 -- Boss AI (runs only on the client that owns the entity)
@@ -253,7 +229,7 @@ local function setupBoss(ped, first)
     SetPedPathAvoidFire(ped, false)
 
     if first then
-        local total = Config.Boss.health + Config.HealthOffset
+        local total = Config.Damage.realHealth + Config.HealthOffset
         SetPedMaxHealth(ped, total)
         SetEntityMaxHealth(ped, total)
         SetEntityHealth(ped, total)
@@ -328,6 +304,9 @@ CreateThread(function()
             local E = Config.Enrage
             local myPos = GetEntityCoords(ped)
 
+            if GetEntityHealth(ped) < Config.Damage.realHealth * 0.5 then
+                SetEntityHealth(ped, Config.Damage.realHealth + Config.HealthOffset)
+            end
             if target then
                 local ok, pPed = isValidPlayer(target)
                 if not ok or #(myPos - GetEntityCoords(pPed)) > AI.aggroRange * 1.3 then target = nil end

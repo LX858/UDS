@@ -1,10 +1,22 @@
 Config = {}
 
-Config.Debug = false
+Config.Debug = true
 
--- Health of a ped is offset by 100 (below that the ped is considered dead).
--- Real entity health = Config.Boss.health + HealthOffset.
+-- Boss hp is tracked by the server from player hit reports (not by entity health),
+-- because neons_ddame sets weapon damage modifiers to ~0 and re-applies damage itself.
+-- The entity gets a huge real health so it never dies from real damage.
 Config.HealthOffset = 100
+
+Config.Damage = {
+    syncResource = 'neons_ddame', -- read WeaponDamages from this resource config.lua ('' to disable)
+    weapons = {}, -- manual overrides: [`weapon_x`] = { damage = 20, headshot = 40, maxRange = 100.0 }
+    unlistedMax = 150, -- cap for weapons not listed anywhere (client-reported base damage)
+    headMult = 2.0, -- headshot multiplier for unlisted weapons
+    multiplier = 1.0, -- global damage multiplier against the boss
+    defaultMaxRange = 300.0,
+    maxHitsPerSecond = 40, -- per player, anti-spam
+    realHealth = 1000000,
+}
 
 Config.Boss = {
     label = 'BOSS ZOMBIE', -- GTA fonts do not render Vietnamese diacritics

@@ -182,6 +182,7 @@ spawnBoss = function()
 
     -- Keep the entity alive for far players and avoid falling through unloaded collision.
     SetEntityDistanceCullingRadius(ped, 500.0)
+    SetEntityOrphanMode(ped, 2) -- keep the entity when no client owns it (otherwise it is culled)
     FreezeEntityPosition(ped, true)
 
     boss = {
@@ -199,8 +200,6 @@ spawnBoss = function()
         lastMelee = 0,
         lastSlam = 0,
         contrib = {},
-        attributed = 0,
-        lastDealt = {},
     }
     broadcast(true)
     notifyAll(Config.Text.spawned, 'warning')
@@ -235,9 +234,6 @@ local function monitor()
         broadcast(false)
         return
     end
-
-    local hp = math.max(0, math.min(boss.maxHp, GetEntityHealth(ped) - Config.HealthOffset))
-    boss.hp = math.min(boss.hp, hp)
 
     if not boss.enraged and boss.hp <= boss.maxHp * Config.Enrage.threshold and boss.hp > 0 then
         boss.enraged = true
@@ -321,25 +317,52 @@ RegisterNetEvent('xn_danhboss:slam', function()
     end)
 end)
 
--- Damage attribution: clients report the boss hp they observed dropping after their hits.
--- Server caps the total at the real hp lost, so inflated reports cannot exceed reality.
-RegisterNetEvent('xn_danhboss:dealt', function(amount)
-    local src = source
-    if not boss or not boss.confirmed or boss.dead then return end
-    amount = tonumber(amount)
-    if not amount or amount <= 0 then return end
+-- Weapon damage table: manual overrides first, then neons_ddame's config.lua (kept in sync).
+local weaponDamage = {}
 
-    local now = GetGameTimer()
-    if boss.lastDealt[src] and now - boss.lastDealt[src] < 800 then return end
-    boss.lastDealt[src] = now
+local function normHash(h)
+    return h & 0xFFFFFFFF
+end
 
+local function loadWeaponDamage()
+    local D = Config.Damage
+    weaponDamage = {}
+
+    local res = D.syncResource
+    if res and res ~= '' and GetResourceState(res) ~= 'missing' then
+        local code = LoadResourceFile(res, 'config.lua')
+        local env = setmetatable({}, { __index = _G })
+        local fn = code and load(code, '@' .. res .. '/config.lua', 't', env)
+        local ok = fn and pcall(fn)
+        local cfg = ok and rawget(env, 'Config')
+        if cfg and type(cfg.WeaponDamages) == 'table' then
+            local n = 0
+            for hash, w in pairs(cfg.WeaponDamages) do
+                if math.tointeger(hash) and w.damage then
+                    weaponDamage[normHash(hash)] = w
+                    n = n + 1
+                end
+            end
+            debugPrint(('loaded %d weapons from %s'):format(n, res))
+        else
+            print(('[xn_danhboss] could not read WeaponDamages from %s'):format(res))
+        end
+    end
+
+    for hash, w in pairs(D.weapons) do
+        weaponDamage[normHash(hash)] = w
+    end
+end
+
+CreateThread(loadWeaponDamage)
+
+AddEventHandler('onResourceStart', function(res)
+    if res == Config.Damage.syncResource then loadWeaponDamage() end
+end)
+
+local function addContribution(src, damage)
     local player = exports.qbx_core:GetPlayer(src)
     if not player then return end
-
-    local unattributed = (boss.maxHp - boss.hp) - boss.attributed
-    local accepted = math.floor(math.min(amount, unattributed, 3000))
-    if accepted <= 0 then return end
-
     local cid = player.PlayerData.citizenid
     local c = boss.contrib[cid]
     if not c then
@@ -348,8 +371,55 @@ RegisterNetEvent('xn_danhboss:dealt', function(amount)
         boss.contrib[cid] = c
     end
     c.src = src
-    c.damage = c.damage + accepted
-    boss.attributed = boss.attributed + accepted
+    c.damage = c.damage + damage
+end
+
+local hitWindow = {}
+
+AddEventHandler('playerDropped', function()
+    hitWindow[source] = nil
+end)
+
+-- Attacker client reports a hit on the boss; server decides the damage.
+RegisterNetEvent('xn_danhboss:damageBoss', function(weaponHash, isHead, baseDamage)
+    local src = source
+    if not boss or not boss.confirmed or boss.dead then return end
+    weaponHash = math.tointeger(weaponHash)
+    if not weaponHash then return end
+
+    local D = Config.Damage
+    local now = GetGameTimer()
+    local w = hitWindow[src]
+    if not w or now - w.start >= 1000 then
+        w = { start = now, count = 0 }
+        hitWindow[src] = w
+    end
+    w.count = w.count + 1
+    if w.count > D.maxHitsPerSecond then return end
+
+    local ped = GetPlayerPed(src)
+    if ped == 0 or GetEntityHealth(ped) <= 0 then return end
+    local key = normHash(weaponHash)
+    if normHash(GetSelectedPedWeapon(ped)) ~= key then return end
+
+    local cfg = weaponDamage[key]
+    local range = (cfg and cfg.maxRange or D.defaultMaxRange) + 3.0
+    if #(GetEntityCoords(ped) - GetEntityCoords(boss.ped)) > range then return end
+
+    local dmg
+    if cfg then
+        dmg = isHead and (cfg.headshot or cfg.damage) or cfg.damage
+    else
+        dmg = math.max(1, math.min(tonumber(baseDamage) or 1, D.unlistedMax))
+        if isHead then dmg = dmg * D.headMult end
+    end
+    dmg = math.floor(dmg * D.multiplier)
+    dmg = math.min(dmg, boss.hp)
+    if dmg <= 0 then return end
+
+    boss.hp = boss.hp - dmg
+    addContribution(src, dmg)
+    if boss.hp <= 0 then finishBoss() end
 end)
 
 lib.addCommand('spawnboss', {
@@ -388,6 +458,10 @@ end)
 CreateThread(function()
     if not Config.Boss.spawnOnStart then return end
     Wait(Config.Boss.startDelay * 1000)
-    local ok, err = spawnBoss()
-    if not ok then print('[xn_danhboss] ' .. tostring(err)) end
+    for _ = 1, 10 do
+        local ok, err = spawnBoss()
+        if ok or boss then return end
+        print('[xn_danhboss] spawn failed: ' .. tostring(err) .. ' (retry in 10s)')
+        Wait(10000)
+    end
 end)
