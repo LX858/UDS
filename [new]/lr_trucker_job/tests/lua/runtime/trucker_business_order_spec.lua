@@ -147,6 +147,32 @@ local board = LRTruckerServer.BusinessOrderBoard:New({
   logger = { Warn = function() end },
 })
 local player = { citizenId = "CID1", job = { name = "quanan", onDuty = true } }
+
+-- Validate the deployed item mappings, not only the complete test fixture.
+SetLocale = function() return {} end
+dofile("config.lua")
+local deployedConfig = Config
+for itemId, mapping in pairs(deployedConfig.BusinessOrders.Items) do
+  assertTrue(type(mapping.unitsPerPackage) == "number" and mapping.unitsPerPackage >= 1,
+    "missing unitsPerPackage for " .. itemId)
+end
+local deployedBoard = LRTruckerServer.BusinessOrderBoard:New({
+  config = deployedConfig, integration = integration,
+  nextId = function() return "deployed-test" end, logger = { Warn = function() end },
+})
+GetEntityCoords = function() return deployedConfig.BusinessOrders.Businesses.bar.orderPoint end
+local context, contextError = deployedBoard:GetContext(1,
+  { citizenId = "CID1", job = { name = "quannuoc", onDuty = true } }, "bar")
+assertTrue(context ~= nil, contextError)
+local previousBusiness = snapshot.business
+snapshot.business = context
+local validContext, contextDetail = contract.net.rpc.clientToServer.getBusinessContext.response({
+  success = true, message = "Đã tải cổng đặt hàng", snapshot = snapshot,
+})
+assertTrue(validContext, contextDetail)
+snapshot.business = previousBusiness
+GetEntityCoords = function() return vector3(0, 0, 0) end
+
 local created, message = board:Create(1, player, "restaurant_shop", {
   { itemId = "coconut", quantity = 2 },
   { itemId = "luami", quantity = 1 },

@@ -115,13 +115,13 @@ Config = {
       },
     },
     Items = {
-      coconut = { destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'dua_soche', destinationLabel = 'Dừa sơ chế' },
-      la_che = { destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'tra_kho', destinationLabel = 'Trà khô' },
-      luami = { destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'gao', destinationLabel = 'Gạo' },
-      conheo = { destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'conheo', destinationLabel = 'Heo' },
-      conbo = { destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'conbo', destinationLabel = 'Bò' },
-      luanuoc = { destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'luanuoc', destinationLabel = 'Lúa nước' },
-      dau_tho = { destinationMultiplier = 20, destinationUnit = 'liter', destinationItemId = '', destinationLabel = 'Nhiên liệu' },
+      coconut = { unitsPerPackage = 12, destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'dua_soche', destinationLabel = 'Dừa sơ chế' },
+      la_che = { unitsPerPackage = 12, destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'tra_kho', destinationLabel = 'Trà khô' },
+      luami = { unitsPerPackage = 12, destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'gao', destinationLabel = 'Gạo' },
+      conheo = { unitsPerPackage = 12, destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'conheo', destinationLabel = 'Heo' },
+      conbo = { unitsPerPackage = 12, destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'conbo', destinationLabel = 'Bò' },
+      luanuoc = { unitsPerPackage = 12, destinationMultiplier = 1, destinationUnit = 'item', destinationItemId = 'luanuoc', destinationLabel = 'Lúa nước' },
+      dau_tho = { unitsPerPackage = 12, destinationMultiplier = 20, destinationUnit = 'liter', destinationItemId = '', destinationLabel = 'Nhiên liệu' },
     },
     -- Điểm giao tịnh tiến theo quán hiện tại; kiểm tra va chạm và heading trên staging.
     Businesses = {
