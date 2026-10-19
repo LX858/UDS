@@ -28,7 +28,7 @@ const App = observer(() => {
         playerVars: { autoplay: 1, loop: 1, playlist: 'Ev5Oj4KTsqI' },
         events: {
           onReady: (event: any) => {
-            event.target.setVolume(15);
+            event.target.setVolume(5);
             event.target.playVideo();
           },
           onStateChange: (event: any) => {

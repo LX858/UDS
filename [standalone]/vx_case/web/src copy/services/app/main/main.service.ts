@@ -12,6 +12,9 @@ import { isEnvBrowser } from '@/utils/misc';
 import { fetchNui } from '../../../utils/fetchNui';
 import { showNotify } from '../../../utils/toast';
 
+const SPIN_SEGMENT_LENGTH = 45;
+const REWARD_OFFSET = 30;
+
 export type IMainService = MainService;
 export const IMainService = defineService<IMainService>('MainService');
 
@@ -51,6 +54,9 @@ class MainService implements AppContribution {
   spinningItems: IReward[] = [];
   result: IReward[] = [];
   mutiplier: number = 1;
+  spinRound = 0;
+  completedSpins = 0;
+  currentRewardIndex = -1;
 
   async init() {
     this.logService.log('init');
@@ -92,32 +98,64 @@ class MainService implements AppContribution {
   }
 
   private generateFakeItems(reward: IReward) {
-    const items = [...this.items];
-    for (let index = 0; index < 125; index += 1) {
-      items.push(index === 80 ? {...reward, isReward: true} : this.items[Math.floor(Math.random() * this.items.length)]);
+    return this.generateSpinSegment(reward);
+  }
+
+  private generateSpinSegment(reward: IReward) {
+    return Array.from({length: SPIN_SEGMENT_LENGTH}, (_, index) => (
+      index === REWARD_OFFSET
+        ? {...reward, isReward: true}
+        : this.items[Math.floor(Math.random() * this.items.length)]
+    )).filter(Boolean);
+  }
+
+  private async spinOnce() {
+    const result = await fetchNui<IReward[]>('GetResult', {multiplier: 1}, [this.items[0]]);
+    if (!Array.isArray(result) || result.length === 0) return false;
+
+    this.result = [...this.result, ...result];
+    if (this.spinningItems.length === 0) {
+      this.spinningItems = this.generateFakeItems(result[0]);
+      this.currentRewardIndex = REWARD_OFFSET;
+    } else {
+      this.currentRewardIndex = this.spinningItems.length + REWARD_OFFSET;
+      this.spinningItems = [...this.spinningItems, ...this.generateSpinSegment(result[0])];
     }
-    return items.filter(Boolean);
+    this.spinRound += 1;
+    return true;
   }
 
   async openChest() {
     if (this.state !== 'idle' || this.items.length === 0) return null;
 
-    const result = await fetchNui<IReward[]>('GetResult', {multiplier: this.mutiplier}, [this.items[0]]);
-    if (!Array.isArray(result) || result.length === 0) return null;
-    this.result = result;
-    this.spinningItems = this.generateFakeItems(result[0]);
+    this.result = [];
+    this.completedSpins = 0;
+    this.spinRound = 0;
+    if (!await this.spinOnce()) return null;
     this.state = 'opening';
     return this.spinningItems;
   }
 
   finishOpening() {
-    if (this.state === 'opening') this.state = 'reward';
+    if (this.state !== 'opening') return;
+
+    this.completedSpins += 1;
+    if (this.mutiplier === 5 && this.completedSpins < 5) {
+      setTimeout(async () => {
+        if (this.state !== 'opening') return;
+        if (!await this.spinOnce()) this.state = this.result.length > 0 ? 'reward' : 'idle';
+      }, 1000);
+      return;
+    }
+
+    this.state = 'reward';
   }
 
   spinAgain() {
     if (this.state !== 'reward') return;
     this.result = [];
     this.spinningItems = [];
+    this.currentRewardIndex = -1;
     this.state = 'idle';
   }
 

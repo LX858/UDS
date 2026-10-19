@@ -8,9 +8,10 @@ import Chest from './Chest';
 
 const Main = observer(() => {
     const mainService = useMainService();
-    const { state, count, result, spinningItems } = mainService;
+    const { state, count, result, spinningItems, spinRound, currentRewardIndex } = mainService;
   const trackRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const arrowRef = useRef<HTMLDivElement | null>(null);
   const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
     const isIdle = state === 'idle';
@@ -31,24 +32,50 @@ const Main = observer(() => {
       audio.currentTime = 0;
       if (spinAudioRef.current === audio) spinAudioRef.current = null;
     };
-  }, [isOpening]);
+  }, [isOpening, spinRound]);
 
     useEffect(() => {
         if (!isOpening || !trackRef.current || !viewportRef.current) return;
-        const targetIndex = spinningItems.findIndex(item => item.isReward);
+        const targetIndex = currentRewardIndex;
         const target = itemRefs.current.get(targetIndex);
         if (targetIndex < 0 || !target) return;
 
         const track = trackRef.current;
         const viewport = viewportRef.current;
+        const arrow = arrowRef.current;
+        if (arrow) {
+            gsap.killTweensOf(arrow);
+            gsap.set(arrow, { rotation: 0 });
+            gsap.to(arrow, {
+                rotation: 2160,
+                duration: 8,
+                ease: 'power2.inOut',
+            });
+        }
         gsap.killTweensOf(track);
-        gsap.set(track, { x: 0 });
+        const currentX = Number(gsap.getProperty(track, 'x')) || 0;
         const viewportRect = viewport.getBoundingClientRect();
         const targetRect = target.getBoundingClientRect();
         const offsetX = viewportRect.left + viewportRect.width / 2 - (targetRect.left + targetRect.width / 2);
-        const tween = gsap.to(track, { x: offsetX, duration: 8, ease: 'power2.inOut', onComplete: () => setTimeout(() => mainService.finishOpening(), 1500) });
-        return () => tween.kill();
-    }, [isOpening, mainService, spinningItems]);
+        let finishTimer: ReturnType<typeof setTimeout> | undefined;
+        let highlightTween: gsap.core.Tween | undefined;
+        const tween = gsap.to(track, { x: currentX + offsetX, duration: 8, ease: 'power2.inOut', onComplete: () => {
+            highlightTween = gsap.to(target, {
+                scale: 1.18,
+                duration: 0.35,
+                ease: 'back.out(1.7)',
+                onComplete: () => {
+                    finishTimer = setTimeout(() => mainService.finishOpening(), 1000);
+                },
+            });
+        } });
+        return () => {
+            tween.kill();
+            if (arrow) gsap.killTweensOf(arrow);
+            if (highlightTween) highlightTween.kill();
+            if (finishTimer) clearTimeout(finishTimer);
+        };
+    }, [isOpening, mainService, spinningItems, currentRewardIndex]);
 
     const getItemImage = (item: IReward) => {
         if (item.metadata?.imageurl) return item.metadata.imageurl;
@@ -79,7 +106,7 @@ const Main = observer(() => {
             </Box>
 
             {isOpening && <Box className='absolute left-0 bottom-[20%] z-[10] flex w-full flex-col items-center justify-center' rHeight={295} rBottom={180} rGap={10}>
-                <Box rWidth={105} rHeight={105} background='url(./assets/muiten.png) no-repeat center center / contain' />
+                <Box ref={arrowRef} rWidth={105} rHeight={105} background='url(./assets/muiten.png) no-repeat center center / contain' />
                 <Box ref={viewportRef} className='w-full overflow-hidden' rHeight={180}>
                     <Box ref={trackRef} className='flex h-full w-max items-center gap-[15px] px-[32px]'>
                         {spinningItems.map((item, index) => <Box key={`${item.name}-${index}`} ref={element => { if (element) itemRefs.current.set(index, element); else itemRefs.current.delete(index); }} rWidth={150} rHeight={150} className='flex flex-shrink-0 items-center justify-center' rPadding={[15, 0, 0, 0]} background='url(./assets/item-bg.png) no-repeat center center / contain'>

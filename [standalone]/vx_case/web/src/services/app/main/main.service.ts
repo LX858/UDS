@@ -68,8 +68,12 @@ class MainService implements AppContribution {
     });
   }
 
-  changeMultiplier() {
-    this.mutiplier = this.mutiplier === 1 ? 5 : 1;
+  changeMultiplier(value?: number) {
+    if (value !== undefined) {
+      this.mutiplier = value;
+    } else {
+      this.mutiplier = this.mutiplier === 1 ? 5 : 1;
+    }
   }
   setShow(show: boolean) {
     this.show = show;

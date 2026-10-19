@@ -8,7 +8,7 @@ import Chest from './Chest';
 
 const Main = observer(() => {
     const mainService = useMainService();
-    const { state, count, result, spinningItems, spinRound, currentRewardIndex } = mainService;
+    const { state, count, result, spinningItems, spinRound, currentRewardIndex, mutiplier } = mainService;
   const trackRef = useRef<HTMLDivElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const arrowRef = useRef<HTMLDivElement | null>(null);
@@ -92,7 +92,7 @@ const Main = observer(() => {
     return (
         <Box rWidth={1178} rHeight={662} background={`url(./assets/${isIdle ? 'bg' : 'blurbg'}.png) no-repeat center center / contain`} className='relative'>
             <Box className={`absolute transition-opacity duration-500 ${isIdle ? 'opacity-100' : 'opacity-0'}`} rWidth={183.26} rHeight={61.09} background='url(./assets/conlai.png) no-repeat center center / contain' rTop={10} rLeft={225}>
-                <Box className='absolute flex items-center justify-center text-[#FFD63D]' rWidth={50} rHeight={20} rBottom={18} rRight={45}><Text rFontSize={15}>{count}</Text></Box>
+                <Box className='absolute flex items-center justify-center text-[#FFD63D]' rWidth={50} rHeight={20} rBottom={16} rRight={35}><Text rFontSize={15}>{count}</Text></Box>
             </Box>
             <Chest isVisible={isIdle} />
 
@@ -118,22 +118,18 @@ const Main = observer(() => {
 
             {isIdle && <Box rWidth={329} rHeight={110} background='url(./assets/open.png) no-repeat center center / contain' className='absolute left-[50%] -translate-x-1/2 transition-transform hover:scale-105 hover:cursor-pointer' rBottom={40} pointerEvents='auto' onClick={() => mainService.openChest()} />}
             {isIdle && <Box
-                rWidth={128}
-                rHeight={28}
-                className='roboto absolute left-[50%] -translate-x-1/2 flex items-center justify-center gap-1 rounded-full border border-[#FFD778] bg-gradient-to-r from-[#7A2B08] via-[#D56D18] to-[#7A2B08] px-2 shadow-[0_2px_0_rgba(75,24,5,0.7),0_0_10px_rgba(255,190,64,0.35)] transition-all duration-200 hover:scale-105 hover:brightness-110 hover:cursor-pointer'
-                rBottom={18}
+                rWidth={220}
+                rHeight={53}
+                className='roboto flex absolute left-[50%] -translate-x-1/2 flex items-center justify-center rounded-full transition-all duration-200 '
+                rBottom={5}
+                rGap={5}
                 pointerEvents='auto'
-                onClick={() => mainService.changeMultiplier()}
             >
-                <Text className='roboto text-[#FFF2B0]' rFontSize={12} fontWeight={700}>SỐ LƯỢNG</Text>
-                <Box className='flex items-center gap-0.5 rounded-full bg-black/30 px-1 py-0.5'>
-                    <Text className={mainService.mutiplier === 1 ? 'text-white' : 'text-white/45'} rFontSize={10} fontWeight={700}>×1</Text>
-                    <Text className='roboto text-white/60' rFontSize={12}>/</Text>
-                    <Text className={mainService.mutiplier === 5 ? 'text-[#FFF27A]' : 'text-white/45'} rFontSize={10} fontWeight={700}>×5</Text>
-                </Box>
+                <Box onClick={() => mainService.changeMultiplier(1)} className={`hover:scale-105 hover:brightness-110 hover:cursor-pointer ${mutiplier == 1 ? 'brightness-150 scale-105' : ''}`} rWidth={106} rHeight={53} background='url(./assets/x1.png) no-repeat center center / contain'></Box>
+                <Box onClick={() => mainService.changeMultiplier(5)} className={`hover:scale-105 hover:brightness-110 hover:cursor-pointer ${mutiplier == 5 ? 'brightness-150 scale-105' : ''}`} rWidth={106} rHeight={53} background='url(./assets/x5.png) no-repeat center center / contain'></Box>
             </Box>}
             {isReward && result[0] && <Box className='absolute inset-0 z-[60] flex flex-col items-center justify-center' pointerEvents='auto'>
-                <Box rWidth={400} rHeight={133} background='url(./assets/chucmung.png) center / contain' />
+                <Box rWidth={400} rHeight={133} background='url(./assets/chucmung.png) no-repeat center center / contain' />
                 <Box className='rounded-full border border-[#FFD778] bg-[#6E260D]/80 px-4 py-1 shadow-[0_0_12px_rgba(255,190,64,0.35)]'>
                     <Text className='roboto text-[#FFF2B0]' rFontSize={15} fontWeight={700}>LƯỢT QUAY ×{mainService.mutiplier}</Text>
                 </Box>
@@ -144,7 +140,7 @@ const Main = observer(() => {
                             rWidth={mainService.mutiplier === 5 ? 112 : 180}
                             rHeight={mainService.mutiplier === 5 ? 112 : 180}
                             className='flex flex-shrink-0 items-center justify-center'
-                            background='url(./assets/item-bg.png) center / contain'
+                            background='url(./assets/item-bg.png) no-repeat center center / contain'
                             rPadding={[15, 0, 0, 0]}
                         >
                             <Image
