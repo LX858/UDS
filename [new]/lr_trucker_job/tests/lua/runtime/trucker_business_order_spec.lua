@@ -156,20 +156,44 @@ for itemId, mapping in pairs(deployedConfig.BusinessOrders.Items) do
   assertTrue(type(mapping.unitsPerPackage) == "number" and mapping.unitsPerPackage >= 1,
     "missing unitsPerPackage for " .. itemId)
 end
+local deployedIntegration = setmetatable({
+  GetCatalog = function()
+    local catalog = {}
+    for itemId in pairs(deployedConfig.BusinessOrders.Items) do
+      catalog[#catalog + 1] = {
+        itemName = itemId, label = itemId, category = "traicay",
+        price = 100, availableAmount = 12,
+      }
+    end
+    return catalog
+  end,
+  GetFuelContext = function() return { label = "Trạm xăng", balance = 1000, fuel = 0, maxFuel = 10000 } end,
+  GetFuelStations = function()
+    return { { location = 1, label = "Trạm xăng", x = 0, y = 0, z = 0, h = 0 } }
+  end,
+}, { __index = integration })
 local deployedBoard = LRTruckerServer.BusinessOrderBoard:New({
-  config = deployedConfig, integration = integration,
+  config = deployedConfig, integration = deployedIntegration,
   nextId = function() return "deployed-test" end, logger = { Warn = function() end },
 })
-GetEntityCoords = function() return deployedConfig.BusinessOrders.Businesses.bar.orderPoint end
-local context, contextError = deployedBoard:GetContext(1,
-  { citizenId = "CID1", job = { name = "quannuoc", onDuty = true } }, "bar")
-assertTrue(context ~= nil, contextError)
+local targetCoords
+GetEntityCoords = function() return targetCoords end
 local previousBusiness = snapshot.business
-snapshot.business = context
-local validContext, contextDetail = contract.net.rpc.clientToServer.getBusinessContext.response({
-  success = true, message = "Đã tải cổng đặt hàng", snapshot = snapshot,
-})
-assertTrue(validContext, contextDetail)
+for _, business in ipairs({
+  { id = "bar", job = "quannuoc", coords = deployedConfig.BusinessOrders.Businesses.bar.orderPoint },
+  { id = "restaurant_shop", job = "quanan", coords = deployedConfig.BusinessOrders.Businesses.restaurant_shop.orderPoint },
+  { id = "gas_station_1", job = "unemployed", coords = vector3(0, 0, 0) },
+}) do
+  targetCoords = business.coords
+  local context, contextError = deployedBoard:GetContext(1,
+    { citizenId = "CID1", job = { name = business.job, onDuty = true } }, business.id)
+  assertTrue(context ~= nil, contextError)
+  snapshot.business = context
+  local validContext, contextDetail = contract.net.rpc.clientToServer.getBusinessContext.response({
+    success = true, message = "Đã tải cổng đặt hàng", snapshot = snapshot,
+  })
+  assertTrue(validContext, business.id .. ": " .. tostring(contextDetail))
+end
 snapshot.business = previousBusiness
 GetEntityCoords = function() return vector3(0, 0, 0) end
 
