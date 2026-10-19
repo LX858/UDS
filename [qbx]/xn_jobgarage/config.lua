@@ -151,13 +151,13 @@ Config.JobGarages = {
         spawnPoint = vec4(106.08, -416.25, 39.83, 253.02),
         vehicleType = "ground",
         vehicles = {
-            {name = "nkfugitive", label = "Xe Cadet", grade = 0, fee = 0, defaultMods = {modLivery = 0}},
-            {name = "bmwrp", label = "Xe giao thông", grade = 1, fee = 0},
-            {name = "nkdoradoac", label = "Xe SUV", grade = 2, fee = 0, defaultMods = {modLivery = 0, modSpoilers = 1}},
-            {name = "nkbuffalo4", label = "Xe Buffalo4", grade = 1, fee = 0, defaultMods = {modLivery = 0}},
-            {name = "nkgtx", label = "Xe Dominator", grade = 4, fee = 0, defaultMods = {modLivery = 0}},
-            {name = "nkvigero2", label = "Xe Vigero2", grade = 7, fee = 0, defaultMods = {modLivery = 0}},
-            {name = "polcoq4", label = "Xe Coquette", grade = 10, fee = 0, defaultMods = {modLivery = 0}}
+            {name = "nkfugitive", label = "Xe Cadet", grade = 1, fee = 0, defaultMods = {modLivery = 0}},
+            {name = "bmwrp", label = "Xe giao thông", grade = 2, fee = 0},
+            {name = "nkdoradoac", label = "Xe SUV", grade = 3, fee = 0, defaultMods = {modLivery = 0, modSpoilers = 1}},
+            {name = "nkbuffalo4", label = "Xe Buffalo4", grade = 2, fee = 0, defaultMods = {modLivery = 0}},
+            {name = "nkgtx", label = "Xe Dominator", grade = 5, fee = 0, defaultMods = {modLivery = 0}},
+            {name = "nkvigero2", label = "Xe Vigero2", grade = 8, fee = 0, defaultMods = {modLivery = 0}},
+            {name = "polcoq4", label = "Xe Coquette", grade = 11, fee = 0, defaultMods = {modLivery = 0}}
         }
     },
     police_5 = {

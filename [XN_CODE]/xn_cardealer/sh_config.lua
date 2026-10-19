@@ -3,6 +3,12 @@ Config = Config or {}
 -- [[ CÀI ĐẶT CHUNG ]] --
 Config.TestDriveTimer = 60000 -- Thời gian lái thử (mili giây = 60 giây)
 
+-- [[ DANH SÁCH MODEL XE KÉO DOANH NGHIỆP ĐƯỢC PHÉP TRẢ TẠI REMOVEFLATBED ]] --
+Config.AllowedFlatbeds = {
+    [`flatbed`] = true,
+    [`slamtruck`] = true,
+}
+
 -- [[ VỊ TRÍ CẢNG NHẬP XE CHUNG ]] --
 Config.PortLocation = {
     [1] = vector4(1195.09, -2942.77, 5.9, 94.13),

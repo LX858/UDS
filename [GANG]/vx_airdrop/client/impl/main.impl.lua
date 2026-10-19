@@ -381,6 +381,7 @@ function Impl:StartMatch(roundId, team, endsAt, scores, serverNow)
   LocalPlayer.state.invBusy = true
   LocalPlayer.state.canUseWeapons = true
   self:Teleport(Config.Airdrop.Teams[team].spawn, Config.Airdrop.Teams[team].heading)
+
   FreezeEntityPosition(PlayerPedId(), true)
   CreateThread(function()
     Wait(5000)

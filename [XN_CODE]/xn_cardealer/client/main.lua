@@ -614,32 +614,24 @@ end)
 
 local function handleVehicleStockIn(vehicle, dealerId)
     local plate = GetVehicleNumberPlateText(vehicle)
+    local trimmedPlate = plate and plate:match('^%s*(.-)%s*$') or ''
+    
+    -- Chỉ cho phép nhập xe từ cảng có 2 ký tự đầu là 'XN'
+    if string.sub(trimmedPlate:upper(), 1, 2) ~= 'XN' then
+        exports.qbx_core:Notify("Điểm này chỉ nhập xe chuyển từ cảng về (biển số XN)!", "error")
+        return
+    end
+
     local model = GetEntityModel(vehicle)
     local name = GetDisplayNameFromVehicleModel(model):lower()
-    
-    if string.find(plate, "CDL") or string.find(plate, "CDK") then
-        TriggerServerEvent("1307_Cardealer:server:stockIn", name, plate, dealerId)
-        exports.qbx_core:Notify("Đã nhập xe vào kho thành công", "success")
-        if DoesEntityExist(vehicle) then
-            SetTimeout(1000, function()
-                SetEntityAsMissionEntity(vehicle, true, true)
-                Delete_Entity(vehicle)
-            end)
-        end
-    else
-        local result = lib.callback.await("1307_Cardealer:server:IsOwned", false, plate)
-        if result then 
-            TriggerServerEvent("1307_Cardealer:server:stockIn", name, plate, dealerId)
-            exports.qbx_core:Notify("Đã nhập xe vào kho thành công", "success")
-            if DoesEntityExist(vehicle) then
-                SetTimeout(1000, function()
-                    SetEntityAsMissionEntity(vehicle, true, true)
-                    Delete_Entity(vehicle)
-                end)
-            end
-        else
-            exports.qbx_core:Notify("Đây không phải là xe của bạn", "error")
-        end
+
+    TriggerServerEvent("1307_Cardealer:server:stockIn", name, trimmedPlate, dealerId)
+    exports.qbx_core:Notify("Đã nhập xe vào kho thành công", "success")
+    if DoesEntityExist(vehicle) then
+        SetTimeout(1000, function()
+            SetEntityAsMissionEntity(vehicle, true, true)
+            Delete_Entity(vehicle)
+        end)
     end
 end
 
@@ -684,15 +676,21 @@ CreateThread(function()
                     sleep = 0
                     if IsPedInAnyVehicle(playerPed) then
                         DrawMarker(2, dealerCfg.locations.removeFlatbed.x, dealerCfg.locations.removeFlatbed.y, dealerCfg.locations.removeFlatbed.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 252, 186, 3, 255, false, false, false, true, false, false, false)
-                        DrawText3Ds(dealerCfg.locations.removeFlatbed.x, dealerCfg.locations.removeFlatbed.y, dealerCfg.locations.removeFlatbed.z, "~g~[E]~w~ Xóa Xe Doanh Nghiệp")
+                        DrawText3Ds(dealerCfg.locations.removeFlatbed.x, dealerCfg.locations.removeFlatbed.y, dealerCfg.locations.removeFlatbed.z, "~g~[E]~w~ Trả Xe Kéo Flatbed")
                         if IsControlJustPressed(0, 38) then
                             local vehicle = GetVehiclePedIsIn(playerPed, false)
                             if DoesEntityExist(vehicle) then
-                                SetTimeout(500, function()
-                                    SetEntityAsMissionEntity(vehicle, true, true)
-                                    Delete_Entity(vehicle)
-                                    exports.qbx_core:Notify("Đã cất xe doanh nghiệp", "success")
-                                end)
+                                local model = GetEntityModel(vehicle)
+                                local isAllowedFlatbed = Config.AllowedFlatbeds and Config.AllowedFlatbeds[model]
+                                if isAllowedFlatbed or model == `flatbed` or model == `slamtruck` then
+                                    SetTimeout(500, function()
+                                        SetEntityAsMissionEntity(vehicle, true, true)
+                                        Delete_Entity(vehicle)
+                                        exports.qbx_core:Notify("Đã cất xe kéo doanh nghiệp", "success")
+                                    end)
+                                else
+                                    exports.qbx_core:Notify("Điểm này chỉ để cất xe kéo (Flatbed), không thể xóa các loại xe khác!", "error")
+                                end
                             end
                         end
                     end

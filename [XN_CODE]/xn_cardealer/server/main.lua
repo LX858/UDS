@@ -50,6 +50,17 @@ local function GenerateCarDealerPlate()
     end
 end
 
+-- Biển số cho xe đặt hàng từ cảng chuyển về kho (bắt đầu bằng XN)
+local function GeneratePortOrderPlate()
+    local plate = 'XN' .. RandomInt(6)
+    local result = MySQL.scalar.await('SELECT plate FROM player_vehicles WHERE plate = ?', { plate })
+    if result then
+        return GeneratePortOrderPlate()
+    else
+        return plate:upper()
+    end
+end
+
 local function logEvent(Player, eventName, message, webhook)
     if not webhook or webhook == '' then return end
     logger.log({
@@ -410,6 +421,19 @@ lib.callback.register("1307_Cardealer:server:IsOwned", function(source, plate)
     return retval
 end)
 
+-- Kiểm tra xe có thuộc về chính player đang gọi không (theo citizenid)
+lib.callback.register("1307_Cardealer:server:IsOwnedByMe", function(source, plate)
+    local player = exports.qbx_core:GetPlayer(source)
+    if not player then return false end
+    local citizenid = player.PlayerData.citizenid
+    local retval = nil
+    exports.oxmysql:execute('SELECT * FROM player_vehicles WHERE plate = ? AND citizenid = ?', {plate, citizenid}, function(result)
+        retval = (result and result[1]) and true or false
+    end)
+    while retval == nil do Wait(0) end 
+    return retval
+end)
+
 lib.callback.register("1307_Cardealer:server:NhapXe", function(source, vehicle, brand, dealerId)
     local targetDealer = dealerId or 'cardealer'
     local retval = nil
@@ -452,7 +476,7 @@ AddEventHandler('1307_Cardealer:server:OrderVehicles', function(vehicle, price, 
 
     local cash = exports['Renewed-Banking']:getAccountMoney(accountName) or 0
     local vehiclePrice = price
-    local plate = GenerateCarDealerPlate()
+    local plate = GeneratePortOrderPlate()
     local amountPrice = tonumber(vehiclePrice)
 
     if tonumber(cash) >= tonumber(vehiclePrice) then
@@ -481,8 +505,20 @@ end)
 
 RegisterServerEvent('1307_Cardealer:server:stockIn')
 AddEventHandler('1307_Cardealer:server:stockIn', function(vehicle, plate, dealerId)
+    local src = source
     local targetDealer = dealerId or 'cardealer'
-    exports.oxmysql:execute('DELETE FROM player_vehicles WHERE plate = ?', {plate})
+    local trimmedPlate = plate and plate:match('^%s*(.-)%s*$') or ''
+
+    -- CHỈ NHẬP XE CÓ 2 KÝ TỰ ĐẦU LÀ 'XN' (Xe lấy từ cảng về)
+    if string.sub(trimmedPlate:upper(), 1, 2) ~= 'XN' then
+        TriggerClientEvent('QBCore:Notify', src, 'Biển số xe không hợp lệ! Điểm này chỉ nhập xe lấy từ cảng (biển số XN).', 'error')
+        return
+    end
+
+    -- Xóa record tạm của xe này khỏi player_vehicles
+    exports.oxmysql:execute('DELETE FROM player_vehicles WHERE plate = ?', {trimmedPlate})
+
+    -- Cộng stock vào kho đại lý
     exports.oxmysql:execute('UPDATE cardealer_stock SET stock = stock + 1 WHERE vehicle = ? AND dealer = ?', { vehicle, targetDealer }, function(result)
         local affected = type(result) == 'number' and result or (result and result.affectedRows or 0)
         if affected == 0 then

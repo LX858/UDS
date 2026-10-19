@@ -2,6 +2,7 @@ WS.RegisterEventHandler("neons_ddame:server:hit", function(playerId, attackerId,
     victimDied = victimDied == true or victimDied == 1
     WS.TriggerClientEvent("neons_ddame:client:hit", tonumber(attackerId), playerId, HitHealth, HitArmour, victimDied)
     local healthDamage = tonumber(HitHealth) or 0
+    -- print("neons_ddame:client:hit", tonumber(attackerId), playerId, HitHealth, HitArmour, victimDied)
     if healthDamage > 0 then
         TriggerEvent("neons_ddame:server:healthHit", tonumber(playerId), tonumber(attackerId), healthDamage)
     end
