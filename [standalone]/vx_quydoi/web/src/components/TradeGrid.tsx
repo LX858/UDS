@@ -18,7 +18,7 @@ const TradeGrid = ({
 }: TradeGridProps) => {
   if (!items.length) {
     return (
-      <Box className="trader-empty" rWidth={columns === 5 ? 1007 : 786} rHeight={height}>
+      <Box className="trader-empty" rWidth={columns === 5 ? 920 : 720} rHeight={height}>
         <Text rFontSize={23} fontWeight={900}>{emptyMessage}</Text>
       </Box>
     );
@@ -27,11 +27,11 @@ const TradeGrid = ({
   return (
     <Box
       className="trade-grid"
-      rWidth={columns === 5 ? 1007 : 786}
+      rWidth={columns === 5 ? 920 : 720}
       rHeight={height}
-      rGridTemplateColumns={[columns, 180]}
-      rColumnGap={columns === 5 ? 20 : 14}
-      rRowGap={12}
+      rGridTemplateColumns={[columns, 165]}
+      rColumnGap={columns === 5 ? 18 : 14}
+      rRowGap={10}
     >
       {items.map(item => {
         const available = canExchangeEntry(item) && !disabled;
@@ -40,23 +40,23 @@ const TradeGrid = ({
         };
 
         return (
-          <Box className="trade-card" rWidth={180} rHeight={250} rPadding={[8, 10, 10]} key={item.id}>
-            <Box className={`trade-card-media ${onPreview ? 'is-outfit' : ''}`} rWidth={160} rHeight={99}>
+          <Box className="trade-card" rWidth={165} rHeight={180} rPadding={[6, 7]} key={item.id}>
+            <Box className={`trade-card-media ${onPreview ? 'is-outfit' : ''}`} rWidth={147} rHeight={68}>
               <Image
                 className="trade-card-art"
                 src={item.image}
                 alt={item.name}
                 fallbackSrc="./assets/no-picture.png"
-                rWidth={132}
-                rHeight={95}
+                rWidth={110}
+                rHeight={66}
               />
               {onPreview && (
                 <Box
                   className="trade-card-preview"
                   rTop={4}
                   rRight={4}
-                  rWidth={23}
-                  rHeight={23}
+                  rWidth={20}
+                  rHeight={20}
                   role="button"
                   tabIndex={0}
                   aria-label={`Xem trước ${item.name}`}
@@ -68,20 +68,20 @@ const TradeGrid = ({
                     }
                   }}
                 >
-                  <Image src="./assets/view.png" alt="" rWidth={17} rHeight={17} />
+                  <Image src="./assets/view.png" alt="" rWidth={16} rHeight={16} />
                 </Box>
               )}
             </Box>
-            <Text className="trade-card-name" title={item.name} rWidth={160} rHeight={36} rFontSize={15} rLineHeight={17} fontWeight={900}>
+            <Text className="trade-card-name" title={item.name} rWidth={147} rHeight={30} rFontSize={14} rLineHeight={15} fontWeight={900}>
               {item.name}
             </Text>
-            <Box className="trade-card-costs" rWidth={160} rHeight={61}>
+            <Box className="trade-card-costs" rWidth={147} rHeight={40}>
               {item.costs.map(cost => (
                 <Text
                   className={`trade-card-cost ${cost.owned >= cost.required ? 'is-ready' : 'is-missing'}`}
                   title={`${cost.label}: ${cost.owned}/${cost.required}`}
-                  rFontSize={13}
-                  rLineHeight={20}
+                  rFontSize={12}
+                  rLineHeight={18}
                   key={cost.item}
                 >
                   {cost.label}: {cost.owned}/{cost.required}
@@ -90,8 +90,8 @@ const TradeGrid = ({
             </Box>
             <Box
               className={`trade-card-exchange ${available ? '' : 'is-disabled'}`}
-              rWidth={101}
-              rHeight={32}
+              rWidth={95}
+              rHeight={26}
               role="button"
               tabIndex={available ? 0 : -1}
               aria-label={`Quy đổi ${item.name}`}
