@@ -72,6 +72,7 @@ const DoiVatPham = observer(({weapons, clothing, disabled = false, onExchange, o
           className="items-grid-slot"
           rHeight={category === 'clothes' ? 330 : 365}
           rMargin={[category === 'clothes' ? 64 : 25, 0, 0]}
+          rPadding={[0, 0, 0, 60]}
         >
           <TradeGrid
             items={items}
