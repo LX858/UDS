@@ -73,7 +73,7 @@ Config = {
       pounder = { label = 'Pounder', model = 'pounder', fee = 15000, capacity = 150, rewardMultiplier = 100 },
       hauler = { label = 'Hauler', model = 'hauler', fee = 20000, capacity = 200, rewardMultiplier = 100 },
       packer = { label = 'Packer', model = 'packer', fee = 25000, capacity = 200, rewardMultiplier = 100 },
-      phantom = { label = 'Phantom', model = 'phantom', fee = 30000, capacity = 250, rewardMultiplier = 100 },
+      phantom = { label = 'Phantom', model = 'phantom', fee = 30000, capacity = 500, rewardMultiplier = 100 },
     },
     RentalMinutes = 60,
     OveragePercentPerMinute = 3,
