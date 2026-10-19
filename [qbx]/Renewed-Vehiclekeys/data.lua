@@ -30,6 +30,9 @@ return {
         [`whippet`] = true,       -- Whippet Race Bike
         [`phantom`] = true,
         [`phantom2`] = true,
+        [`pounder`] = true,
+        [`packer`] = true,
+        [`hauler`] = true,
         [`speedo`] = true,
         [`mule`] = true,
         [`benson`] = true,
