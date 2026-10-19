@@ -1,0 +1,32 @@
+{
+  "folders": [
+    {"name": "lua-shared", "path": "shared"},
+    {"name": "lua-client", "path": "client"},
+    {"name": "lua-server", "path": "server"},
+    {"name": "nui", "path": "web"},
+    {"name": "resource-root", "path": "."}
+  ],
+  "settings": {
+    "Lua.workspace.checkThirdParty": false,
+    "explorer.excludeGitIgnore": true,
+    "files.exclude": {
+      "**/.git": true,
+      "**/.tools": true,
+      "**/node_modules": true,
+      "**/coverage": true,
+      "**/build": true,
+      "**/generated": true,
+      "**/playwright-report": true,
+      "**/test-results": true
+    },
+    "search.exclude": {
+      "**/generated": true,
+      "**/packages/contracts/src/modules": true
+    },
+    "Lua.runtime.version": "Lua 5.4"
+  },
+  "extensions": {
+    "recommendations": ["sumneko.lua"],
+    "unwantedRecommendations": ["overextended.cfxlua-vscode"]
+  }
+}

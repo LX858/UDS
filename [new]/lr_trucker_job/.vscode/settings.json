@@ -1,0 +1,24 @@
+{
+  "Lua.runtime.version": "Lua 5.4",
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.workspace.library": [
+    "types/cfx/shared"
+  ],
+  "Lua.workspace.ignoreDir": [
+    ".git",
+    ".github",
+    ".vscode",
+    "node_modules",
+    "web",
+    "client",
+    "server",
+    "shared",
+    "tests",
+    "types"
+  ],
+  "Lua.diagnostics.globals": [
+    "Config",
+    "ResourceName",
+    "lib"
+  ]
+}

@@ -1,4 +1,5 @@
 Config = {}
+Config.EnableTruckerjob = true -- Chỉ điều khiển tích hợp với lr_trucker_job
 
 -- SỐ CẢNH SÁT ONLINE YÊU CẦU ĐỂ BÁN HÀNG TẠI CHỢ ĐEN (choden)
 Config.ChodenRequiredCops = 0
@@ -6,6 +7,17 @@ Config.ChodenRequiredCops = 0
 -- BẬT/TẮT TỰ ĐỘNG CẬP NHẬT GIÁ MỖI GIỜ
 Config.TuDong_ThayDoiGia = true -- Bật = true, Tắt = false
 Config.ThoiGian_CapNhat = 30 -- Tính theo phút
+
+Config.TruckerIntegration = {
+    AllowedResource = 'lr_trucker_job',
+    CleanCategories = {
+        fish = true,
+        phelieu = true,
+        mining = true,
+        nuoithu = true,
+        traicay = true,
+    }
+}
 
 -- MINIGAME ROULETTE X2 KHI BÁN HẢI SẢN
 Config.RouletteSell = {
@@ -137,6 +149,16 @@ Config.Items = {
         },
     },
     ['mining'] = {
+        ['dau_tho'] = {
+            Label = 'Dầu thô',
+            ReferencePrice = 300,
+            Min = 240,
+            Max = 360,
+            RandomWhenStart = true,
+            RangeChange = {1, 4},
+            AmountToChange = 50
+        },
+
         -- ['than'] = {
         --     Label = 'Than',
         --     Min = 300,
@@ -181,6 +203,26 @@ Config.Items = {
         -- },
     },
     ['nuoithu'] = {
+        ['conheo'] = {
+            Label = 'Heo',
+            ReferencePrice = 600,
+            Min = 480,
+            Max = 720,
+            RandomWhenStart = true,
+            RangeChange = {1, 4},
+            AmountToChange = 50
+        },
+
+        ['conbo'] = {
+            Label = 'Bò',
+            ReferencePrice = 800,
+            Min = 640,
+            Max = 960,
+            RandomWhenStart = true,
+            RangeChange = {1, 4},
+            AmountToChange = 50
+        },
+
         -- ['conbo'] = {
         --     Label = 'Con Bò',
         --     Min = 700,
@@ -201,6 +243,35 @@ Config.Items = {
         -- },
     },
      ['traicay'] = {
+        ['luanuoc'] = {
+            Label = 'Lúa nước',
+            ReferencePrice = 300,
+            Min = 240,
+            Max = 360,
+            RandomWhenStart = true,
+            RangeChange = {1, 4},
+            AmountToChange = 300
+        },
+
+        ['la_che'] = {
+            Label = 'Lá chè',
+            ReferencePrice = 250,
+            Min = 200,
+            Max = 300,
+            RandomWhenStart = true,
+            RangeChange = {1, 4},
+            AmountToChange = 250
+        },
+
+        ['luami'] = {
+            Label = 'Lúa mì',
+            Min = 60,
+            Max = 100,
+            RandomWhenStart = true,
+            RangeChange = {1, 4},
+            AmountToChange = 300
+        },
+
         ['coconut'] = {
             Label = 'Quả dừa',
             Min = 50,

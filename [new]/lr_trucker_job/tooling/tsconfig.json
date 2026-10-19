@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "ESNext.Decorators"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "useDefineForClassFields": true,
+    "paths": {
+      "@/*": ["../web/src/*"],
+      "@lr/contracts": ["../packages/contracts/src/index.ts"],
+      "@lr/contracts/authoring/*": ["../packages/contracts/src/authoring/*/index.ts"],
+      "@lr/nui-store": ["../packages/nui-store/src/index.ts"]
+    },
+    "types": ["node", "vitest/globals"]
+  },
+  "include": [
+    "codegen/**/*.ts"
+  ]
+}

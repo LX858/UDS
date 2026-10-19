@@ -1,0 +1,58 @@
+{
+  "name": "lr_trucker_job",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.3.4",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "generate": "pnpm generate:contracts && pnpm generate:cfx",
+    "generate:contracts": "tsx tooling/codegen/generate.ts",
+    "generate:cfx": "node tooling/cfx/snapshot.mjs",
+    "update:cfx": "node tooling/cfx/snapshot.mjs --refresh",
+    "check:cfx": "node tooling/cfx/snapshot.mjs --check",
+    "check:contracts": "tsx tooling/codegen/generate.ts --check",
+    "test:contracts": "pnpm --filter @lr/contracts test",
+    "test:nui-store": "pnpm --filter @lr/nui-store test",
+    "test:codegen": "vitest run tooling/codegen/generator.test.ts --reporter=dot",
+    "test:tooling": "node --test tests/tooling/manifest-tools.test.mjs tests/tooling/cfx-types.test.mjs tests/tooling/luals-config.test.mjs tests/tooling/create-resource-package.test.mjs tests/tooling/contracts-package.test.mjs tests/tooling/docs-guide.test.mjs",
+    "test:e2e": "pnpm --filter web test:e2e",
+    "test:security": "node tooling/scripts/security-check.mjs",
+    "test:lua": "node tooling/scripts/lua-test.mjs",
+    "test": "pnpm test:contracts && pnpm test:nui-store && pnpm test:codegen && pnpm test:tooling && pnpm test:lua && pnpm --filter web test && pnpm test:e2e",
+    "test:coverage": "vitest run packages/contracts/src packages/nui-store/src tooling/codegen --coverage && pnpm --filter create-lr-resource test:coverage && pnpm --filter web test:coverage",
+    "typecheck:contracts": "pnpm --filter @lr/contracts typecheck",
+    "typecheck:nui-store": "pnpm --filter @lr/nui-store typecheck",
+    "typecheck": "pnpm typecheck:contracts && pnpm typecheck:nui-store && tsc -p tooling/tsconfig.json --noEmit && pnpm --filter web typecheck",
+    "lint": "pnpm --filter web lint",
+    "check:lua": "pnpm test:lua",
+    "check:luals": "node tooling/scripts/luals-check.mjs",
+    "audit:prod": "pnpm audit --prod --audit-level high",
+    "verify:manifest": "node tooling/scripts/verify-manifest.mjs --root .",
+    "build": "pnpm --filter web build",
+    "verify": "pnpm check:contracts && pnpm check:cfx && pnpm typecheck && pnpm lint && pnpm test:coverage && pnpm test:tooling && pnpm test:lua && pnpm test:security && pnpm check:luals && pnpm build && pnpm test:e2e && pnpm verify:manifest && pnpm audit:prod",
+    "create:resource": "pnpm --filter create-lr-resource build:template && node packages/create-lr-resource/bin/create-lr-resource.mjs",
+    "package": "node tooling/scripts/package-resource.mjs --root . --name lr_trucker_job"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@vitest/coverage-v8": "4.1.9",
+    "fengari-node-cli": "0.1.0",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vitest": "4.1.9"
+  },
+  "pnpm": {
+    "overrides": {
+      "browserslist": "4.28.8",
+      "caniuse-lite": "1.0.30001809",
+      "lodash": "4.18.0",
+      "update-browserslist-db": "1.3.1"
+    },
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "esbuild"
+    ]
+  }
+}

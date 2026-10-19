@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "runtime.version": "Lua 5.4",
+  "workspace.checkThirdParty": false,
+  "workspace.library": [
+    "types/cfx/shared"
+  ],
+  "workspace.ignoreDir": [
+    ".git",
+    ".github",
+    ".vscode",
+    "node_modules",
+    "web",
+    "client",
+    "server",
+    "shared",
+    "tests",
+    "types"
+  ],
+  "diagnostics.globals": [
+    "Config",
+    "ResourceName",
+    "lib"
+  ]
+}

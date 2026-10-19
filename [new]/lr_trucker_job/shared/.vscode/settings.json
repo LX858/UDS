@@ -1,0 +1,22 @@
+{
+  "Lua.runtime.version": "Lua 5.4",
+  "Lua.workspace.checkThirdParty": false,
+  "Lua.workspace.library": [
+    "../types/cfx/shared",
+    "../types/shared"
+  ],
+  "Lua.workspace.ignoreDir": [
+    "../client",
+    "../server",
+    "../web",
+    "../types/cfx/client",
+    "../types/cfx/server",
+    "../types/client",
+    "../types/server"
+  ],
+  "Lua.diagnostics.globals": [
+    "Config",
+    "ResourceName",
+    "lib"
+  ]
+}

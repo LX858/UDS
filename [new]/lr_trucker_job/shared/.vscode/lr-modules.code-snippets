@@ -1,0 +1,38 @@
+{
+  "LR Shared Module": {
+    "scope": "lua",
+    "prefix": "lr-module",
+    "description": "Create a typed LR shared module",
+    "body": [
+      "LR.Modules:Register({",
+      "  id = \"${1:module_id}\",",
+      "  start = \"${3|resource,player|}\",",
+      "  dependencies = { ${4} },",
+      "  ---@param context LRShared.ModuleContext",
+      "  create = function(context)",
+      "    ---@class LRShared.ModuleMap",
+      "    ---@field ${1:module_id} LRShared.${2:ModuleName}Module",
+      "    ---@class LRShared.${2:ModuleName}Module : LRShared.ModuleInstance",
+      "    local instance = {}",
+      "",
+      "    ---@param readyContext LRShared.ModuleContext",
+      "    function instance:OnReady(readyContext)",
+      "      ${5:-- Prepare this module's data and API.}",
+      "    end",
+      "",
+      "    ---@param startContext LRShared.ModuleContext",
+      "    function instance:Start(startContext)",
+      "      ${6:-- Connect to other ready modules.}",
+      "    end",
+      "",
+      "    ---@param stopContext LRShared.ModuleContext",
+      "    function instance:Stop(stopContext)",
+      "      ${0}",
+      "    end",
+      "",
+      "    return instance",
+      "  end,",
+      "})"
+    ]
+  }
+}

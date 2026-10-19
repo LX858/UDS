@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  :root {
+    --background: 214 32% 97%;
+    --foreground: 218 42% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 218 42% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 218 42% 17%;
+    --primary: 32 95% 44%;
+    --primary-foreground: 48 100% 97%;
+    --secondary: 213 28% 93%;
+    --secondary-foreground: 218 38% 21%;
+    --muted: 214 28% 94%;
+    --muted-foreground: 215 18% 43%;
+    --accent: 38 92% 91%;
+    --accent-foreground: 27 78% 28%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 24% 86%;
+    --input: 214 24% 82%;
+    --ring: 32 95% 44%;
+    --grid-color: 215 24% 72%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 218 34% 9%;
+    --foreground: 210 32% 94%;
+    --card: 217 29% 13%;
+    --card-foreground: 210 32% 94%;
+    --popover: 217 29% 13%;
+    --popover-foreground: 210 32% 94%;
+    --primary: 36 92% 52%;
+    --primary-foreground: 222 47% 9%;
+    --secondary: 216 23% 19%;
+    --secondary-foreground: 210 28% 92%;
+    --muted: 216 23% 18%;
+    --muted-foreground: 214 17% 68%;
+    --accent: 31 49% 21%;
+    --accent-foreground: 40 96% 78%;
+    --destructive: 0 62.8% 38%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 215 21% 25%;
+    --input: 215 21% 29%;
+    --ring: 36 92% 52%;
+    --grid-color: 215 20% 30%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+  }
+
+  body {
+    @apply bg-transparent text-foreground antialiased;
+    margin: 0;
+    overflow: hidden;
+    font-family: "Roboto Condensed Variable", "Roboto Condensed", sans-serif;
+    font-optical-sizing: auto;
+    font-synthesis: none;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  html {
+    background-color: transparent;
+  }
+}
+
+@layer utilities {
+  .trucker-viewport {
+    display: grid;
+    width: 100%;
+    min-height: 100dvh;
+    place-items: center;
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+  }
+
+  .trucker-shell {
+    width: min(82.5rem, 100%);
+    height: min(50rem, calc(100dvh - clamp(1.5rem, 4vw, 3rem)));
+    min-height: 0;
+    border-radius: clamp(1.125rem, 2vw, 1.5rem);
+  }
+
+  .trucker-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(19rem, 21.25rem);
+    gap: 1rem;
+    overflow: hidden;
+    padding: clamp(1rem, 1.8vw, 1.5rem);
+  }
+
+  .trucker-body--solo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .trucker-orders,
+  .trucker-sidebar {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 0.25rem;
+  }
+
+  .logistics-grid::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image:
+      linear-gradient(hsl(var(--grid-color) / 0.09) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--grid-color) / 0.09) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: linear-gradient(to bottom, black, transparent 48%);
+  }
+
+  .logistics-grid > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(217, 119, 6, 0.38) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 0.35rem;
+    height: 0.35rem;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(217, 119, 6, 0.32);
+  }
+
+  .trucker-button {
+    transition:
+      color 160ms ease,
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 120ms ease;
+  }
+
+  .trucker-button:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .trucker-button:focus-visible,
+  .trucker-input:focus-visible {
+    outline: 3px solid rgba(217, 119, 6, 0.24);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 899px) {
+    .trucker-shell {
+      height: calc(100dvh - 1rem);
+    }
+
+    .trucker-body {
+      display: block;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .trucker-orders,
+    .trucker-sidebar {
+      overflow: visible;
+      padding-right: 0;
+    }
+
+    .trucker-sidebar {
+      margin-top: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .trucker-viewport {
+      padding: 0.25rem;
+    }
+
+    .trucker-shell {
+      height: calc(100dvh - 0.5rem);
+      border-radius: 1rem;
+    }
+  }
+}

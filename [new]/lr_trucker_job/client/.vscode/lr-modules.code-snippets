@@ -1,0 +1,38 @@
+{
+  "LR Client Module": {
+    "scope": "lua",
+    "prefix": "lr-module",
+    "description": "Create a typed LR client module",
+    "body": [
+      "LR.Modules:Register({",
+      "  id = \"${1:module_id}\",",
+      "  start = \"${3|resource,player|}\",",
+      "  dependencies = { ${4} },",
+      "  ---@param context LRClient.ModuleContext",
+      "  create = function(context)",
+      "    ---@class LRClient.ModuleMap",
+      "    ---@field ${1:module_id} LRClient.${2:ModuleName}Module",
+      "    ---@class LRClient.${2:ModuleName}Module : LRClient.ModuleInstance",
+      "    local instance = {}",
+      "",
+      "    ---@param readyContext LRClient.ModuleContext",
+      "    function instance:OnReady(readyContext)",
+      "      ${5:-- Prepare this module's data and API.}",
+      "    end",
+      "",
+      "    ---@param startContext LRClient.ModuleContext",
+      "    function instance:Start(startContext)",
+      "      ${6:-- Connect to other ready modules.}",
+      "    end",
+      "",
+      "    ---@param stopContext LRClient.ModuleContext",
+      "    function instance:Stop(stopContext)",
+      "      ${0}",
+      "    end",
+      "",
+      "    return instance",
+      "  end,",
+      "})"
+    ]
+  }
+}

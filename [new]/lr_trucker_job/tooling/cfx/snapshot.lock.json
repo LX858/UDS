@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "game": "gta5",
+  "sources": {
+    "gameNatives": {
+      "url": "https://runtime.fivem.net/doc/natives.json",
+      "file": "natives.json",
+      "sourceRevision": "etag:\"67c548b4-2a3d3f\"",
+      "etag": "\"67c548b4-2a3d3f\"",
+      "lastModified": "Mon, 03 Mar 2025 06:14:12 GMT",
+      "sha256": "169c1c91b5f7b17d83309678b9b8603e7e4c50c0e4e6d39fbcb225ac18a4f16a",
+      "bytes": 2768191
+    },
+    "cfxNatives": {
+      "url": "https://runtime.fivem.net/doc/natives_cfx.json",
+      "file": "natives_cfx.json",
+      "sourceRevision": "etag:\"6a5f7675-8293b\"",
+      "etag": "\"6a5f7675-8293b\"",
+      "lastModified": "Tue, 21 Jul 2026 13:39:01 GMT",
+      "sha256": "d9a24c71964214ab77605da6da2f40cc2b588838333fefd3bbb66fad5ec5b3b2",
+      "bytes": 534843
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "name": "create-lr-resource",
+  "version": "0.3.0",
+  "description": "Create a production-ready typed FiveM resource from the LR v2 template",
+  "keywords": [
+    "fivem",
+    "lua",
+    "nui",
+    "mobx",
+    "typescript",
+    "scaffold"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lorraxs/lr_trucker_job.git",
+    "directory": "packages/create-lr-resource"
+  },
+  "homepage": "https://github.com/Lorraxs/lr_trucker_job#readme",
+  "bugs": {
+    "url": "https://github.com/Lorraxs/lr_trucker_job/issues"
+  },
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "create-lr-resource": "bin/create-lr-resource.mjs"
+  },
+  "exports": {
+    ".": "./src/scaffold.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "template"
+  ],
+  "scripts": {
+    "build:template": "node scripts/build-template.mjs",
+    "clean:template": "node scripts/clean-template.mjs",
+    "prepack": "node scripts/build-template.mjs",
+    "postpack": "node scripts/clean-template.mjs",
+    "test": "vitest run --config vitest.config.mjs --reporter=dot",
+    "test:coverage": "vitest run --config vitest.config.mjs --coverage --reporter=dot"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

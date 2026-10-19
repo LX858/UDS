@@ -1,5 +1,6 @@
 custom = 'custom' -- Keyword cho item có giá tùy chỉnh
 Config = {}
+Config.EnableTruckerjob = true -- Chỉ điều khiển nguyên liệu và đơn giao trucker
 
 -- Debug configuration
 Config.debug = false
@@ -505,3 +506,29 @@ Config.Crafting = {
     --     }
     -- },
 }
+-- Giữ menu, giá và vị trí cửa hàng hiện tại; chỉ bổ sung nguyên liệu từ trucker.
+if Config.EnableTruckerjob then
+    local barShop = Config.Shops.bar
+    local restaurant = Config.Shops.restaurant_shop
+    barShop.stash_items[#barShop.stash_items + 1] = 'dua_soche'
+    barShop.stash_items[#barShop.stash_items + 1] = 'tra_kho'
+    restaurant.stash_items[#restaurant.stash_items + 1] = 'gao'
+    restaurant.stash_items[#restaurant.stash_items + 1] = 'dua_soche'
+    restaurant.stash_config.weight = math.max(restaurant.stash_config.weight, 2000000)
+
+    for _, recipe in ipairs(Config.Crafting.bar_crafting.recipes) do
+        if recipe.name == 'nuocdua_utso' then
+            recipe.ingredients = { { name = 'dua_soche', count = 1 } }
+        elseif recipe.name == 'trada_utso' then
+            recipe.ingredients = { { name = 'tra_kho', count = 1 } }
+        end
+    end
+    for _, recipe in ipairs(Config.Crafting.restaurant_crafting.recipes) do
+        if recipe.name == 'com_suon_tam_9h' then
+            recipe.ingredients = {
+                { name = 'gao', count = 5 },
+                { name = 'conheo', count = 4 },
+            }
+        end
+    end
+end

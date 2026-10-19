@@ -28,5 +28,7 @@ client_scripts {
 
 server_scripts {
 	'@oxmysql/lib/MySQL.lua',
-	'server/*.lua'
+	'server/crafting_service.lua',
+	'server/main.lua',
+	'server/npc.lua'
 }

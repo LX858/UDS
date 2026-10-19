@@ -253,6 +253,8 @@ SetTimeout(100, function()
 	
 	-- Đăng ký hook một lần cho tất cả shops
 	swapHook = exports.ox_inventory:registerHook('swapItems', function(payload)
+		if XnCrafting.service and (XnCrafting.service:IsLocked(payload.fromInventory)
+			or XnCrafting.service:IsLocked(payload.toInventory)) then return false end
 		debugPrint("DEBUG: Full payload =", json.encode(payload))
 
 		-- Helper: tìm shop config theo inventory ID (hỗ trợ cả main stash và stash_sell)
@@ -1341,126 +1343,55 @@ lib.callback.register('xn_banhnuoc:server:getCraftingData', function(source, cra
     }
 end)
 
--- Callback kiểm tra nguyên liệu trước khi craft (kiểm tra từ kho stash)
+-- Resolve recipes only from server config. The client recipe object is a name carrier.
+local craftingService = XnCrafting.Create({
+    config = Config,
+    player = function(src) return exports.qbx_core:GetPlayer(src) end,
+    coords = function(src)
+        local ped = GetPlayerPed(src)
+        if ped == 0 or not DoesEntityExist(ped) then return nil end
+        return GetEntityCoords(ped)
+    end,
+    now = GetGameTimer,
+    items = function(stash) return exports.ox_inventory:GetInventoryItems(stash, false) end,
+    canCarry = function(...) return exports.ox_inventory:CanCarryItem(...) end,
+    remove = function(...) return exports.ox_inventory:RemoveItem(...) end,
+    add = function(...) return exports.ox_inventory:AddItem(...) end,
+    log = print,
+})
+-- Referenced by the existing swap hook to keep rollback slots intact.
+XnCrafting.service = craftingService
+
 lib.callback.register('xn_banhnuoc:server:checkCraftIngredients', function(source, craftingKey, recipe, quantity)
-    local player = exports.qbx_core:GetPlayer(source)
-    if not player then return false, _('error_occurred') end
-
-    local craftConfig = Config.Crafting[craftingKey]
-    if not craftConfig then return false, _('error_occurred') end
-
-    -- Kiểm tra job nếu có yêu cầu
-    if craftConfig.job then
-        if player.PlayerData.job.name ~= craftConfig.job or not player.PlayerData.job.onduty then
-            return false, _('wrong_job')
-        end
-    end
-
-    -- Tìm shopKey để truy cập kho stash
-    local shopKey = craftConfig.job and GetShopKeyByJob(craftConfig.job) or nil
-    if not shopKey then
-        return false, _('error_occurred')
-    end
-
-    -- Kiểm tra từng nguyên liệu trong kho stash
-    for i, ingredient in ipairs(recipe.ingredients) do
-        local needed = ingredient.count * quantity
-        local stashCount = GetStashCount(shopKey, ingredient.name)
-
-        if stashCount < needed then
-            local itemData = exports.ox_inventory:Items(ingredient.name)
-            local itemLabel = itemData and itemData.label or ingredient.name
-            return false, _('not_enough_ingredient', itemLabel, needed, stashCount)
-        end
-    end
-
-    return true, nil
+    return craftingService:Begin(source, craftingKey, recipe, quantity)
 end)
 
--- Event hoàn thành chế biến
--- Nguyên liệu trừ từ kho stash, sản phẩm thêm vào kho stash_sell
 RegisterNetEvent('xn_banhnuoc:server:completeCraft', function(craftingKey, recipe, quantity)
-    local source = source
-    local player = exports.qbx_core:GetPlayer(source)
-    if not player then return end
-
-    local craftConfig = Config.Crafting[craftingKey]
-    if not craftConfig then return end
-
-    -- Kiểm tra job nếu có yêu cầu
-    if craftConfig.job then
-        if player.PlayerData.job.name ~= craftConfig.job then
-            TriggerClientEvent('ox_lib:notify', source, {
-                title = 'Lỗi',
-                description = _('wrong_job'),
-                type = 'error'
-            })
-            return
-        end
-    end
-
-    -- Tìm shopKey
-    local shopKey = craftConfig.job and GetShopKeyByJob(craftConfig.job) or nil
-    if not shopKey then
-        TriggerClientEvent('ox_lib:notify', source, {
-            title = 'Lỗi',
-            description = _('error_occurred'),
-            type = 'error'
-        })
+    local src = source
+    local ok, result = craftingService:Complete(src, craftingKey, recipe, quantity)
+    if not ok then
+        TriggerClientEvent('ox_lib:notify', src, { title = 'Lỗi', description = result, type = 'error' })
         return
     end
-    local sellStashId = shopKey .. '_sell'
+    local item = exports.ox_inventory:Items(result.recipe.name)
+    TriggerClientEvent('ox_lib:notify', src, {
+        title = 'Thành công',
+        description = _('craft_success', (result.recipe.count or 1) * result.quantity,
+            item and item.label or result.recipe.name),
+        type = 'success',
+    })
+    TriggerEvent('rep_shop:server:lamMoiShop', result.stash)
+end)
 
-    -- Kiểm tra lại nguyên liệu trong kho stash
-    for i, ingredient in ipairs(recipe.ingredients) do
-        local needed = ingredient.count * quantity
-        local stashCount = GetStashCount(shopKey, ingredient.name)
-
-        if stashCount < needed then
-            TriggerClientEvent('ox_lib:notify', source, {
-                title = 'Lỗi',
-                description = _('not_enough_ingredients'),
-                type = 'error'
-            })
-            return
-        end
+AddEventHandler('playerDropped', function() craftingService.sessions[source] = nil end)
+CreateThread(function()
+    while true do
+        Wait(5000)
+        for stash in pairs(craftingService.refunds) do craftingService:RetryRefund(stash) end
     end
+end)
 
-    -- Trừ nguyên liệu từ kho stash
-    for _, ingredient in ipairs(recipe.ingredients) do
-        local needed = ingredient.count * quantity
-        exports.ox_inventory:RemoveItem(shopKey, ingredient.name, needed)
-    end
-
-    -- Thêm sản phẩm vào kho stash_sell
-    local resultCount = (recipe.count or 1) * quantity
-    local added = exports.ox_inventory:AddItem(sellStashId, recipe.name, resultCount)
-
-    if added then
-        local itemData = exports.ox_inventory:Items(recipe.name)
-        local itemLabel = itemData and itemData.label or recipe.name
-
-        TriggerClientEvent('ox_lib:notify', source, {
-            title = 'Thành công',
-            description = _('craft_success', resultCount, itemLabel),
-            type = 'success'
-        })
-
-        -- Refresh kho bán
-        TriggerEvent('rep_shop:server:lamMoiShop', shopKey)
-
-        debugPrint("DEBUG SERVER: Chế tạo", resultCount, recipe.name, "-> stash_sell:", sellStashId)
-    else
-        -- Hoàn lại nguyên liệu vào kho stash nếu không thêm được
-        for _, ingredient in ipairs(recipe.ingredients) do
-            local needed = ingredient.count * quantity
-            exports.ox_inventory:AddItem(shopKey, ingredient.name, needed)
-        end
-
-        TriggerClientEvent('ox_lib:notify', source, {
-            title = 'Lỗi',
-            description = _('craft_failed'),
-            type = 'error'
-        })
-    end
+-- Trucker may only advertise these businesses while this integration is enabled.
+exports('IsTruckerjobEnabled', function()
+    return Config.EnableTruckerjob == true
 end)

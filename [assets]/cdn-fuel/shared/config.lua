@@ -1,4 +1,5 @@
 Config = {}
+Config.EnableTruckerjob = true -- Chỉ điều khiển đơn nhập nhiên liệu của lr_trucker_job
 Config.FuelDebug = false -- Used for debugging, although there are not many areas in yet (Default: false) + Enables Setfuel Commands (0, 50, 100). 
 Config.PolyDebug = false -- Enables Polyzone Debugging to see PolyZones!
 Config.ShowNearestGasStationOnly = false -- Khi được bật, chỉ các trạm khí gần nhất sẽ được hiển thị trên bản đồ.

@@ -1075,8 +1075,27 @@ return {
         weight = 300,
         stack = true,
         close = true,
-        description = 'Lá chè tươi, dùng để pha trà'
+        description = 'Lá chè tươi, dùng để pha trà',
+        client = { image = 'trasua.webp' }
 
+    },
+
+    ['tra_kho'] = {
+        label = 'Trà khô',
+        weight = 300,
+        stack = true,
+        close = true,
+        description = 'Lá chè đã sơ chế cho quán nước',
+        client = { image = 'trasua.webp' }
+    },
+
+    ['dua_soche'] = {
+        label = 'Dừa sơ chế',
+        weight = 1000,
+        stack = true,
+        close = true,
+        description = 'Dừa đã sơ chế cho quán nước và nhà hàng',
+        client = { image = 'coconut.webp' }
     },
 
     ['radio'] = {

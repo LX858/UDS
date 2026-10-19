@@ -1,0 +1,25 @@
+# Coding Rules
+
+- Never manually edit generated artifacts. Run `pnpm generate:contracts`.
+- Lifecycle order is Create all, OnReady all, Start all, then reverse Stop.
+- Internal calls use `startContext.modules.inventory`.
+- Author schemas at `packages/contracts/src/authoring/<module_id>/<module_id>.schemas.ts`.
+- Author boundaries at `packages/contracts/src/authoring/<module_id>/<module_id>.boundaries.ts`.
+- Export schemas only from `packages/contracts/src/authoring/<module_id>/index.ts`.
+- Name boundary constants `<id>NuiBoundary`, `<id>NetworkBoundary`, `<id>ExportBoundary`, and `<id>Boundaries`.
+- Register every module in `moduleBoundaries`.
+- Browser stores import `@lr/contracts/authoring/inventory`.
+- Store metadata is state-only: `@Store({id: 'inventory'})`.
+- Declare state with `@State(TypeBoxSchema, default)`.
+- Register stores in `web/src/app/modules/registry.ts`.
+- Never edit `packages/contracts/src/modules/`.
+- Contract and store registries require one-to-one parity.
+- Network and export boundaries must not be package-exported to browser code.
+- Browser generated contracts contain only synchronized state and NUI.
+- Synchronized state has no owner.
+- Await queued writes with `AppRuntime.flush()` when ordering matters.
+- NUI startup completes only after `core.synced`.
+- Run `pnpm check:luals` with the pinned LuaLS version.
+- Do not configure `overextended.cfxlua-vscode` as the workspace language server.
+- Constructors accept at most one typed input value.
+- Do not revert unrelated changes.

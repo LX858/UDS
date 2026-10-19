@@ -1459,6 +1459,28 @@ if Config.PlayerOwnedGasStationsEnabled then -- This is so Player Owned Gas Stat
     -- Startup Process
     local function Startup()
         if Config.FuelDebug then print("Startup process...") end
+        MySQL.query.await([[
+            CREATE TABLE IF NOT EXISTS `fuel_station_procurement_ledger` (
+              `order_id` varchar(64) NOT NULL,
+              `location` int NOT NULL,
+              `amount` int unsigned NOT NULL,
+              `debited_at` timestamp NULL DEFAULT NULL,
+              `delivery_id` varchar(96) NULL DEFAULT NULL,
+              `refunded_at` timestamp NULL DEFAULT NULL,
+              `delivered_at` timestamp NULL DEFAULT NULL,
+              `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`order_id`),
+              UNIQUE KEY `unique_fuel_procurement_delivery` (`delivery_id`),
+              KEY `idx_fuel_procurement_location` (`location`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ]])
+        -- Earlier trucker builds created this ledger without debited_at. Every
+        -- row in that schema was inserted after its station was charged.
+        local debitColumn = MySQL.query.await("SHOW COLUMNS FROM fuel_station_procurement_ledger LIKE 'debited_at'")
+        if not debitColumn or #debitColumn == 0 then
+            MySQL.query.await('ALTER TABLE fuel_station_procurement_ledger ADD COLUMN debited_at timestamp NULL DEFAULT NULL AFTER amount')
+            MySQL.update.await('UPDATE fuel_station_procurement_ledger SET debited_at = created_at WHERE debited_at IS NULL')
+        end
         -- Tối ưu: 1 query batch thay vì N queries riêng biệt cho từng trạm
         MySQL.Async.fetchAll('SELECT location, label FROM fuel_stations', {}, function(result)
             if result then
