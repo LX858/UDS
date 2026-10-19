@@ -77,7 +77,7 @@ const DoiVatPham = observer(({weapons, clothing, disabled = false, onExchange, o
           <TradeGrid
             items={items}
             columns={4}
-            height={370}
+            height={335}
             emptyMessage="Chưa có vật phẩm trong danh mục này."
             disabled={disabled}
             onExchange={onExchange}
