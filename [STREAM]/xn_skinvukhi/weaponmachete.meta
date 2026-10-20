@@ -303,6 +303,14 @@
                   <Name>COMPONENT_SKIN_MACHETEBON</Name>
                   <Default value="false" />
                 </Item>
+                <Item>
+                  <Name>COMPONENT_SKIN_MACHETENAM</Name>
+                  <Default value="false" />
+                </Item>
+                <Item>
+                  <Name>COMPONENT_SKIN_MACHETESAU</Name>
+                  <Default value="false" />
+                </Item>
               </Components>
             </Item>
           </AttachPoints>

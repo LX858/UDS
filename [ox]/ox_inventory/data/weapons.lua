@@ -2530,6 +2530,30 @@ return {
 				usetime = 2500
 			}
 		},
+
+		['skin_machete_nam'] = {
+			label = 'Skin Halloween 1',
+			type = 'skin',
+			weight = 50,
+			client = {
+				component = {
+					`COMPONENT_SKIN_MACHETENAM`,
+				},
+				usetime = 2500
+			}
+		},
+
+		['skin_machete_sau'] = {
+			label = 'Skin Halloween 2',
+			type = 'skin',
+			weight = 50,
+			client = {
+				component = {
+					`COMPONENT_SKIN_MACHETESAU`,
+				},
+				usetime = 2500
+			}
+		},
 	},
 
 

@@ -217,6 +217,8 @@ return {
         weight = 100,
         stack = true,
     },
+
+    
     ["carry_item"] = {
         label = "Carry",
         weight = 100,
@@ -3516,6 +3518,54 @@ return {
     ['chocolate_bar'] = {label = 'Sô cô la', weight = 100},
     ['pumpkin_basket'] = {label = 'Giỏ bí ngô', weight = 500},
     ['rotten_casket'] = {label = 'Hòm thối', weight = 1000},
+
+    ["hom_hlw"] = {
+        label = 'Hòm Halloween',
+        weight = 100,
+        stack = true,
+        close = true,
+        description = "Hòm Halloween Mở ra nhiều phần quà hấp dẫn"
+    },
+
+    ["hom_hlw_ig"] = {
+        label = 'Hòm Halloween IG',
+        weight = 100,
+        stack = true,
+        close = true,
+        description = "Hòm Halloween (IG) Mở ra nhiều phần quà hấp dẫn"
+    },
+
+    ["the_outfit_hlw"] = {
+        label = 'Thẻ Trang Phục',
+        weight = 100,
+        stack = true,
+    },
+
+    ["the_skin_hlw"] = {
+        label = 'Thẻ Skin',
+        weight = 50,
+        stack = true,
+    },
+
+    ["the_hlw"] = {
+        label = 'Thẻ Trung Thu',
+        weight = 10,
+        stack = true,
+    },
+
+    ["ve_doi_xe_hlw1"] = {
+        label = 'Vé đổi xe KOENICSE',
+        weight = 100,
+        stack = true,
+        description = "Xe Koenicse Halloween"
+    },
+    
+    ["ve_doi_xe_hlw2"] = {
+        label = 'Vé đổi xe Poscher',
+        weight = 100,
+        stack = true,
+        description = "Xe Poscher Halloween"
+    },
 
     ["fertilizer"] = {
         label = "Phân bón",
@@ -9165,7 +9215,7 @@ return {
 	},
 
 
-     ["hom_trung_thu"] = {
+    ["hom_trung_thu"] = {
         label = 'Hòm Trung Thu',
         weight = 100,
         stack = true,

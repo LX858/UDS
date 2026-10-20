@@ -1,0 +1,5 @@
+fx_version 'cerulean'
+game 'gta5'
+author 'RENOVOXEL'
+description 'Halloween traffic lights - Pumpkin Ribbon Avenue; human runtime test candidate'
+version '0.3.0'

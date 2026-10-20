@@ -1,5 +1,10 @@
 ---@type table?
 local boss = nil
+---@type table<integer, table> -- minion zombies by netId
+local minions = {}
+local minionCount = 0
+local nextMinionAt = 0
+local zoneCenter = vec3(Config.Boss.coords.x, Config.Boss.coords.y, Config.Boss.coords.z)
 local respawnToken = 0
 local lastBroadcast = 0
 local lastSentHp = -1
@@ -23,6 +28,8 @@ end
 local function buildState()
     if not boss then return nil end
     local c = boss.coords
+    local ids = {}
+    for netId in pairs(minions) do ids[#ids + 1] = netId end
     return {
         netId = boss.netId,
         hp = boss.hp,
@@ -30,6 +37,7 @@ local function buildState()
         enraged = boss.enraged,
         dead = boss.dead,
         coords = { x = c.x, y = c.y, z = c.z },
+        minions = ids,
     }
 end
 
@@ -69,60 +77,239 @@ local function applyDamage(sid, dmg, from, heavy)
     TriggerClientEvent('xn_danhboss:hit', sid, math.floor(dmg), from, heavy)
 end
 
-local function giveRewards()
-    local R = Config.Rewards
-    local list, total = {}, 0
-    for _, c in pairs(boss.contrib) do
-        if c.damage >= R.minDamage then
-            list[#list + 1] = c
-            total = total + c.damage
+-- Ranking storage: one row per participant, written once when the boss dies,
+-- wiped when the next boss spawns, so the table never grows past one round.
+
+local RANK_TABLE = 'xn_danhboss_ranking'
+
+---@type { rows: table[], byCid: table<string, table>, total: integer, totalDamage: integer }
+local ranking = { rows = {}, byCid = {}, total = 0, totalDamage = 0 }
+local itemInfoCache = nil
+local claiming = {}
+local lastOpen = {}
+
+local function getItemInfo()
+    if itemInfoCache then return itemInfoCache end
+    local name = Config.Rewards.item
+    local ok, item = pcall(function() return exports.ox_inventory:Items(name) end)
+    item = ok and item or nil
+    if not item then return { name = name, label = name, image = '' } end
+
+    local image = ('nui://ox_inventory/web/images/%s.png'):format(name)
+    local custom = item.client and item.client.image
+    if custom then
+        image = custom:find('^nui://') and custom or ('nui://ox_inventory/web/images/%s'):format(custom)
+    end
+    itemInfoCache = { name = name, label = item.label or name, image = image }
+    return itemInfoCache
+end
+
+local function resetRankingCache()
+    ranking = { rows = {}, byCid = {}, total = 0, totalDamage = 0 }
+end
+
+-- Builds the top list and per-player lookup from rows sorted by position.
+local function buildRankingCache(list)
+    resetRankingCache()
+    local totalDamage = 0
+    for _, e in ipairs(list) do totalDamage = totalDamage + e.damage end
+
+    local topSize = #Config.Rewards.top
+    for i, e in ipairs(list) do
+        ranking.byCid[e.cid] = e
+        if i <= topSize then
+            ranking.rows[i] = {
+                rank = e.pos,
+                name = e.name,
+                damage = e.damage,
+                percent = math.floor(e.damage / totalDamage * 1000 + 0.5) / 10,
+                reward = e.reward,
+            }
         end
     end
-    table.sort(list, function(a, b) return a.damage > b.damage end)
+    ranking.total = #list
+    ranking.totalDamage = totalDamage
+end
 
-    local rewarded = {}
+local function loadRanking()
+    local res = MySQL.query.await(('SELECT citizenid, name, damage, pos, reward, claimed FROM %s ORDER BY pos ASC'):format(RANK_TABLE))
+    local list = {}
+    for i, r in ipairs(res or {}) do
+        list[i] = { cid = r.citizenid, name = r.name, damage = r.damage, pos = r.pos, reward = r.reward, claimed = r.claimed == 1 }
+    end
+    buildRankingCache(list)
+    debugPrint(('ranking loaded: %d players'):format(#list))
+end
+
+local function clearRanking()
+    MySQL.query.await(('DELETE FROM %s'):format(RANK_TABLE))
+    resetRankingCache()
+end
+
+MySQL.ready(function()
+    MySQL.query.await(([[
+        CREATE TABLE IF NOT EXISTS %s (
+            citizenid VARCHAR(50) NOT NULL,
+            name VARCHAR(100) NOT NULL,
+            damage INT UNSIGNED NOT NULL,
+            pos SMALLINT UNSIGNED NOT NULL,
+            reward SMALLINT UNSIGNED NOT NULL,
+            claimed TINYINT(1) NOT NULL DEFAULT 0,
+            PRIMARY KEY (citizenid),
+            KEY idx_pos (pos)
+        ) ENGINE=InnoDB
+    ]]):format(RANK_TABLE))
+    loadRanking()
+end)
+
+local function buildRankingPayload(cid)
+    local me = ranking.byCid[cid]
+    return {
+        boss = Config.Boss.label,
+        item = getItemInfo(),
+        rows = ranking.rows,
+        me = me and { rank = me.pos, damage = me.damage, reward = me.reward, claimed = me.claimed, total = ranking.total } or nil,
+    }
+end
+
+-- Runs once when the boss dies: rank, save in bulk, then open the UI for online participants.
+local function finalizeRanking(b)
+    local R = Config.Rewards
+    local list = {}
+    for _, c in pairs(b.contrib) do
+        if c.damage >= R.minDamage then list[#list + 1] = c end
+    end
+    if #list == 0 then return end
+
+    table.sort(list, function(x, y)
+        if x.damage ~= y.damage then return x.damage > y.damage end
+        return x.cid < y.cid
+    end)
+
+    local entries = {}
     for i, c in ipairs(list) do
-        local player = exports.qbx_core:GetPlayerByCitizenId(c.cid)
+        entries[i] = {
+            cid = c.cid,
+            name = c.name:sub(1, 100),
+            damage = c.damage,
+            pos = i,
+            reward = R.top[i] or R.participation,
+            claimed = false,
+        }
+    end
+
+    -- Chunked multi-row inserts in one transaction.
+    local queries = {}
+    local CHUNK = 200
+    for i = 1, #entries, CHUNK do
+        local marks, params = {}, {}
+        for j = i, math.min(i + CHUNK - 1, #entries) do
+            local e = entries[j]
+            marks[#marks + 1] = '(?, ?, ?, ?, ?)'
+            params[#params + 1] = e.cid
+            params[#params + 1] = e.name
+            params[#params + 1] = e.damage
+            params[#params + 1] = e.pos
+            params[#params + 1] = e.reward
+        end
+        queries[#queries + 1] = {
+            query = ('INSERT INTO %s (citizenid, name, damage, pos, reward) VALUES %s'):format(RANK_TABLE, table.concat(marks, ',')),
+            values = params,
+        }
+    end
+
+    local ok = MySQL.transaction.await(queries)
+    if not ok then
+        print('[xn_danhboss] ERROR: could not save the ranking to the database')
+        return
+    end
+
+    buildRankingCache(entries)
+    notifyAll(Config.Text.killed:format(entries[1].name, entries[1].damage), 'success')
+
+    for _, e in ipairs(entries) do
+        local player = exports.qbx_core:GetPlayerByCitizenId(e.cid)
         if player then
             local src = player.PlayerData.source
-            rewarded[src] = true
-            local cash = R.baseCash + math.floor(R.cashPool * c.damage / total)
-            if i == 1 then cash = cash + R.topBonus end
-            player.Functions.AddMoney('cash', cash, 'xn_danhboss-reward')
-
-            if ox_inventory_started() then
-                for _, it in ipairs(R.items) do
-                    if math.random(100) <= it.chance then
-                        local count = math.random(it.min, it.max)
-                        if exports.ox_inventory:CanCarryItem(src, it.name, count) then
-                            exports.ox_inventory:AddItem(src, it.name, count)
-                        end
-                    end
-                end
-            end
-
             TriggerClientEvent('ox_lib:notify', src, {
                 title = Config.Text.title,
-                description = Config.Text.reward:format(cash),
+                description = Config.Text.rankingReady,
                 type = 'success',
-                icon = 'sack-dollar',
+                duration = 8000,
             })
+            if R.showRanking then
+                TriggerClientEvent('xn_danhboss:showRanking', src, buildRankingPayload(e.cid))
+            end
         end
     end
+end
 
-    for _, c in pairs(boss.contrib) do
-        if c.damage < R.minDamage then
-            TriggerClientEvent('ox_lib:notify', c.src, {
-                title = Config.Text.title,
-                description = Config.Text.noReward,
-                type = 'error',
-            })
-        end
+lib.callback.register('xn_danhboss:getRanking', function(src)
+    local now = GetGameTimer()
+    if lastOpen[src] and now - lastOpen[src] < 1000 then return nil end
+    lastOpen[src] = now
+
+    if boss and not boss.dead then return nil, Config.Text.bossActive end
+    if ranking.total == 0 then return nil, Config.Text.noRanking end
+
+    local player = exports.qbx_core:GetPlayer(src)
+    if not player then return nil end
+    return buildRankingPayload(player.PlayerData.citizenid)
+end)
+
+-- Claim is atomic in SQL (claimed 0 -> 1) so a reward can never be given twice.
+local function doClaim(src, cid)
+    local entry = ranking.byCid[cid]
+    if not entry then return false, Config.Text.notParticipant end
+    if entry.claimed then return false, Config.Text.alreadyClaimed end
+    if not ox_inventory_started() then return false, Config.Text.inventoryFull end
+
+    local item = Config.Rewards.item
+    if not exports.ox_inventory:CanCarryItem(src, item, entry.reward) then
+        return false, Config.Text.inventoryFull
     end
 
-    if list[1] then
-        notifyAll(Config.Text.killed:format(list[1].name, list[1].damage), 'success')
+    local affected = MySQL.update.await(('UPDATE %s SET claimed = 1 WHERE citizenid = ? AND claimed = 0'):format(RANK_TABLE), { cid })
+    if affected ~= 1 then
+        entry.claimed = true
+        return false, Config.Text.alreadyClaimed
     end
+
+    if not exports.ox_inventory:AddItem(src, item, entry.reward) then
+        MySQL.update.await(('UPDATE %s SET claimed = 0 WHERE citizenid = ?'):format(RANK_TABLE), { cid })
+        return false, Config.Text.inventoryFull
+    end
+
+    entry.claimed = true
+    return true, Config.Text.claimed:format(entry.reward, getItemInfo().label)
+end
+
+lib.callback.register('xn_danhboss:claim', function(src)
+    local player = exports.qbx_core:GetPlayer(src)
+    if not player then return false, Config.Text.notParticipant end
+    local cid = player.PlayerData.citizenid
+    if claiming[cid] then return false, Config.Text.busy end
+
+    claiming[cid] = true
+    local ok, success, msg = pcall(doClaim, src, cid)
+    claiming[cid] = nil
+
+    if not ok then
+        print('[xn_danhboss] claim error: ' .. tostring(success))
+        return false, Config.Text.busy
+    end
+    return success, msg
+end)
+
+AddEventHandler('playerDropped', function()
+    lastOpen[source] = nil
+end)
+
+local function clearMinions()
+    for _, m in pairs(minions) do
+        if DoesEntityExist(m.ped) then DeleteEntity(m.ped) end
+    end
+    minions, minionCount = {}, 0
 end
 
 local spawnBoss
@@ -142,9 +329,10 @@ local function finishBoss()
     local b = boss
     b.dead = true
     b.hp = 0
+    clearMinions()
     broadcast(true)
     TriggerClientEvent('xn_danhboss:died', -1, b.netId)
-    giveRewards()
+    CreateThread(function() finalizeRanking(b) end)
 
     local ped = b.ped
     SetTimeout(Config.Boss.corpseTime, function()
@@ -160,6 +348,7 @@ end
 local function removeBoss()
     if not boss then return false end
     respawnToken = respawnToken + 1
+    clearMinions()
     if DoesEntityExist(boss.ped) then DeleteEntity(boss.ped) end
     boss = nil
     broadcast(true)
@@ -169,6 +358,7 @@ end
 spawnBoss = function()
     if boss and not boss.dead then return false, 'Boss đang tồn tại.' end
     if boss then removeBoss() end
+    clearRanking() -- the previous round's ranking ends when the next boss starts
 
     local B = Config.Boss
     local c = B.coords
@@ -223,14 +413,6 @@ local function monitor()
     local now = GetGameTimer()
 
     if not boss.confirmed then
-        if boss.ready then
-            if GetEntityHealth(ped) > 200 then
-                boss.confirmed = true
-            elseif now - boss.readyAt > 10000 then
-                boss.ready = false
-                Entity(ped).state:set('xnReady', false, true)
-            end
-        end
         broadcast(false)
         return
     end
@@ -261,8 +443,10 @@ RegisterNetEvent('xn_danhboss:ready', function(netId)
     if not boss or boss.dead or boss.ready or netId ~= boss.netId then return end
     if NetworkGetEntityOwner(boss.ped) ~= src then return end
     boss.ready = true
+    boss.confirmed = true
     boss.readyAt = GetGameTimer()
     Entity(boss.ped).state:set('xnReady', true, true)
+    debugPrint('boss initialised by', src)
 end)
 
 local function isBossOwner(src)
@@ -288,6 +472,19 @@ RegisterNetEvent('xn_danhboss:melee', function(targetSid)
 
     boss.lastMelee = now
     applyDamage(targetSid, randomInRange(M.damage), bpos, false)
+end)
+
+RegisterNetEvent('xn_danhboss:gunWarn', function(targetSid)
+    local src = source
+    if not isBossOwner(src) then return end
+    targetSid = math.tointeger(targetSid)
+    if not targetSid or GetPlayerPed(targetSid) == 0 then return end
+    TriggerClientEvent('ox_lib:notify', targetSid, {
+        title = Config.Text.title,
+        description = Config.Text.gunWarn,
+        type = 'error',
+        icon = 'gun',
+    })
 end)
 
 RegisterNetEvent('xn_danhboss:slam', function()
@@ -380,31 +577,30 @@ AddEventHandler('playerDropped', function()
     hitWindow[source] = nil
 end)
 
--- Attacker client reports a hit on the boss; server decides the damage.
-RegisterNetEvent('xn_danhboss:damageBoss', function(weaponHash, isHead, baseDamage)
-    local src = source
-    if not boss or not boss.confirmed or boss.dead then return end
-    weaponHash = math.tointeger(weaponHash)
-    if not weaponHash then return end
-
-    local D = Config.Damage
+-- Per-attacker rate limit shared by boss and minion hits.
+local function allowHit(attackerSid)
     local now = GetGameTimer()
-    local w = hitWindow[src]
+    local w = hitWindow[attackerSid]
     if not w or now - w.start >= 1000 then
         w = { start = now, count = 0 }
-        hitWindow[src] = w
+        hitWindow[attackerSid] = w
     end
     w.count = w.count + 1
-    if w.count > D.maxHitsPerSecond then return end
+    return w.count <= Config.Damage.maxHitsPerSecond
+end
 
-    local ped = GetPlayerPed(src)
-    if ped == 0 or GetEntityHealth(ped) <= 0 then return end
-    local key = normHash(weaponHash)
-    if normHash(GetSelectedPedWeapon(ped)) ~= key then return end
+-- Damage a player hit deals to `targetEntity` (boss or minion), or nil if the hit is invalid.
+local function calcHitDamage(attackerSid, weaponHash, isHead, baseDamage, targetEntity)
+    local D = Config.Damage
+    local ped = GetPlayerPed(attackerSid)
+    if ped == 0 or GetEntityHealth(ped) <= 0 then return nil end
 
-    local cfg = weaponDamage[key]
+    local cfg = weaponDamage[normHash(weaponHash)]
     local range = (cfg and cfg.maxRange or D.defaultMaxRange) + 3.0
-    if #(GetEntityCoords(ped) - GetEntityCoords(boss.ped)) > range then return end
+    if #(GetEntityCoords(ped) - GetEntityCoords(targetEntity)) > range then
+        debugPrint('hit rejected: out of range', attackerSid, weaponHash)
+        return nil
+    end
 
     local dmg
     if cfg then
@@ -414,12 +610,205 @@ RegisterNetEvent('xn_danhboss:damageBoss', function(weaponHash, isHead, baseDama
         if isHead then dmg = dmg * D.headMult end
     end
     dmg = math.floor(dmg * D.multiplier)
+    return dmg > 0 and dmg or nil
+end
+
+-- The boss owner client receives the damage event (the attacker client does not reliably get it)
+-- and reports who hit the boss; server decides the damage.
+RegisterNetEvent('xn_danhboss:damageBoss', function(attackerSid, weaponHash, isHead, baseDamage)
+    local src = source
+    if not isBossOwner(src) then return end
+    attackerSid = math.tointeger(attackerSid)
+    weaponHash = math.tointeger(weaponHash)
+    if not attackerSid or not weaponHash or not allowHit(attackerSid) then return end
+
+    local dmg = calcHitDamage(attackerSid, weaponHash, isHead, baseDamage, boss.ped)
+    if not dmg then return end
     dmg = math.min(dmg, boss.hp)
     if dmg <= 0 then return end
 
     boss.hp = boss.hp - dmg
-    addContribution(src, dmg)
+    addContribution(attackerSid, dmg)
+    debugPrint(('hit %d by %d weapon %d, hp %d'):format(dmg, attackerSid, weaponHash, boss.hp))
     if boss.hp <= 0 then finishBoss() end
+end)
+
+-- Minion zombies: up to Config.Minions.max alive at once inside the zone while the boss lives.
+-- Their damage never counts for the ranking.
+
+local function removeMinion(netId, m)
+    minions[netId] = nil
+    minionCount = minionCount - 1
+    local ped = m.ped
+    SetTimeout(Config.Minions.corpseTime, function()
+        if DoesEntityExist(ped) then DeleteEntity(ped) end
+    end)
+end
+
+local function spawnMinion()
+    local M = Config.Minions
+    local owner = NetworkGetEntityOwner(boss.ped)
+    if not owner or owner == 0 then return false end
+
+    local angle = math.random() * 2 * math.pi
+    local r = math.sqrt(math.random()) * Config.Zone.radius
+    local x, y = zoneCenter.x + math.cos(angle) * r, zoneCenter.y + math.sin(angle) * r
+
+    -- The client resolves ground height (the server cannot) and rejects spots too close to players.
+    local ok, z = pcall(lib.callback.await, 'xn_danhboss:findSpawn', owner, x, y, zoneCenter.z)
+    if not ok or not z then return false end
+
+    local model = M.models[math.random(#M.models)]
+    local ped = CreatePed(4, model, x, y, z, math.random(0, 359) + 0.0, true, true)
+    local tries = 0
+    while not DoesEntityExist(ped) and tries < 30 do
+        Wait(100)
+        tries = tries + 1
+    end
+    if not DoesEntityExist(ped) then return false end
+
+    SetEntityDistanceCullingRadius(ped, 300.0)
+    SetEntityOrphanMode(ped, 2)
+    local netId = NetworkGetNetworkIdFromEntity(ped)
+    Entity(ped).state:set('xnMinion', true, true)
+
+    minions[netId] = { ped = ped, netId = netId, hp = M.hp, lastHit = 0 }
+    minionCount = minionCount + 1
+    broadcast(true)
+    return true
+end
+
+local function anyPlayerInZone()
+    for _, pid in ipairs(GetPlayers()) do
+        local ped = GetPlayerPed(tonumber(pid))
+        if ped ~= 0 and GetEntityHealth(ped) > 0 and #(GetEntityCoords(ped) - zoneCenter) <= Config.Zone.radius then
+            return true
+        end
+    end
+    return false
+end
+
+CreateThread(function()
+    while true do
+        Wait(1000)
+        local M = Config.Minions
+        if M.enabled and boss and boss.confirmed and not boss.dead then
+            local changed = false
+            for netId, m in pairs(minions) do
+                if not DoesEntityExist(m.ped) then
+                    minions[netId] = nil
+                    minionCount = minionCount - 1
+                    changed = true
+                end
+            end
+            if changed then broadcast(true) end
+
+            local now = GetGameTimer()
+            if minionCount < M.max and now >= nextMinionAt and anyPlayerInZone() then
+                nextMinionAt = now + M.spawnInterval
+                spawnMinion()
+            end
+        end
+    end
+end)
+
+RegisterNetEvent('xn_danhboss:damageMinion', function(netId, attackerSid, weaponHash, isHead, baseDamage)
+    local src = source
+    netId = math.tointeger(netId)
+    attackerSid = math.tointeger(attackerSid)
+    weaponHash = math.tointeger(weaponHash)
+    local m = netId and minions[netId]
+    if not m or not attackerSid or not weaponHash then return end
+    if not DoesEntityExist(m.ped) or NetworkGetEntityOwner(m.ped) ~= src or not allowHit(attackerSid) then return end
+
+    local dmg = calcHitDamage(attackerSid, weaponHash, isHead, baseDamage, m.ped)
+    if not dmg then return end
+
+    m.hp = m.hp - dmg
+    if m.hp <= 0 then
+        removeMinion(netId, m)
+        nextMinionAt = math.max(nextMinionAt, GetGameTimer() + Config.Minions.respawnDelay)
+        TriggerClientEvent('xn_danhboss:minionDied', -1, netId)
+        broadcast(true)
+    end
+end)
+
+RegisterNetEvent('xn_danhboss:minionHit', function(netId, targetSid)
+    local src = source
+    netId = math.tointeger(netId)
+    targetSid = math.tointeger(targetSid)
+    local m = netId and minions[netId]
+    if not m or not targetSid or not boss or boss.dead then return end
+    if not DoesEntityExist(m.ped) or NetworkGetEntityOwner(m.ped) ~= src then return end
+
+    local M = Config.Minions
+    local now = GetGameTimer()
+    if now - m.lastHit < M.cooldown * 0.6 then return end
+
+    local ok, tPed = canHit(targetSid)
+    if not ok then return end
+    local mpos = GetEntityCoords(m.ped)
+    if #(mpos - GetEntityCoords(tPed)) > M.attackRange + M.tolerance then return end
+
+    m.lastHit = now
+    TriggerClientEvent('xn_danhboss:hit', targetSid, randomInRange(M.damage), mpos, false, {
+        shake = M.shake,
+        ragdoll = M.ragdoll,
+    })
+end)
+
+-- Players who go down inside the boss zone are revived in place by qbx_medical after a delay.
+local pendingRevive = {}
+
+local function startZoneRevive(src)
+    local Z = Config.Zone
+    if not Z.enabled or pendingRevive[src] then return end
+    if Z.onlyWhileBoss and not (boss and not boss.dead) then return end
+
+    local ped = GetPlayerPed(src)
+    if ped == 0 or #(GetEntityCoords(ped) - zoneCenter) > Z.radius then return end
+
+    pendingRevive[src] = true
+    TriggerClientEvent('ox_lib:notify', src, {
+        title = Config.Text.title,
+        description = Config.Text.reviveSoon:format(Z.reviveDelay),
+        type = 'inform',
+        icon = 'heart-pulse',
+        duration = 6000,
+    })
+
+    SetTimeout(Z.reviveDelay * 1000, function()
+        pendingRevive[src] = nil
+        local st = Player(src).state['qbx_medical:deathState']
+        if GetPlayerPed(src) ~= 0 and st and st > 1 then
+            exports.qbx_medical:Revive(src)
+        end
+    end)
+end
+
+-- Instant reaction when qbx_medical flags the player as down.
+AddStateBagChangeHandler('qbx_medical:deathState', nil, function(bagName, _, value)
+    if not value or value <= 1 then return end
+    local src = GetPlayerFromStateBagName(bagName)
+    if src and src ~= 0 then startZoneRevive(src) end
+end)
+
+-- Fallback for players already down when the boss spawns.
+CreateThread(function()
+    while true do
+        Wait(3000)
+        if Config.Zone.enabled and boss and not boss.dead then
+            for _, pid in ipairs(GetPlayers()) do
+                local src = tonumber(pid)
+                local deathState = Player(src).state['qbx_medical:deathState']
+                if deathState and deathState > 1 then startZoneRevive(src) end
+            end
+        end
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    pendingRevive[source] = nil
 end)
 
 lib.addCommand('spawnboss', {
@@ -453,6 +842,7 @@ end)
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     if boss and DoesEntityExist(boss.ped) then DeleteEntity(boss.ped) end
+    clearMinions()
 end)
 
 CreateThread(function()

@@ -1,0 +1,32 @@
+{
+    "notify": {
+        "stoppedKnocking": "¡Has dejado de golpear!",
+        "receivedTreat": "¡Recibiste un dulce!",
+        "gotTricked": "¡Te han engañado!",
+        "soldCandy": "Vendiste %sx dulces por $%s",
+        "noCandy": "¡No tienes ningún dulce!",
+        "knockedRecently": "¡Has golpeado aquí hace rất poco!",
+        "notEventTime": "¡Truco o Trato solo está abierto de 20:00 a 06:00!",
+        "eventStarted": "¡El evento Truco o Trato ha comenzado! (20:00 - 06:00)",
+        "eventEnded": "¡El evento Truco o Trato ha terminado por hoy!"
+    },
+
+    "blips": {
+        "house": "Casa de Truco o Trato",
+        "candyClown": "[$$$] Payaso de Dulces"
+    },
+
+    "textui": {
+        "trickortreat": "**[E]** ¡Golpea la puerta!",
+        "sellCandy": "**[E]** Vender Dulces"
+    },
+
+    "progress": {
+        "knocking": "Golpeando en la puerta..."
+    },
+    
+    "target": {
+        "trickortreat": "Golpea la puerta",
+        "sellcandy": "Vender Dulces"
+    }
+}
