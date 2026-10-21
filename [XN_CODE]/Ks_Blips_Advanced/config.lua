@@ -210,4 +210,20 @@ Config.Blips = {
 
     },
 
+    {
+        id = 14, --Blip ID. This must be different to any other Blip to check if the blip is created. If you have 2 of these the same, Only the first one will show.
+        name = "<FONT FACE='Oswald'>[EVENT] Sự kiện Halloween</FONT>", --Blip Name on map when selected.
+        sprite = 681, --Sprite/Icon of the main Blip.
+        color = 1, --Color of the main Blip.
+        alpha = 255, --Alpha/độ trong suốt của đốm chính.
+        scale = 1.0, --Scale of the main Blip.
+        display = 4, --Priority over over blips --Will this blip be shown on top of other blips within the area --See https://docs.fivem.net/natives/?_0x9029B2F3DA924928 for more info.
+        shortRange = true, --True to only display the blip as 'short range', false to display the blip from a longer distance.
+        coords = vector3(-1686.6796, -293.3308, 51.8893), --Cordinates of the Blip/Radius Blip.
+        radius = 0.0, -- Radius of the outer radius blip.
+        radiusBlipColor = 1, -- Color of the outer radius blip.
+        radiusBlipAlpha = 50, -- Alpha/Transparency of the outer radius blip.
+
+    },
+
 }

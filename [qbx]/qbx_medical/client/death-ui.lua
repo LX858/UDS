@@ -8,6 +8,7 @@ local hasBeenTeleported = false
 local allowAutoTeleport = false
 local isInPrison = false
 local justSpawned = true
+local screenHidden = false
 
 local function getRedZoneWaitTime()
     local isInRedZone, currentRedZone = exports.qbx_medical:IsInRedZone()
@@ -172,6 +173,7 @@ function ShowDeathUI()
 end
 
 function HideDeathUI()
+    screenHidden = false
     if not deathUIActive then return end
 
     -- Tắt UI trước để dừng các threads
@@ -224,6 +226,7 @@ end)
 
 AddEventHandler('QBCore:Client:OnPlayerUnload', function()
     deathUIActive = false
+    screenHidden = false
     justSpawned = true
 end)
 
@@ -238,7 +241,7 @@ lib.addKeybind({
     onPressed = function()
         if LocalPlayer.state.vxAirdropActive then return end
         if exports.qbx_medical:IsInRedZone() then return end
-        if not deathUIActive or isInPrison or allowAutoTeleport then return end
+        if not deathUIActive or screenHidden or isInPrison or allowAutoTeleport then return end
 
         if DeathState == sharedConfig.deathState.LAST_STAND or DeathState == sharedConfig.deathState.DEAD then
             if isHoldingE then return end
@@ -362,6 +365,18 @@ end
 
 exports('ShowDeathUI', ShowDeathUI)
 exports('HideDeathUI', HideDeathUI)
+
+-- Chỉ ẩn giao diện màn hình chết (NUI + blur), không thay đổi trạng thái chết/timer/redzone.
+-- Trong lúc ẩn, phím E (gọi bác sĩ / hồi sinh) bị vô hiệu hóa; HideDeathUI sẽ reset cờ này.
+local function HideDeathScreen()
+    screenHidden = true
+    isHoldingE = false
+    eHoldMs = 0
+    SendNUIMessage({action = "DSMenu", open = false})
+    TriggerScreenblurFadeOut(500)
+end
+
+exports('HideDeathScreen', HideDeathScreen)
 
 AddStateBagChangeHandler(DEATH_STATE_STATE_BAG, ('player:%s'):format(cache.serverId), function(_, _, value)
     if deathUIActive and value then

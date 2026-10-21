@@ -82,6 +82,13 @@ Config.Itemsell = {
         price = 499,
         type = "item"
     },
+
+    [7] = {
+        name = "hom_hlw",
+        label = "Hòm Halloween",
+        price = 10,
+        type = "item"
+    },
 }
 
 Config.EnableDebug = false

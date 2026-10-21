@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<CVehicleModelInfoVariation>
+  <variationData>
+    <Item>
+      <modelName>did_halloentity3</modelName>
+      <colors>
+        <Item>
+          <indices content="char_array">
+            12
+            36
+            0
+            36
+            0
+            36
+          </indices>
+          <liveries>
+            <Item value="true" />
+            <Item value="true" />
+            <Item value="true" />
+            <Item value="true" />
+            <Item value="true" />
+            <Item value="true" />
+            <Item value="true" />
+            <Item value="true" />
+          </liveries>
+        </Item>	 
+      </colors>
+      <kits>
+        <Item>0_default_modkit</Item>
+      </kits>
+      <windowsWithExposedEdges />
+      <plateProbabilities>
+        <Probabilities>
+          <Item>
+            <Name>Standard White</Name>
+            <Value value="100" />
+          </Item>
+        </Probabilities>
+      </plateProbabilities>
+      <lightSettings value="191" />
+      <sirenSettings value="0" />
+    </Item>
+  </variationData>
+</CVehicleModelInfoVariation><!-- This file was modified by the server script -->
+New line at Thu May  7 15:19:40 2026
+<!-- This file was modified by the server script -->
+New line at Thu May  7 15:35:50 2026
+<!-- This file was modified by the server script -->
+New line at Thu May  7 21:45:01 2026
+<!-- This file was modified by the server script -->
+New line at Fri May  8 13:16:44 2026

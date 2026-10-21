@@ -51,12 +51,17 @@ local function updateBlip()
     SetBlipCoords(blip, c.x, c.y, c.z)
 end
 
+local restoreDeathScreenIfNeeded
+
 RegisterNetEvent('xn_danhboss:sync', function(data)
     if data and (not state or state.netId ~= data.netId) then
         shownHp = data.hp + 0.0
     end
     state = data
     updateBlip()
+    if not (state and not state.dead) and restoreDeathScreenIfNeeded then
+        restoreDeathScreenIfNeeded()
+    end
 end)
 
 CreateThread(function()
@@ -73,6 +78,103 @@ AddEventHandler('onResourceStop', function(res)
     if res == GetCurrentResourceName() then
         if blip then RemoveBlip(blip) end
         if zoneBlip then RemoveBlip(zoneBlip) end
+        if restoreDeathScreenIfNeeded then restoreDeathScreenIfNeeded() end
+    end
+end)
+
+-- Zone Death Screen & Revive Handling
+local deathScreenHiddenByBoss = false
+
+local function isInsideBossZone()
+    local ped = cache.ped or PlayerPedId()
+    if not ped or ped == 0 then return false end
+    local pcoords = GetEntityCoords(ped)
+    local h = Config.Boss.coords
+    return #(pcoords - vec3(h.x, h.y, h.z)) <= Config.Zone.radius
+end
+
+local function isBossActive()
+    return state and not state.dead
+end
+
+-- force = true when the server already validated zone + boss (no local checks needed)
+local function hideBossZoneDeathScreen(force)
+    if not force then
+        if not Config.Zone.enabled then return end
+        if not isBossActive() then return end
+        if not isInsideBossZone() then return end
+    end
+
+    deathScreenHiddenByBoss = true
+    CreateThread(function()
+        for _ = 1, 5 do
+            exports.qbx_medical:HideDeathScreen()
+            Wait(200)
+        end
+    end)
+end
+
+restoreDeathScreenIfNeeded = function()
+    if not deathScreenHiddenByBoss then return end
+    deathScreenHiddenByBoss = false
+    local st = LocalPlayer.state['qbx_medical:deathState']
+    if st and st > 1 then
+        pcall(function()
+            exports.qbx_medical:HideDeathUI()
+            Wait(100)
+            exports.qbx_medical:ShowDeathUI()
+        end)
+    end
+end
+
+RegisterNetEvent('xn_danhboss:hideDeathScreen', function()
+    hideBossZoneDeathScreen(true)
+end)
+
+RegisterNetEvent('xn_danhboss:died', function()
+    restoreDeathScreenIfNeeded()
+end)
+
+RegisterNetEvent('xn_danhboss:reviveCheck', function()
+    Wait(1500) -- let the server-side revive finish first
+    if not isInsideBossZone() then return end
+    local st = LocalPlayer.state['qbx_medical:deathState']
+    if st and st > 1 then
+        TriggerServerEvent('xn_danhboss:requestRevive')
+    end
+end)
+
+AddEventHandler('qbx_medical:client:onPlayerDied', function()
+    hideBossZoneDeathScreen()
+end)
+
+AddEventHandler('qbx_medical:client:onPlayerLaststand', function()
+    hideBossZoneDeathScreen()
+end)
+
+AddStateBagChangeHandler('qbx_medical:deathState', ('player:%s'):format(cache.serverId), function(_, _, value)
+    if value and value > 1 then
+        hideBossZoneDeathScreen()
+    else
+        deathScreenHiddenByBoss = false
+    end
+end)
+
+AddEventHandler('qbx_medical:client:onPlayerRevived', function()
+    deathScreenHiddenByBoss = false
+end)
+
+CreateThread(function()
+    while true do
+        if deathScreenHiddenByBoss then
+            local st = LocalPlayer.state['qbx_medical:deathState']
+            if not st or st <= 1 then
+                deathScreenHiddenByBoss = false
+            elseif not isInsideBossZone() then
+                restoreDeathScreenIfNeeded()
+            end
+        end
+        Wait(1000)
     end
 end)
 
@@ -270,50 +372,74 @@ local function requestRanking()
     end
 end
 
--- Ranking NPC: spawned only while the player is nearby.
-local npcPed = nil
+-- Ranking target: a plain ox_target sphere zone, no ped.
+local rankingZoneId = nil
 
-local function removeNpc()
-    if npcPed and DoesEntityExist(npcPed) then
-        exports.ox_target:removeLocalEntity(npcPed)
-        DeleteEntity(npcPed)
+local function removeRankingZone()
+    if rankingZoneId then
+        exports.ox_target:removeZone(rankingZoneId)
+        rankingZoneId = nil
     end
-    npcPed = nil
 end
 
-local function spawnNpc()
-    if npcPed then return end
+do
     local N = Config.Npc
-    lib.requestModel(N.model)
-    local c = N.coords
-    npcPed = CreatePed(4, N.model, c.x, c.y, c.z - 1.0, c.w, false, false)
-    SetModelAsNoLongerNeeded(N.model)
-    FreezeEntityPosition(npcPed, true)
-    SetEntityInvincible(npcPed, true)
-    SetBlockingOfNonTemporaryEvents(npcPed, true)
-
-    exports.ox_target:addLocalEntity(npcPed, {
-        {
-            name = 'xn_danhboss_ranking',
-            icon = N.icon,
-            label = N.label,
-            distance = N.interactDistance,
-            onSelect = requestRanking,
+    rankingZoneId = exports.ox_target:addSphereZone({
+        coords = N.coords,
+        radius = N.radius,
+        options = {
+            {
+                name = 'xn_danhboss_ranking',
+                icon = N.icon,
+                label = N.label,
+                distance = N.interactDistance,
+                onSelect = requestRanking,
+            },
         },
     })
 end
 
-lib.points.new({
-    coords = Config.Npc.coords.xyz,
-    distance = Config.Npc.spawnDistance,
-    onEnter = spawnNpc,
-    onExit = removeNpc,
-})
+-- The server keeps a set of players inside the boss zone instead of scanning every player.
+do
+    local h = Config.Boss.coords
+    lib.zones.sphere({
+        coords = vec3(h.x, h.y, h.z),
+        radius = Config.Zone.radius,
+        onEnter = function() TriggerServerEvent('xn_danhboss:zone', true) end,
+        onExit = function() TriggerServerEvent('xn_danhboss:zone', false) end,
+    })
+end
 
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     SetNuiFocus(false, false)
-    removeNpc()
+    removeRankingZone()
+end)
+
+-- Hits are merged per target/attacker/weapon and sent every 200ms in one event, so the owner of the
+-- boss does not flood the server when many players shoot at once.
+local hitQueue = {}
+
+local function queueHit(target, attackerSid, weapon, isHead)
+    local key = ('%d:%d:%d:%s'):format(target, attackerSid, weapon, isHead and 'h' or 'b')
+    local e = hitQueue[key]
+    if e then
+        e.n = e.n + 1
+    else
+        hitQueue[key] = { t = target, a = attackerSid, w = weapon, h = isHead, b = GetWeaponDamage(weapon, 0), n = 1 }
+    end
+end
+
+CreateThread(function()
+    while true do
+        Wait(200)
+        if next(hitQueue) then
+            local batch = {}
+            for _, e in pairs(hitQueue) do batch[#batch + 1] = e end
+            hitQueue = {}
+            TriggerServerEvent('xn_danhboss:hits', batch)
+        end
+    end
 end)
 
 -- Only the client that owns the boss/minion receives the damage event, so it reports every player hit.
@@ -335,16 +461,10 @@ AddEventHandler('gameEventTriggered', function(name, args)
     local idx = NetworkGetPlayerIndexFromPed(attacker)
     if idx == -1 then return end
 
-    local weapon = args[7]
     local found, bone = GetPedLastDamageBone(victim)
     local isHead = found and (bone == 31086 or bone == 12844 or bone == 39317) or false
-    local attackerSid = GetPlayerServerId(idx)
-
-    if isBoss then
-        TriggerServerEvent('xn_danhboss:damageBoss', attackerSid, weapon, isHead, GetWeaponDamage(weapon, 0))
-    else
-        TriggerServerEvent('xn_danhboss:damageMinion', NetworkGetNetworkIdFromEntity(victim), attackerSid, weapon, isHead, GetWeaponDamage(weapon, 0))
-    end
+    local target = isBoss and 0 or NetworkGetNetworkIdFromEntity(victim)
+    queueHit(target, GetPlayerServerId(idx), math.tointeger(args[7]) or 0, isHead)
 end)
 
 -- Boss AI (runs only on the client that owns the entity)
@@ -433,6 +553,8 @@ end
 
 -- Blocking: face the target, fire a burst of scripted bullets, then back to normal melee.
 -- Scripted bullets work on any ped model (a ped shoot task needs weapon animations).
+-- If the target dies/leaves mid-burst, another player is picked so the burst is not cut short.
+-- Returns the number of bullets fired.
 local function doGun(ped, idx)
     local G = Config.Gun
     local tPed = GetPlayerPed(idx)
@@ -443,15 +565,32 @@ local function doGun(ped, idx)
     while not HasWeaponAssetLoaded(G.weapon) and GetGameTimer() < loadTimeout do Wait(0) end
 
     ClearPedTasks(ped)
+
+    local function targetOk()
+        return DoesEntityExist(tPed) and not IsEntityDead(tPed) and (select(1, isValidPlayer(idx)))
+    end
+
+    local function ensureTarget()
+        if targetOk() then return true end
+        local newIdx = pickGunTarget(ped, GetEntityCoords(ped))
+        if not newIdx then return false end
+        idx, tPed = newIdx, GetPlayerPed(newIdx)
+        TriggerServerEvent('xn_danhboss:gunWarn', GetPlayerServerId(newIdx))
+        return true
+    end
+
     local windupEnd = GetGameTimer() + G.windup
-    while GetGameTimer() < windupEnd and DoesEntityExist(tPed) do
-        faceTarget(ped, GetEntityCoords(ped), GetEntityCoords(tPed))
+    while GetGameTimer() < windupEnd and DoesEntityExist(ped) and NetworkGetEntityOwner(ped) == cache.playerId do
+        if ensureTarget() then
+            faceTarget(ped, GetEntityCoords(ped), GetEntityCoords(tPed))
+        end
         Wait(50)
     end
 
+    local fired = 0
     for _ = 1, G.shots do
-        if IsEntityDead(ped) or not DoesEntityExist(tPed) or IsEntityDead(tPed)
-            or NetworkGetEntityOwner(ped) ~= cache.playerId then break end
+        if not DoesEntityExist(ped) or IsEntityDead(ped) or NetworkGetEntityOwner(ped) ~= cache.playerId then break end
+        if not ensureTarget() then break end
 
         local from = GetOffsetFromEntityInWorldCoords(ped, 0.0, 0.8, 0.5)
         local to = GetPedBoneCoords(tPed, 24816, 0.0, 0.0, 0.0)
@@ -459,10 +598,12 @@ local function doGun(ped, idx)
         to = to + vec3((math.random() - 0.5) * s, (math.random() - 0.5) * s, (math.random() - 0.5) * s)
         faceTarget(ped, from, to)
         ShootSingleBulletBetweenCoords(from.x, from.y, from.z, to.x, to.y, to.z, G.damage, true, G.weapon, ped, true, false, 400.0)
+        fired = fired + 1
         Wait(G.shotDelay)
     end
 
     RemoveWeaponAsset(G.weapon)
+    return fired
 end
 
 CreateThread(function()
@@ -480,7 +621,7 @@ CreateThread(function()
         if ped == 0 or IsEntityDead(ped) or NetworkGetEntityOwner(ped) ~= cache.playerId then
             setupPed = 0
             target, taskedTarget, mode = nil, nil, nil
-            Wait(350)
+            Wait(state and 350 or 1500)
         else
             local now = GetGameTimer()
             if setupPed ~= ped then
@@ -518,9 +659,13 @@ CreateThread(function()
 
             if gunTarget then
                 mode = nil
-                doGun(ped, gunTarget)
-                local interval = math.random(G.intervalMin, G.intervalMax)
-                nextGunAt = GetGameTimer() + (enraged and interval * E.cooldownMult or interval)
+                local fired = doGun(ped, gunTarget)
+                if fired < math.ceil(G.shots / 2) then
+                    nextGunAt = GetGameTimer() + 1500 -- burst got cut short, retry soon
+                else
+                    local interval = math.random(G.intervalMin, G.intervalMax)
+                    nextGunAt = GetGameTimer() + (enraged and interval * E.cooldownMult or interval)
+                end
                 taskedTarget = nil
             elseif not target then
                 if mode ~= 'idle' then
@@ -622,12 +767,10 @@ local zoneCenter = vec3(Config.Boss.coords.x, Config.Boss.coords.y, Config.Boss.
 local function collectPlayers()
     local list = {}
     for _, idx in ipairs(GetActivePlayers()) do
-        local ok, pPed = isValidPlayer(idx)
-        if ok then
-            local pos = GetEntityCoords(pPed)
-            if #(vec2(pos.x, pos.y) - vec2(zoneCenter.x, zoneCenter.y)) <= Config.Zone.radius then
-                list[#list + 1] = { idx = idx, ped = pPed, sid = GetPlayerServerId(idx), pos = pos }
-            end
+        local pPed = GetPlayerPed(idx)
+        local pos = GetEntityCoords(pPed)
+        if #(vec2(pos.x, pos.y) - vec2(zoneCenter.x, zoneCenter.y)) <= Config.Zone.radius and isValidPlayer(idx) then
+            list[#list + 1] = { idx = idx, ped = pPed, sid = GetPlayerServerId(idx), pos = pos }
         end
     end
     table.sort(list, function(a, b) return a.sid < b.sid end)
@@ -702,6 +845,20 @@ local function tickMinion(ped, netId, ai, players, now)
     end
 end
 
+-- Validity/zone checks are rebuilt once a second; positions are refreshed every tick.
+local playerCache, playerCacheAt = {}, 0
+
+local function getZonePlayers(now)
+    if now - playerCacheAt >= 1000 then
+        playerCache, playerCacheAt = collectPlayers(), now
+    else
+        for _, p in ipairs(playerCache) do
+            if DoesEntityExist(p.ped) then p.pos = GetEntityCoords(p.ped) end
+        end
+    end
+    return playerCache
+end
+
 CreateThread(function()
     while true do
         Wait(250)
@@ -721,7 +878,7 @@ CreateThread(function()
                             minionAI[netId] = ai
                             setupMinion(ped)
                         end
-                        players = players or collectPlayers()
+                        players = players or getZonePlayers(now)
                         tickMinion(ped, netId, ai, players, now)
                     end
                 end

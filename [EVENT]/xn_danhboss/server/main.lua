@@ -8,6 +8,33 @@ local zoneCenter = vec3(Config.Boss.coords.x, Config.Boss.coords.y, Config.Boss.
 local respawnToken = 0
 local lastBroadcast = 0
 local lastSentHp = -1
+local stateDirty = false -- set by frequent changes (minions), flushed by the 500ms monitor tick
+local pendingRevive = {}
+---@type table<integer, true> -- players currently inside the boss zone (reported by clients, verified on enter)
+local zonePlayers = {}
+local zoneCount = 0
+
+RegisterNetEvent('xn_danhboss:zone', function(inside)
+    local src = source
+    if inside == true then
+        if zonePlayers[src] then return end
+        local ped = GetPlayerPed(src)
+        if ped == 0 or #(GetEntityCoords(ped) - zoneCenter) > Config.Zone.radius + 15.0 then return end
+        zonePlayers[src] = true
+        zoneCount = zoneCount + 1
+    elseif zonePlayers[src] then
+        zonePlayers[src] = nil
+        zoneCount = zoneCount - 1
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    local src = source
+    if zonePlayers[src] then
+        zonePlayers[src] = nil
+        zoneCount = zoneCount - 1
+    end
+end)
 
 local ox_inventory_started = function() return GetResourceState('ox_inventory') == 'started' end
 
@@ -48,7 +75,8 @@ local function broadcast(force)
         return
     end
     local now = GetGameTimer()
-    if force or boss.hp ~= lastSentHp or now - lastBroadcast > 2000 then
+    if force or stateDirty or boss.hp ~= lastSentHp or now - lastBroadcast > 2000 then
+        stateDirty = false
         lastBroadcast = now
         lastSentHp = boss.hp
         TriggerClientEvent('xn_danhboss:sync', -1, buildState())
@@ -257,7 +285,8 @@ lib.callback.register('xn_danhboss:getRanking', function(src)
     return buildRankingPayload(player.PlayerData.citizenid)
 end)
 
--- Claim is atomic in SQL (claimed 0 -> 1) so a reward can never be given twice.
+-- Claim is atomic in SQL (claimed 0 -> 1): the row is reserved first, the item is given second,
+-- and the reservation is rolled back if the item could not be delivered to the same character.
 local function doClaim(src, cid)
     local entry = ranking.byCid[cid]
     if not entry then return false, Config.Text.notParticipant end
@@ -275,16 +304,31 @@ local function doClaim(src, cid)
         return false, Config.Text.alreadyClaimed
     end
 
-    if not exports.ox_inventory:AddItem(src, item, entry.reward) then
+    -- The await above yielded: the player may have dropped and the source id been reused.
+    local current = exports.qbx_core:GetPlayer(src)
+    local sameCharacter = current and current.PlayerData.citizenid == cid
+    local okAdd, added = false, false
+    if sameCharacter then
+        okAdd, added = pcall(function() return exports.ox_inventory:AddItem(src, item, entry.reward) end)
+    end
+
+    if not (okAdd and added) then
         MySQL.update.await(('UPDATE %s SET claimed = 0 WHERE citizenid = ?'):format(RANK_TABLE), { cid })
         return false, Config.Text.inventoryFull
     end
 
     entry.claimed = true
+    print(('[xn_danhboss] claim: %s received %d x %s (rank %d)'):format(cid, entry.reward, item, entry.pos))
     return true, Config.Text.claimed:format(entry.reward, getItemInfo().label)
 end
 
+local lastClaim = {}
+
 lib.callback.register('xn_danhboss:claim', function(src)
+    local now = GetGameTimer()
+    if lastClaim[src] and now - lastClaim[src] < 1500 then return false, Config.Text.busy end
+    lastClaim[src] = now
+
     local player = exports.qbx_core:GetPlayer(src)
     if not player then return false, Config.Text.notParticipant end
     local cid = player.PlayerData.citizenid
@@ -303,6 +347,7 @@ end)
 
 AddEventHandler('playerDropped', function()
     lastOpen[source] = nil
+    lastClaim[source] = nil
 end)
 
 local function clearMinions()
@@ -325,11 +370,42 @@ local function scheduleRespawn()
     end)
 end
 
+local reviveWindowUntil = 0
+
+-- Revives every downed player inside the boss zone when the boss dies or is removed.
+-- The server set covers tracked players; clients inside the zone also confirm (xn_danhboss:requestRevive)
+-- so nobody stays down if the tracking missed them.
+local function reviveZonePlayers()
+    local Z = Config.Zone
+    if not (Z.enabled and Z.reviveOnBossDeath) then return end
+    for src in pairs(zonePlayers) do
+        local st = Player(src).state['qbx_medical:deathState']
+        if st and st > 1 then
+            exports.qbx_medical:Revive(src)
+        end
+    end
+    reviveWindowUntil = GetGameTimer() + 15000
+    TriggerClientEvent('xn_danhboss:reviveCheck', -1)
+end
+
+RegisterNetEvent('xn_danhboss:requestRevive', function()
+    local src = source
+    if GetGameTimer() > reviveWindowUntil then return end
+    local ped = GetPlayerPed(src)
+    if ped == 0 or #(GetEntityCoords(ped) - zoneCenter) > Config.Zone.radius + 15.0 then return end
+    local st = Player(src).state['qbx_medical:deathState']
+    if st and st > 1 then
+        exports.qbx_medical:Revive(src)
+    end
+end)
+
 local function finishBoss()
     local b = boss
     b.dead = true
     b.hp = 0
     clearMinions()
+    pendingRevive = {}
+    reviveZonePlayers()
     broadcast(true)
     TriggerClientEvent('xn_danhboss:died', -1, b.netId)
     CreateThread(function() finalizeRanking(b) end)
@@ -347,8 +423,11 @@ end
 
 local function removeBoss()
     if not boss then return false end
+    local wasAlive = not boss.dead
     respawnToken = respawnToken + 1
     clearMinions()
+    pendingRevive = {}
+    if wasAlive then reviveZonePlayers() end
     if DoesEntityExist(boss.ped) then DeleteEntity(boss.ped) end
     boss = nil
     broadcast(true)
@@ -390,6 +469,7 @@ spawnBoss = function()
         lastMelee = 0,
         lastSlam = 0,
         contrib = {},
+        bySrc = {},
     }
     broadcast(true)
     notifyAll(Config.Text.spawned, 'warning')
@@ -503,8 +583,7 @@ RegisterNetEvent('xn_danhboss:slam', function()
     local b = boss
     SetTimeout(S.delay, function()
         if boss ~= b or b.dead then return end
-        for _, pid in ipairs(GetPlayers()) do
-            local sid = tonumber(pid)
+        for sid in pairs(zonePlayers) do
             local ok, tPed = canHit(sid)
             if ok and #(GetEntityCoords(tPed) - pos) <= S.radius then
                 applyDamage(sid, randomInRange(S.damage), pos, true)
@@ -558,14 +637,18 @@ AddEventHandler('onResourceStart', function(res)
 end)
 
 local function addContribution(src, damage)
-    local player = exports.qbx_core:GetPlayer(src)
-    if not player then return end
-    local cid = player.PlayerData.citizenid
-    local c = boss.contrib[cid]
+    local c = boss.bySrc[src]
     if not c then
-        local info = player.PlayerData.charinfo
-        c = { cid = cid, src = src, damage = 0, name = ('%s %s'):format(info.firstname, info.lastname) }
-        boss.contrib[cid] = c
+        local player = exports.qbx_core:GetPlayer(src)
+        if not player then return end
+        local cid = player.PlayerData.citizenid
+        c = boss.contrib[cid]
+        if not c then
+            local info = player.PlayerData.charinfo
+            c = { cid = cid, src = src, damage = 0, name = ('%s %s'):format(info.firstname, info.lastname) }
+            boss.contrib[cid] = c
+        end
+        boss.bySrc[src] = c
     end
     c.src = src
     c.damage = c.damage + damage
@@ -575,18 +658,20 @@ local hitWindow = {}
 
 AddEventHandler('playerDropped', function()
     hitWindow[source] = nil
+    if boss then boss.bySrc[source] = nil end
 end)
 
--- Per-attacker rate limit shared by boss and minion hits.
-local function allowHit(attackerSid)
+-- Per-attacker rate limit shared by boss and minion hits; returns how many of `count` hits are allowed.
+local function takeHits(attackerSid, count)
     local now = GetGameTimer()
     local w = hitWindow[attackerSid]
     if not w or now - w.start >= 1000 then
         w = { start = now, count = 0 }
         hitWindow[attackerSid] = w
     end
-    w.count = w.count + 1
-    return w.count <= Config.Damage.maxHitsPerSecond
+    local allowed = math.max(0, math.min(count, Config.Damage.maxHitsPerSecond - w.count))
+    w.count = w.count + allowed
+    return allowed
 end
 
 -- Damage a player hit deals to `targetEntity` (boss or minion), or nil if the hit is invalid.
@@ -598,7 +683,7 @@ local function calcHitDamage(attackerSid, weaponHash, isHead, baseDamage, target
     local cfg = weaponDamage[normHash(weaponHash)]
     local range = (cfg and cfg.maxRange or D.defaultMaxRange) + 3.0
     if #(GetEntityCoords(ped) - GetEntityCoords(targetEntity)) > range then
-        debugPrint('hit rejected: out of range', attackerSid, weaponHash)
+        if Config.Debug then debugPrint('hit rejected: out of range', attackerSid, weaponHash) end
         return nil
     end
 
@@ -612,26 +697,6 @@ local function calcHitDamage(attackerSid, weaponHash, isHead, baseDamage, target
     dmg = math.floor(dmg * D.multiplier)
     return dmg > 0 and dmg or nil
 end
-
--- The boss owner client receives the damage event (the attacker client does not reliably get it)
--- and reports who hit the boss; server decides the damage.
-RegisterNetEvent('xn_danhboss:damageBoss', function(attackerSid, weaponHash, isHead, baseDamage)
-    local src = source
-    if not isBossOwner(src) then return end
-    attackerSid = math.tointeger(attackerSid)
-    weaponHash = math.tointeger(weaponHash)
-    if not attackerSid or not weaponHash or not allowHit(attackerSid) then return end
-
-    local dmg = calcHitDamage(attackerSid, weaponHash, isHead, baseDamage, boss.ped)
-    if not dmg then return end
-    dmg = math.min(dmg, boss.hp)
-    if dmg <= 0 then return end
-
-    boss.hp = boss.hp - dmg
-    addContribution(attackerSid, dmg)
-    debugPrint(('hit %d by %d weapon %d, hp %d'):format(dmg, attackerSid, weaponHash, boss.hp))
-    if boss.hp <= 0 then finishBoss() end
-end)
 
 -- Minion zombies: up to Config.Minions.max alive at once inside the zone while the boss lives.
 -- Their damage never counts for the ranking.
@@ -674,16 +739,15 @@ local function spawnMinion()
 
     minions[netId] = { ped = ped, netId = netId, hp = M.hp, lastHit = 0 }
     minionCount = minionCount + 1
-    broadcast(true)
+    stateDirty = true
     return true
 end
 
 local function anyPlayerInZone()
-    for _, pid in ipairs(GetPlayers()) do
-        local ped = GetPlayerPed(tonumber(pid))
-        if ped ~= 0 and GetEntityHealth(ped) > 0 and #(GetEntityCoords(ped) - zoneCenter) <= Config.Zone.radius then
-            return true
-        end
+    if zoneCount == 0 then return false end
+    for src in pairs(zonePlayers) do
+        local ped = GetPlayerPed(src)
+        if ped ~= 0 and GetEntityHealth(ped) > 0 then return true end
     end
     return false
 end
@@ -701,7 +765,7 @@ CreateThread(function()
                     changed = true
                 end
             end
-            if changed then broadcast(true) end
+            if changed then stateDirty = true end
 
             local now = GetGameTimer()
             if minionCount < M.max and now >= nextMinionAt and anyPlayerInZone() then
@@ -712,24 +776,66 @@ CreateThread(function()
     end
 end)
 
-RegisterNetEvent('xn_danhboss:damageMinion', function(netId, attackerSid, weaponHash, isHead, baseDamage)
-    local src = source
-    netId = math.tointeger(netId)
-    attackerSid = math.tointeger(attackerSid)
-    weaponHash = math.tointeger(weaponHash)
-    local m = netId and minions[netId]
-    if not m or not attackerSid or not weaponHash then return end
-    if not DoesEntityExist(m.ped) or NetworkGetEntityOwner(m.ped) ~= src or not allowHit(attackerSid) then return end
+-- The owner client of the boss/minions receives the damage events (the attacker client does not
+-- reliably get them) and reports who hit what in batches; the server decides the damage.
+-- Entry: { t = target netId (0 = boss), a = attacker server id, w = weapon, h = headshot, b = base damage, n = hit count }
+local MAX_BATCH = 64
 
-    local dmg = calcHitDamage(attackerSid, weaponHash, isHead, baseDamage, m.ped)
+local function applyBossHits(src, e, attackerSid, weapon, count)
+    if not isBossOwner(src) then return end
+    local allowed = takeHits(attackerSid, count)
+    if allowed <= 0 then return end
+
+    local dmg = calcHitDamage(attackerSid, weapon, e.h, e.b, boss.ped)
+    if not dmg then return end
+    dmg = math.min(dmg * allowed, boss.hp)
+    if dmg <= 0 then return end
+
+    boss.hp = boss.hp - dmg
+    addContribution(attackerSid, dmg)
+    if Config.Debug then debugPrint(('hit %d by %d weapon %d, hp %d'):format(dmg, attackerSid, weapon, boss.hp)) end
+    if boss.hp <= 0 then finishBoss() end
+end
+
+local function applyMinionHits(src, e, attackerSid, weapon, count)
+    local m = minions[e.t]
+    if not m or not DoesEntityExist(m.ped) or NetworkGetEntityOwner(m.ped) ~= src then return end
+    local allowed = takeHits(attackerSid, count)
+    if allowed <= 0 then return end
+
+    local dmg = calcHitDamage(attackerSid, weapon, e.h, e.b, m.ped)
     if not dmg then return end
 
-    m.hp = m.hp - dmg
+    m.hp = m.hp - dmg * allowed
     if m.hp <= 0 then
-        removeMinion(netId, m)
+        removeMinion(e.t, m)
         nextMinionAt = math.max(nextMinionAt, GetGameTimer() + Config.Minions.respawnDelay)
-        TriggerClientEvent('xn_danhboss:minionDied', -1, netId)
-        broadcast(true)
+        TriggerClientEvent('xn_danhboss:minionDied', -1, e.t)
+        stateDirty = true
+    end
+end
+
+RegisterNetEvent('xn_danhboss:hits', function(batch)
+    local src = source
+    if type(batch) ~= 'table' or not boss or boss.dead or not boss.confirmed then return end
+
+    for i = 1, math.min(#batch, MAX_BATCH) do
+        local e = batch[i]
+        if type(e) == 'table' then
+            e.t = math.tointeger(e.t)
+            local attackerSid = math.tointeger(e.a)
+            local weapon = math.tointeger(e.w)
+            local count = math.tointeger(e.n)
+            if e.t and attackerSid and weapon and count and count > 0 then
+                count = math.min(count, Config.Damage.maxHitsPerSecond)
+                if e.t == 0 then
+                    applyBossHits(src, e, attackerSid, weapon, count)
+                else
+                    applyMinionHits(src, e, attackerSid, weapon, count)
+                end
+                if boss.dead then return end
+            end
+        end
     end
 end)
 
@@ -758,15 +864,18 @@ RegisterNetEvent('xn_danhboss:minionHit', function(netId, targetSid)
 end)
 
 -- Players who go down inside the boss zone are revived in place by qbx_medical after a delay.
-local pendingRevive = {}
+-- Auto-revive is strictly enabled ONLY when the boss is active (spawned and alive).
 
 local function startZoneRevive(src)
     local Z = Config.Zone
-    if not Z.enabled or pendingRevive[src] then return end
-    if Z.onlyWhileBoss and not (boss and not boss.dead) then return end
+    if not Z.enabled then return end
+    if not (boss and not boss.dead) then return end
 
     local ped = GetPlayerPed(src)
     if ped == 0 or #(GetEntityCoords(ped) - zoneCenter) > Z.radius then return end
+
+    TriggerClientEvent('xn_danhboss:hideDeathScreen', src)
+    if pendingRevive[src] then return end
 
     pendingRevive[src] = true
     TriggerClientEvent('ox_lib:notify', src, {
@@ -778,9 +887,17 @@ local function startZoneRevive(src)
     })
 
     SetTimeout(Z.reviveDelay * 1000, function()
+        if not pendingRevive[src] then return end
         pendingRevive[src] = nil
+
+        -- Only revive if boss is still alive and active
+        if not (Config.Zone.enabled and boss and not boss.dead) then return end
+
+        local p = GetPlayerPed(src)
+        if p == 0 or #(GetEntityCoords(p) - zoneCenter) > Z.radius then return end
+
         local st = Player(src).state['qbx_medical:deathState']
-        if GetPlayerPed(src) ~= 0 and st and st > 1 then
+        if st and st > 1 then
             exports.qbx_medical:Revive(src)
         end
     end)
@@ -788,18 +905,22 @@ end
 
 -- Instant reaction when qbx_medical flags the player as down.
 AddStateBagChangeHandler('qbx_medical:deathState', nil, function(bagName, _, value)
-    if not value or value <= 1 then return end
     local src = GetPlayerFromStateBagName(bagName)
-    if src and src ~= 0 then startZoneRevive(src) end
+    if not src or src == 0 then return end
+    if not value or value <= 1 then
+        pendingRevive[src] = nil
+        return
+    end
+    if not zonePlayers[src] then return end
+    startZoneRevive(src)
 end)
 
--- Fallback for players already down when the boss spawns.
+-- Fallback for players already down inside the zone when the boss spawns.
 CreateThread(function()
     while true do
-        Wait(3000)
-        if Config.Zone.enabled and boss and not boss.dead then
-            for _, pid in ipairs(GetPlayers()) do
-                local src = tonumber(pid)
+        Wait(5000)
+        if zoneCount > 0 and Config.Zone.enabled and boss and not boss.dead then
+            for src in pairs(zonePlayers) do
                 local deathState = Player(src).state['qbx_medical:deathState']
                 if deathState and deathState > 1 then startZoneRevive(src) end
             end
@@ -855,3 +976,17 @@ CreateThread(function()
         Wait(10000)
     end
 end)
+
+for _, schedule in ipairs(Config.Boss.spawnSchedule) do
+    lib.cron.new(schedule, function()
+        if boss and not boss.dead then
+            debugPrint(('scheduled spawn skipped (%s): boss is still active'):format(schedule))
+            return
+        end
+
+        local ok, err = spawnBoss()
+        if not ok then
+            print(('[xn_danhboss] scheduled spawn failed (%s): %s'):format(schedule, tostring(err)))
+        end
+    end)
+end
