@@ -551,6 +551,8 @@ function Impl:OnReady()
           self:StopTool(setup, true)
         end
       end)
+    else
+      self:Notify(source, 'invalid_state')
     end
   end)
   self:OnNet('readyTool', function(setupId, token, success)

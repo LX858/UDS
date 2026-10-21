@@ -3,6 +3,7 @@ Config.Dependencies = {}
 Config.Locale = 'default'
 Config.Settings = { locale = Locales[Config.Locale] or Locales['default'] }
 Config.Debug = false
+Config.DebugZones = false
 Config.Nui = false
 Config.Dev = false
 Config.Framework = 'qbx'
@@ -39,9 +40,11 @@ Config.Torture = {
   actionDistance = 3.0,
   toolTargetRadius = 0.45,
   trolleyTargetPadding = vector3(0.35, 0.35, 0.5),
-  sceneHeadingOffset = 180.0,
+  sceneHeadingCorrection = 0.0,
   sceneOffset = vector3(0.0, 0.0, 0.0),
-  seatAlignment = { dict = 'missfbi3_waterboard', chair = 'waterboard_idle_chair', maxDistance = 1.2 },
+  -- FBI3 scene 0, before a tool has been selected (not the waterboard tool idle).
+  seatAlignment = { dict = 'missfbi3_weapon_select', chair = 'waterboard_idle_chair',
+    victim = 'waterboard_idle_victim', maxDistance = 1.2 },
   -- FBI3 fbi3.c: Local_121 (chair), Local_124 yaw, and weapon-select prop tracks.
   layoutDict = 'missfbi3_weapon_select',
   referenceChair = vector3(142.99, -2201.98, 4.07),

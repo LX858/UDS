@@ -61,7 +61,9 @@ local function alignedSceneOrigin(chair, heading)
   if not HasAnimDictLoaded(alignment.dict) and not loadDict(alignment.dict, 3000) then
     return nil
   end
-  local sceneHeading = (heading + cfg.sceneHeadingOffset) % 360.0
+  local initialRotation = GetAnimInitialOffsetRotation(alignment.dict, alignment.chair,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2)
+  local sceneHeading = (heading - initialRotation.z + cfg.sceneHeadingCorrection) % 360.0
   local initialChair = GetAnimInitialOffsetPosition(alignment.dict, alignment.chair,
     0.0, 0.0, 0.0, 0.0, 0.0, sceneHeading, 0.0, 2)
   if not initialChair then return nil end
@@ -73,6 +75,26 @@ end
 local function sceneOrigin(setup)
   if not targetReady(setup.props.chair) or not setup.positions.chair then return nil end
   return alignedSceneOrigin(setup.positions.chair, setup.heading)
+end
+
+local function waitForScene(scene, ped, dict, clip, looped, current)
+  local expires = GetGameTimer() + 2500
+  local localScene = -1
+  repeat
+    if not current() then return nil end
+    localScene = NetworkGetLocalSceneFromNetworkId(scene)
+    if localScene and localScene >= 0 then
+      SetSynchronizedSceneLooped(localScene, looped)
+      SetSynchronizedSceneHoldLastFrame(localScene, not looped)
+      if IsSynchronizedSceneRunning(localScene) and IsEntityPlayingAnim(ped, dict, clip, 3) then
+        return localScene
+      end
+    end
+    Wait(0)
+  until GetGameTimer() >= expires
+  print(('[vx_torture] Scene did not start: %s / %s (network=%s, local=%s)')
+    :format(dict, clip, scene, localScene))
+  return nil
 end
 
 local function loadModel(model, timeoutMs)
@@ -376,7 +398,7 @@ function Impl:AddTargets(setup)
       name = targetName('trolley_zone'), coords = center,
       size = vector3(max.x - min.x + padding.x,
         max.y - min.y + padding.y, max.z - min.z + padding.z),
-      rotation = GetEntityHeading(trolley), debug = Config.Debug,
+      rotation = GetEntityHeading(trolley), debug = Config.DebugZones == true,
       options = trolleyOptions,
     })
   end
@@ -485,6 +507,7 @@ function Impl:UpdateSetup(setup)
 end
 
 function Impl:StopStage()
+  self:StopVictimScene()
   if self.benchScene then
     NetworkStopSynchronisedScene(self.benchScene)
     self.benchScene = nil
@@ -493,9 +516,10 @@ function Impl:StopStage()
     NetworkStopSynchronisedScene(self.scene)
     self.scene = nil
   end
+  self.localScene = nil
   if self.camera and DoesCamExist(self.camera) then
-    StopCamAnim(self.camera)
     RenderScriptCams(false, false, 0, true, false)
+    SetCamActive(self.camera, false)
     DestroyCam(self.camera, false)
     self.camera = nil
   end
@@ -517,17 +541,40 @@ function Impl:StopStage()
   end
 end
 
-function Impl:PlayIdle(setup)
-  if self.seated ~= setup.id then return false end
+function Impl:StopVictimScene()
+  local scene = self.victimScene
+  self.victimScene = nil
+  self.victimLocalScene = nil
+  if scene then NetworkStopSynchronisedScene(scene) end
+end
+
+function Impl:StartVictimScene(setup, stageData, looped)
+  if self.seated ~= setup.id or IsEntityDead(PlayerPedId()) then return false end
   local coords, heading = sceneOrigin(setup)
-  if not coords or not loadDict('missfbi3_waterboard', 3000) then return false end
+  if not coords or not loadDict(stageData.dict, 3000) then return false end
+  self:StopVictimScene()
   local ped = PlayerPedId()
-  SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z, false, false, false)
-  SetEntityHeading(ped, heading)
-  TaskPlayAnimAdvanced(ped, 'missfbi3_waterboard', 'waterboard_idle_victim',
-    coords.x, coords.y, coords.z, 0.0, 0.0, heading,
-    8.0, -8.0, -1, 1, 0.0, 0, 0)
+  -- Each peer tasks its own ped. Both peers use the same scene-space origin;
+  -- TASK_PLAY_ANIM_ADVANCED takes a task transform, not a scene transform.
+  local scene = NetworkCreateSynchronisedScene(coords.x, coords.y, coords.z,
+    0.0, 0.0, heading, 2, not looped, looped, 1.0, 0.0, 1.0)
+  if not scene or scene == -1 then return false end
+  self.victimScene = scene
+  NetworkAddPedToSynchronisedScene(ped, scene, stageData.dict, stageData.victim,
+    8.0, -8.0, 1036 | 2048 | (looped and 64 or 0), 0, 1000.0, 0)
+  NetworkStartSynchronisedScene(scene)
+  local localScene = waitForScene(scene, ped, stageData.dict, stageData.victim, looped,
+    function() return self.victimScene == scene and self.seated == setup.id end)
+  if not localScene then
+    if self.victimScene == scene then self:StopVictimScene() end
+    return false
+  end
+  self.victimLocalScene = localScene
   return true
+end
+
+function Impl:PlayIdle(setup)
+  return self:StartVictimScene(setup, cfg.seatAlignment, true)
 end
 
 function Impl:ReleaseSeat(setupId)
@@ -555,15 +602,7 @@ function Impl:ReleaseSeat(setupId)
 end
 
 function Impl:StartVictimStage(setup, stageData)
-  local coords, heading = sceneOrigin(setup)
-  if not coords then return false end
-  local ped = PlayerPedId()
-  ClearPedTasksImmediately(ped)
-  TaskPlayAnimAdvanced(ped, stageData.dict, stageData.victim,
-    coords.x, coords.y, coords.z, 0.0, 0.0, heading,
-    8.0, -8.0, stageData.durationMs, 0, 0.0, 0, 0)
-  Wait(200)
-  return IsEntityPlayingAnim(ped, stageData.dict, stageData.victim, 3)
+  return self:StartVictimScene(setup, stageData, false)
 end
 
 function Impl:RestoreBench(setup, selectedTool, returnCompanions)
@@ -579,7 +618,9 @@ end
 
 function Impl:ShowToolMenu(setup)
   local session = self.toolSession
-  if not session or session.token ~= setup.toolToken or session.menuPending
+  if not session or not session.actor or session.phase ~= 'idle' or not session.idleReady
+    or setup.toolState ~= 'idle' or not setup.toolReady or self.activeAction
+    or session.idleEpoch ~= setup.toolEpoch or session.token ~= setup.toolToken or session.menuPending
     or (self.toolMenuId and lib.getOpenContextMenu() == self.toolMenuId) then return end
   local options = {}
   for key, action in pairs(cfg.actions) do
@@ -615,16 +656,7 @@ end
 function Impl:StartVictimToolScene(setup, token, stageData, looped)
   local session = self.toolSession
   if not session or session.token ~= token or self.seated ~= setup.id then return false end
-  local coords, heading = sceneOrigin(setup)
-  if not coords then return false end
-  local ped = PlayerPedId()
-  ClearPedTasksImmediately(ped)
-  TaskPlayAnimAdvanced(ped, stageData.dict, stageData.victim,
-    coords.x, coords.y, coords.z, 0.0, 0.0, heading,
-    8.0, -8.0, -1, looped and 1 or 2, 0.0, 0, 0)
-  Wait(200)
-  return self.toolSession == session
-    and IsEntityPlayingAnim(ped, stageData.dict, stageData.victim, 3)
+  return self:StartVictimScene(setup, stageData, looped) and self.toolSession == session
 end
 
 function Impl:RunActorToolScene(setup, token, stageData, looped)
@@ -678,27 +710,27 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   end
   local scene = NetworkCreateSynchronisedScene(
     coords.x, coords.y, coords.z, 0.0, 0.0, heading,
-    2, false, looped, 1.0, 0.0, 1.0
+    2, not looped, looped, 1.0, 0.0, 1.0
   )
   if not scene or scene == -1 then return false end
   self.scene = scene
   self.actorStageActive = true
   NetworkAddPedToSynchronisedScene(ped, scene, stageData.dict, stageData.actor,
-    8.0, -8.0, 1036, 0, 1000.0, 0)
+    8.0, -8.0, 1036 | 2048 | (looped and 64 or 0), 0, 1000.0, 0)
   if chair then
     FreezeEntityPosition(chair, false)
     self.stageChair = chair
     self.stageChairRestore = { coords = setup.positions.chair, heading = setup.heading,
       rotation = setup.rotations and setup.rotations.chair }
     NetworkAddEntityToSynchronisedScene(chair, scene, stageData.dict, stageData.chair,
-      8.0, -8.0, 0)
+      8.0, -8.0, looped and 64 or 0)
   end
   for key, entity in pairs(entities) do
     local track = sceneProps[key]
     DetachEntity(entity, true, true)
     FreezeEntityPosition(entity, false)
     NetworkAddEntityToSynchronisedScene(entity, scene, track.dict, track.clip,
-      8.0, -8.0, 0)
+      8.0, -8.0, looped and 64 or 0)
   end
   if next(benchEntities) then
     local trolleyClip = cfg.props.trolley.restClip
@@ -720,14 +752,13 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
     end
   end
   NetworkStartSynchronisedScene(scene)
-  local localScene = -1
-  local resolveUntil = GetGameTimer() + 1500
-  while localScene == -1 and GetGameTimer() < resolveUntil do
-    localScene = NetworkGetLocalSceneFromNetworkId(scene)
-    Wait(0)
+  local localScene = waitForScene(scene, ped, stageData.dict, stageData.actor, looped,
+    function() return self.toolSession == session and self.scene == scene end)
+  if not localScene then
+    if self.scene == scene then self:StopStage() end
+    return false
   end
-  if self.toolSession ~= session then return false end
-  if localScene == -1 then self:StopStage() return false end
+  self.localScene = localScene
   local cam = CreateCam('DEFAULT_ANIMATED_CAMERA', true)
   if not PlaySynchronizedCamAnim(cam, localScene, stageData.camera, stageData.dict) then
     DestroyCam(cam, false)
@@ -736,18 +767,10 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   end
   self.camera = cam
   RenderScriptCams(true, false, 0, true, false)
-  if looped then
-    Wait(250)
-    if self.toolSession ~= session then return false end
-    if not IsEntityPlayingAnim(ped, stageData.dict, stageData.actor, 3) then
-      self:StopStage()
-      return false
-    end
-    return true
-  end
+  if looped then return true end
   local untilTime = GetGameTimer() + cfg.toolSelectTimeoutMs
   local attached = false
-  while self.toolSession == session and session.token == token
+  while self.toolSession == session and session.token == token and self.scene == scene
     and GetGameTimer() < untilTime do
     local phase = GetSynchronizedScenePhase(localScene)
     if stageData.attachAt and not attached and phase >= stageData.attachAt then
@@ -761,7 +784,7 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
     end
     Wait(0)
   end
-  if self.toolSession == session then self:StopStage() end
+  if self.scene == scene then self:StopStage() end
   return false
 end
 
@@ -831,13 +854,13 @@ function Impl:RunActorStage(setup, token, key, index)
   if not controlledChair then return false end
   local scene = NetworkCreateSynchronisedScene(
     coords.x, coords.y, coords.z, 0.0, 0.0, heading,
-    2, false, false, 1.0, 0.0, 1.0
+    2, true, false, 1.0, 0.0, 1.0
   )
   if scene and scene ~= -1 then
     self.actorStageActive = true
     self.scene = scene
     NetworkAddPedToSynchronisedScene(ped, scene, stageData.dict, stageData.actor,
-      8.0, -8.0, 1036, 0, 1000.0, 0)
+      8.0, -8.0, 1036 | 2048, 0, 1000.0, 0)
     if stageData.chair then
       FreezeEntityPosition(chair, false)
       self.stageChair = chair
@@ -854,13 +877,10 @@ function Impl:RunActorStage(setup, token, key, index)
         8.0, -8.0, 0)
     end
     NetworkStartSynchronisedScene(scene)
-    local localScene = -1
-    local resolveUntil = GetGameTimer() + 1200
-    while localScene == -1 and GetGameTimer() < resolveUntil do
-      localScene = NetworkGetLocalSceneFromNetworkId(scene)
-      Wait(0)
-    end
-    if localScene ~= -1 then
+    local localScene = waitForScene(scene, ped, stageData.dict, stageData.actor, false,
+      function() return self.scene == scene and self.activeAction and self.activeAction.token == token end)
+    if localScene then
+      self.localScene = localScene
       local camName = stageData.actor:gsub('_player$', '_cam')
       local cam = CreateCam('DEFAULT_ANIMATED_CAMERA', true)
       if PlaySynchronizedCamAnim(cam, localScene, camName, stageData.dict) then
@@ -1061,6 +1081,9 @@ function Impl:Init()
   self.previousInvBusy = nil
   self.activeAction = nil
   self.scene = nil
+  self.localScene = nil
+  self.victimScene = nil
+  self.victimLocalScene = nil
   self.benchScene = nil
   self.camera = nil
   self.stageChair = nil
@@ -1165,7 +1188,8 @@ function Impl:OnReady()
     if not session or session.token ~= token then return end
     if session.idleEpoch and epoch <= session.idleEpoch then return end
     session.idleEpoch = epoch
-    session.phase = 'idle'
+    session.phase = 'startingIdle'
+    session.idleReady = false
     session.menuPending = false
     local idleScene = cfg.toolScenes[session.tool].idle
     CreateThread(function()
@@ -1176,7 +1200,11 @@ function Impl:OnReady()
         success = self:StartVictimToolScene(setup, token, idleScene, true)
       end
       if self.toolSession == session then
+        session.idleReady = success == true
+        if success then session.phase = 'idle' end
         self:EmitNet(self, 'toolIdleReady', setup.id, token, epoch, success == true)
+        local current = self.setups[setup.id]
+        if success and current then self:ShowToolMenu(current) end
       end
     end)
   end)
@@ -1224,7 +1252,7 @@ function Impl:OnReady()
     local chair = setup.positions and setup.positions.chair
     local distanceSq = chair and ((position.x - chair.x) ^ 2 + (position.y - chair.y) ^ 2)
     local aligned = distanceSq and distanceSq <= cfg.seatAlignment.maxDistance ^ 2
-      and IsEntityPlayingAnim(PlayerPedId(), 'missfbi3_waterboard', 'waterboard_idle_victim', 3)
+      and IsEntityPlayingAnim(PlayerPedId(), cfg.seatAlignment.dict, cfg.seatAlignment.victim, 3)
     if not aligned then
       if Config.Debug then print(('[vx_torture] seat alignment failed: %.2f m'):format(
         distanceSq and math.sqrt(distanceSq) or -1.0)) end
@@ -1367,6 +1395,8 @@ function Impl:OnReady()
         local healthy = targetReady(setup.props.chair)
           and targetReady(setup.props[session.tool])
           and IsEntityPlayingAnim(PlayerPedId(), idle.dict, clip, 3)
+        local localScene = session.actor and self.localScene or self.victimLocalScene
+        healthy = healthy and localScene and IsSynchronizedSceneRunning(localScene)
         if session.actor then
           healthy = healthy and self.camera and DoesCamExist(self.camera)
         elseif self.seated ~= setup.id then
@@ -1378,6 +1408,10 @@ function Impl:OnReady()
         if not healthy then
           self:EmitNet(self, 'toolSceneFailed', setup.id, session.token)
           self:EndToolSession(setup)
+        elseif session.actor then
+          -- Also handles a ready snapshot arriving before the local startup
+          -- coroutine has returned. The menu never stops the looping scene.
+          self:ShowToolMenu(setup)
         end
       end
     end
@@ -1390,11 +1424,19 @@ function Impl:OnReady()
     EnableControlAction(0, 1, true)
     EnableControlAction(0, 2, true)
     EnableControlAction(0, 245, true)
+    local activeSetup = self.setups[self.seated or (self.toolSession and self.toolSession.setupId)]
+    if activeSetup then
+      for _, key in ipairs({ 'chair', 'trolley', 'stool' }) do
+        if targetReady(activeSetup.props[key]) then
+          SetEntityNoCollisionEntity(PlayerPedId(), NetworkGetEntityFromNetworkId(activeSetup.props[key]), true)
+        end
+      end
+    end
     if not self.seated then return end
     local setup = self.setups[self.seated]
     if setup and not self.activeAction and not self.toolSession
       and not LocalPlayer.state.isDead and not IsEntityDead(PlayerPedId())
-      and not IsEntityPlayingAnim(PlayerPedId(), 'missfbi3_waterboard', 'waterboard_idle_victim', 3) then
+      and not IsEntityPlayingAnim(PlayerPedId(), cfg.seatAlignment.dict, cfg.seatAlignment.victim, 3) then
       self:PlayIdle(setup)
     end
   end)
