@@ -67,11 +67,14 @@ return {
         models = {
             "u_m_y_zombie_01", -- Model zombie mặc định trong GTA V
         },
-        health = 250, -- Lượng máu của zombie
+        health = 100, -- Lượng máu của zombie (100 máu thực tế)
+        deleteOnDeath = true, -- Tự động xóa xác zombie khi chết
+        deleteDelay = 3000,   -- Thời gian chờ trước khi xóa xác (mili giây, 3000 = 3 giây sau khi chết để hoàn tất ngã xuống rồi biến mất, 0 = xóa ngay lập tức)
         poison = {
             chance = 70, -- Tỷ lệ % bị nhiễm độc khi bị zombie đánh trúng (0-100%)
-            damage = 5,  -- Lượng máu bị trừ mỗi lần rút
-            interval = 4000, -- Chu kỳ rút máu (mili giây, 4000 = 4 giây) cho tới khi chết
+            duration = 3000, -- Thời gian bị nhiễm độc mỗi lần (mili giây, 3000 = 3 giây)
+            percentDamage = 30, -- Tổng % máu bị mất trong suốt 3 giây (30 = mất 30% HP trên thanh máu max 200)
+            interval = 1000, -- Chu kỳ rút máu (mili giây, 1000 = 1 giây rút 1 lần, 3 giây = 3 lần rút)
             screenEffect = true, -- Bật hiệu ứng hình ảnh trúng độc
         }
     },

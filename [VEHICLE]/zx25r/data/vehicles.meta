@@ -4,10 +4,10 @@
   <residentAnims />
   <InitDatas>
     <Item>
-      <modelName>25rpronbrt</modelName>
-      <txdName>25rpronbrt</txdName>
-      <handlingId>BATI</handlingId>
-      <gameName>25rpronbrt</gameName>
+      <modelName>zx25r</modelName>
+      <txdName>zx25r</txdName>
+      <handlingId>zx25r</handlingId>
+      <gameName>zx25r</gameName>
       <vehicleMakeName>KTM</vehicleMakeName>
       <expressionDictName>null</expressionDictName>
       <expressionName>null</expressionName>
@@ -114,7 +114,7 @@
   <txdRelationships>
     <Item>
       <parent>vehshare_truck</parent>
-      <child>25rpronbrt</child>
+      <child>zx25r</child>
     </Item>
   </txdRelationships>
 </CVehicleModelInfo__InitDataList>

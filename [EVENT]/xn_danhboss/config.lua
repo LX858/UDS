@@ -23,6 +23,14 @@ Config.Boss = {
     model = `giuly_driusmah`,
     coords = vec4(-1729.3090, -192.9891, 58.4980, 90.1931),
     health = 10000,
+    spawnSchedule = { -- daily, in the server's local timezone
+        '0 0 * * *',
+        '0 9 * * *',
+        '0 14 * * *',
+        '0 16 * * *',
+        '0 20 * * *',
+        '0 22 * * *',
+    },
     spawnOnStart = false,
     startDelay = 15, -- seconds after resource start
     autoRespawn = false,
@@ -116,22 +124,22 @@ Config.Zone = {
     radius = 50.0,
     reviveDelay = 30, -- seconds before the in-place revive (qbx_medical Revive)
     onlyWhileBoss = true, -- only while the boss is alive
+    reviveOnBossDeath = true, -- instantly revive every downed player inside the zone when the boss dies
     blip = true, -- show the zone radius on the map
 }
 
 Config.Rewards = {
-    item = 'gachabox2', -- must exist in ox_inventory, its label is read from there
-    minDamage = 10, -- minimum damage dealt to qualify
+    item = 'hom_hlw_ig', -- must exist in ox_inventory, its label is read from there
+    minDamage = 100, -- minimum damage dealt to qualify
     participation = 1, -- items for anyone who qualifies but is outside the top list
-    top = { 10, 7, 6, 5, 4, 3, 2, 2, 1, 1 }, -- items for rank 1..10 (also the ranking size)
+    top = { 20, 17, 15, 13, 10, 7, 6, 5, 4, 3 }, -- items for rank 1..10 (also the ranking size)
     showRanking = true, -- open the ranking UI for online participants when the boss dies
 }
 
--- NPC that reopens the ranking UI (also where players can claim their reward).
+-- Target point (no ped) that reopens the ranking UI (also where players can claim their reward).
 Config.Npc = {
-    model = `a_m_m_business_01`,
-    coords = vec4(-1646.4813, -165.0448, 57.2769, 128.2089),
-    spawnDistance = 60.0, -- the ped only exists client-side within this distance
+    coords = vec3(-1685.3926, -292.0206, 51.8924),
+    radius = 1.0, -- target sphere radius
     interactDistance = 2.5,
     label = 'Xem bảng xếp hạng Boss',
     icon = 'fa-solid fa-ghost',

@@ -3514,9 +3514,9 @@ return {
         weight = 100,
         description = "Sự kiện halloween 2025"
     },
-    ['candy_corn'] = {label = 'Candy Corn', weight = 100},
-    ['chocolate_bar'] = {label = 'Sô cô la', weight = 100},
-    ['pumpkin_basket'] = {label = 'Giỏ bí ngô', weight = 500},
+    ['candy_corn'] = {label = 'Candy Corn', weight = 10},
+    ['chocolate_bar'] = {label = 'Sô cô la', weight = 10},
+    ['pumpkin_basket'] = {label = 'Giỏ bí ngô', weight = 100},
     ['rotten_casket'] = {label = 'Hòm thối', weight = 1000},
 
     ["hom_hlw"] = {
@@ -3548,7 +3548,7 @@ return {
     },
 
     ["the_hlw"] = {
-        label = 'Thẻ Trung Thu',
+        label = 'Thẻ Halloween',
         weight = 10,
         stack = true,
     },

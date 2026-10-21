@@ -25,7 +25,7 @@ Config.XNClothes = {
 }
 
 -- Item used to pay for outfits (a group can override it with `costItem`).
-Config.OutfitCostItem = "the_outfit"
+Config.OutfitCostItem = "the_outfit_hlw"
 
 -- Outfit types usable as `type` in Config.Trades.outfits (same definitions as XNClothes).
 -- component: component/prop id, prop: true if it is a prop, itemname: ox_inventory item,
@@ -56,7 +56,7 @@ Config.OutfitTypes = {
 Config.TraderNpc = {
   enabled = true,
   model = "a_m_m_business_01",
-  coords = vector4(201.1613, -966.8997, 31.5085, 63.9683),
+  coords = vector4(-1685.3926, -292.0206, 51.8924, 144.4010),
   target = {
     icon = "fa-solid fa-gift",
     label = "Mở quầy quy đổi",
@@ -143,7 +143,7 @@ Config.Trades = {
       name = "Vé Đổi Xe Kogine HLW",
       image = "./assets/ve_doi_xe_hlw1.png",
       maxQuantity = 1,
-      reward = { item = "ve_doi_xe_r35", amount = 1 },
+      reward = { item = "ve_doi_xe_hlw1", amount = 1 },
       costs = {
         { item = "the_hlw", amount = 499 },
       },
@@ -153,7 +153,7 @@ Config.Trades = {
       name = "Vé Đổi Xe Poscher HLW",
       image = "./assets/ve_doi_xe_hlw2.png",
       maxQuantity = 1,
-      reward = { item = "ve_doi_xe_rongngao", amount = 1 },
+      reward = { item = "ve_doi_xe_hlw2", amount = 1 },
       costs = {
         { item = "the_hlw", amount = 299 },
       },

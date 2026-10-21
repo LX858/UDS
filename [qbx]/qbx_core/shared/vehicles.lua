@@ -452,14 +452,14 @@ return {
         type = 'bike',
         hash = `fenrir`,
     },
-    zx10rr = {
-        name = 'ZX10R',
-        brand = 'Pegassi',
-        model = 'zx10rr',
+    zx25r = {
+        name = 'zx25r',
+        brand = 'Kawasaki',
+        model = 'zx25r',
         price = 100000,
         category = 'motorcycles',
         type = 'bike',
-        hash = `zx10rr`,
+        hash = `zx25r`,
     },
     cbhornet750 = {
         name = 'CB Hornet 750',
@@ -7017,6 +7017,26 @@ return {
         category = 'sports',
         type = 'automobile',
         hash = `m5g60`,
+    },
+
+    did_halloentity3 = {
+        name = 'Entity 3 Halloween',
+        brand = 'BMW',
+        model = 'did_halloentity3',
+        price = 74392,
+        category = 'sports',
+        type = 'automobile',
+        hash = `did_halloentity3`,
+    },
+
+    did_hallocomet6 = {
+        name = 'Comet 6 Halloween',
+        brand = 'BMW',
+        model = 'did_hallocomet6',
+        price = 74392,
+        category = 'sports',
+        type = 'automobile',
+        hash = `did_hallocomet6`,
     },
 
     shabudragon = {

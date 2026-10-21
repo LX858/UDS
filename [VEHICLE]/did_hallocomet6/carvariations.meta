@@ -2,36 +2,44 @@
 
 <CVehicleModelInfoVariation>
   <variationData>
-		<Item>
-      <modelName>25rpronbrt</modelName>
+    <Item>
+      <modelName>did_hallocomet6</modelName>
       <colors>
         <Item>
           <indices content="char_array">
-            112 
-            112 
-            112 
-            112 
+            12
+            38
+            0
+            38
+            0
+            0		
           </indices>
           <liveries>
             <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
+            <Item value="false" />
           </liveries>
-        </Item>
+        </Item>	 
       </colors>
       <kits>
-        <Item>2222_25rpronbrt_modkit</Item>
+        <Item>0_default_modkit</Item>
       </kits>
       <windowsWithExposedEdges />
       <plateProbabilities>
         <Probabilities>
           <Item>
             <Name>Standard White</Name>
-            <Value value="25" />
+            <Value value="100" />
           </Item>
         </Probabilities>
       </plateProbabilities>
-      <lightSettings value="1" />
-      <sirenSettings value="0" />
+      <lightSettings value="93" />
+      <sirenSettings value="09287234223434" />
     </Item>
-
   </variationData>
 </CVehicleModelInfoVariation>

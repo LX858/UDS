@@ -7,6 +7,7 @@ local qtdGraves = #config.coordsGraves
 local isDigging = false
 local graveCooldowns = {}
 local activeZombies = {}
+local deletingZombies = {}
 local isPoisoned = false
 local poisonThreadRunning = false
 
@@ -53,9 +54,9 @@ local function applyZombiePoison()
     isPoisoned = true
     lib.notify({
         title = 'Nhiễm độc xác sống',
-        description = 'Bạn đã bị zombie đánh trúng và nhiễm độc! Độc tố đang rút máu của bạn...',
+        description = 'Bạn đã bị zombie đánh trúng và nhiễm độc! Độc tố đang rút 30% máu trong 3 giây...',
         type = 'error',
-        duration = 6000
+        duration = 3000
     })
 
     if poisonCfg.screenEffect ~= false then
@@ -65,13 +66,24 @@ local function applyZombiePoison()
     if not poisonThreadRunning then
         poisonThreadRunning = true
         CreateThread(function()
-            local damage = poisonCfg.damage or 5
-            local interval = poisonCfg.interval or 4000
+            local duration = poisonCfg.duration or 3000
+            local interval = poisonCfg.interval or 1000
+            local percentDamage = poisonCfg.percentDamage or 30
+            local totalTicks = math.max(1, math.floor(duration / interval))
 
-            while isPoisoned do
+            local ped = cache.ped
+            local maxHp = GetEntityMaxHealth(ped)
+            local usableHp = maxHp > 100 and (maxHp - 100) or maxHp
+            local totalDamage = math.floor(usableHp * (percentDamage / 100))
+            local damagePerTick = poisonCfg.damage or math.max(1, math.ceil(totalDamage / totalTicks))
+
+            local ticksElapsed = 0
+
+            while isPoisoned and ticksElapsed < totalTicks do
                 Wait(interval)
+                if not isPoisoned then break end
 
-                local ped = cache.ped
+                ped = cache.ped
                 if not DoesEntityExist(ped) or IsEntityDead(ped) then
                     clearPoison()
                     break
@@ -84,7 +96,7 @@ local function applyZombiePoison()
                     clearPoison()
                     break
                 else
-                    local newHealth = curHealth - damage
+                    local newHealth = curHealth - damagePerTick
                     ShakeGameplayCam('SMALL_EXPLOSION_SHAKE', 0.15)
                     if newHealth <= 100 then
                         SetEntityHealth(ped, 0)
@@ -94,7 +106,20 @@ local function applyZombiePoison()
                         SetEntityHealth(ped, newHealth)
                     end
                 end
+
+                ticksElapsed = ticksElapsed + 1
             end
+
+            if isPoisoned then
+                clearPoison()
+                lib.notify({
+                    title = 'Độc tố tan biến',
+                    description = 'Cơ thể bạn đã đẩy lùi được độc tố của zombie!',
+                    type = 'success',
+                    duration = 3000
+                })
+            end
+
             poisonThreadRunning = false
         end)
     end
@@ -146,7 +171,10 @@ local function spawnZombies(selectedGrave)
         SetPedSeeingRange(ped, 100.0)
         SetPedAlertness(ped, 3)
 
-        local maxHp = zConfig.health or 250
+        local cfgHp = zConfig.health or 100
+        -- Trong GTA V, ped chết khi máu <= 100 (thang 100-200 tương đương 0-100 máu thực).
+        -- Nếu config đặt <= 100, cộng thêm 100 base để zombie có đúng 100 máu thực mà không bị chết ngay khi spawn.
+        local maxHp = cfgHp > 100 and cfgHp or (100 + cfgHp)
         SetEntityMaxHealth(ped, maxHp)
         SetEntityHealth(ped, maxHp)
 
@@ -154,6 +182,40 @@ local function spawnZombies(selectedGrave)
         activeZombies[ped] = true
         SetModelAsNoLongerNeeded(modelHash)
     end
+end
+
+local function deleteZombiePed(ped)
+    local zConfig = config.zombie or {}
+    if zConfig.deleteOnDeath == false then return end
+    if not DoesEntityExist(ped) then return end
+    if deletingZombies[ped] then return end
+    deletingZombies[ped] = true
+
+    local delay = (zConfig.deleteDelay ~= nil) and zConfig.deleteDelay or 3000
+
+    CreateThread(function()
+        if delay > 0 then
+            Wait(delay)
+        end
+
+        if DoesEntityExist(ped) then
+            if NetworkGetEntityIsNetworked(ped) and not NetworkHasControlOfEntity(ped) then
+                NetworkRequestControlOfEntity(ped)
+                local timeout = 1000
+                while not NetworkHasControlOfEntity(ped) and timeout > 0 do
+                    Wait(50)
+                    timeout = timeout - 50
+                end
+            end
+
+            SetEntityAsMissionEntity(ped, true, true)
+            DeleteEntity(ped)
+            if DoesEntityExist(ped) then
+                DeletePed(ped)
+            end
+        end
+        deletingZombies[ped] = nil
+    end)
 end
 
 -- Lắng nghe sát thương từ zombie bằng event mạng
@@ -165,6 +227,11 @@ AddEventHandler('gameEventTriggered', function(event, data)
 
         if victim == cache.ped and activeZombies[attacker] and not isFatal then
             applyZombiePoison()
+        end
+
+        if activeZombies[victim] and (isFatal or IsEntityDead(victim)) then
+            activeZombies[victim] = nil
+            deleteZombiePed(victim)
         end
     end
 end)
@@ -183,7 +250,9 @@ CreateThread(function()
                     applyZombiePoison()
                 end
             else
-                activeZombies[ped] = nil
+                local deadPed = ped
+                activeZombies[deadPed] = nil
+                deleteZombiePed(deadPed)
             end
         end
 
@@ -233,7 +302,16 @@ local function generateCoords(grave)
 end
 
 local function startDigging(graveIndex, selectedGrave)
-    if isDigging then return end
+    if isDigging then return false end
+
+    if cache.vehicle or IsPedInAnyVehicle(cache.ped, false) then
+        lib.notify({
+            title = 'Đào mộ',
+            description = 'Bạn không thể đào mộ khi đang ngồi trên xe!',
+            type = 'error'
+        })
+        return false
+    end
 
     local onCd, remaining = isGraveOnCooldown(graveIndex)
     if onCd then
@@ -242,7 +320,7 @@ local function startDigging(graveIndex, selectedGrave)
             description = ('Ngôi mộ này vừa mới bị đào! Vui lòng quay lại sau %s giây.'):format(remaining),
             type = 'error'
         })
-        return
+        return false
     end
 
     if config.minCops and config.minCops > 0 then
@@ -253,7 +331,7 @@ local function startDigging(graveIndex, selectedGrave)
                 description = 'Không đủ cảnh sát online trong thành phố!',
                 type = 'error'
             })
-            return
+            return false
         end
     end
 
@@ -263,7 +341,7 @@ local function startDigging(graveIndex, selectedGrave)
             description = 'Bạn cần có xẻng để đào mộ!',
             type = 'error'
         })
-        return
+        return false
     end
 
     isDigging = true
@@ -302,8 +380,18 @@ local function startDigging(graveIndex, selectedGrave)
         TriggerServerEvent('hud:server:GainStress', math.random(12, 20))
         lib.callback.await('lonf_fruitpick:server:giveItem', false)
         spawnZombies(selectedGrave)
+        return true
     end
+
+    return false
 end
+
+-- Tự động ẩn TextUI nếu người chơi vào xe
+lib.onCache('vehicle', function(vehicle)
+    if vehicle then
+        lib.hideTextUI()
+    end
+end)
 
 -- Chế độ tự do: Tạo point cho tất cả các ngôi mộ
 local function initFreeGraves()
@@ -322,7 +410,7 @@ local function initFreeGraves()
         })
 
         function point:onEnter()
-            if not isDigging then
+            if not isDigging and not cache.vehicle and not IsPedInAnyVehicle(cache.ped, false) then
                 lib.showTextUI(textUIMsg, {
                     position = textUIPos,
                     icon = textUIIcon
@@ -335,7 +423,8 @@ local function initFreeGraves()
         end
 
         function point:nearby()
-            if config.drawMarker then
+            local inVehicle = cache.vehicle or IsPedInAnyVehicle(cache.ped, false)
+            if config.drawMarker and not inVehicle then
                 DrawMarker(2, self.coords.x, self.coords.y, self.coords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.5, 0.5, 0.5, 255, 255, 255, 50, false, true, 2, false, nil, nil, false)
             end
 
@@ -365,7 +454,7 @@ local function generatePoints()
     })
 
     function point:onEnter()
-        if not isDigging then
+        if not isDigging and not cache.vehicle and not IsPedInAnyVehicle(cache.ped, false) then
             lib.showTextUI(textUIMsg, {
                 position = textUIPos,
                 icon = textUIIcon
@@ -378,15 +467,18 @@ local function generatePoints()
     end
 
     function point:nearby()
-        if config.drawMarker then
+        local inVehicle = cache.vehicle or IsPedInAnyVehicle(cache.ped, false)
+        if config.drawMarker and not inVehicle then
             DrawMarker(2, self.coords.x, self.coords.y, self.coords.z, 0.0, 0.0, 0.0, 0.0, 0, 0.0, 0.5, 0.5, 0.5, 255, 255, 255, 50, false, true, 2, false, nil, nil, false)
         end
 
         if not isDigging and IsControlJustReleased(0, 38) then
-            startDigging(self.graveIndex, self.graveCoords)
-            point:remove()
-            Wait(500)
-            generatePoints()
+            local success = startDigging(self.graveIndex, self.graveCoords)
+            if success then
+                point:remove()
+                Wait(500)
+                generatePoints()
+            end
         end
     end
 
@@ -510,6 +602,11 @@ AddEventHandler('onResourceStop', function(resourceName)
         cleanZones()
         clearPoison()
         for ped in pairs(activeZombies) do
+            if DoesEntityExist(ped) then
+                DeleteEntity(ped)
+            end
+        end
+        for ped in pairs(deletingZombies) do
             if DoesEntityExist(ped) then
                 DeleteEntity(ped)
             end
