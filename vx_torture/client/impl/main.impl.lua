@@ -45,14 +45,6 @@ local function loadDict(dict, timeoutMs)
   return HasAnimDictLoaded(dict)
 end
 
-local function sceneOrigin(setup)
-  local chair = fromNet(setup.props.chair, 1000)
-  if not chair then return nil end
-  local offset = cfg.sceneOffset
-  local coords = GetOffsetFromEntityInWorldCoords(chair, offset.x, offset.y, offset.z)
-  return coords, (GetEntityHeading(chair) + cfg.sceneHeadingOffset) % 360.0
-end
-
 local function worldOffset(origin, heading, offset)
   local r = math.rad(heading)
   return vector3(
@@ -60,6 +52,27 @@ local function worldOffset(origin, heading, offset)
     origin.y + offset.x * math.sin(r) + offset.y * math.cos(r),
     origin.z + offset.z
   )
+end
+
+-- FBI3 animates the chair as well as the victim. Solve the scene root
+-- from the chair track so every actor and prop track shares its placement.
+local function alignedSceneOrigin(chair, heading)
+  local alignment = cfg.seatAlignment
+  if not HasAnimDictLoaded(alignment.dict) and not loadDict(alignment.dict, 3000) then
+    return nil
+  end
+  local sceneHeading = (heading + cfg.sceneHeadingOffset) % 360.0
+  local initialChair = GetAnimInitialOffsetPosition(alignment.dict, alignment.chair,
+    0.0, 0.0, 0.0, 0.0, 0.0, sceneHeading, 0.0, 2)
+  if not initialChair then return nil end
+  local desiredChair = worldOffset(chair, heading, cfg.sceneOffset)
+  return vector3(desiredChair.x - initialChair.x,
+    desiredChair.y - initialChair.y, desiredChair.z - initialChair.z), sceneHeading
+end
+
+local function sceneOrigin(setup)
+  if not targetReady(setup.props.chair) or not setup.positions.chair then return nil end
+  return alignedSceneOrigin(setup.positions.chair, setup.heading)
 end
 
 local function loadModel(model, timeoutMs)
@@ -120,15 +133,16 @@ local function placementLayout(ped, bounds, clips, objects)
   end
   local chair = positions.chair
   if chair then
-    local sceneHeading = (heading + cfg.sceneHeadingOffset) % 360.0
+    local sceneCoords, sceneHeading = alignedSceneOrigin(chair, heading)
+    if not sceneCoords then return nil end
     for _, key in ipairs(cfg.propOrder) do
       local prop = cfg.props[key]
       if bounds[key] and prop.restClip and clips[key] then
         local clip = prop.restClip
         positions[key] = GetAnimInitialOffsetPosition(cfg.layoutDict, clip,
-          chair.x, chair.y, chair.z, 0.0, 0.0, sceneHeading, 0.0, 2)
+          sceneCoords.x, sceneCoords.y, sceneCoords.z, 0.0, 0.0, sceneHeading, 0.0, 2)
         rotations[key] = GetAnimInitialOffsetRotation(cfg.layoutDict, clip,
-          chair.x, chair.y, chair.z, 0.0, 0.0, sceneHeading, 0.0, 2)
+          sceneCoords.x, sceneCoords.y, sceneCoords.z, 0.0, 0.0, sceneHeading, 0.0, 2)
       elseif bounds[key] and prop.referencePosition then
         local original = cfg.referenceChair
         local delta = prop.referencePosition - original
@@ -301,19 +315,21 @@ function Impl:AddTargets(setup)
 
   if not names.trolley and targetReady(setup.props.trolley) then
     names.trolley = { targetName('take') }
-    -- All tool choices share the trolley entity that already receives ox_target hits.
+    -- A box around the chest also receives ray hits on its top or on props
+    -- and peds in front of it; an entity-only option disappears in those cases.
     local trolleyOptions = {
     {
       name = names.trolley[1], icon = 'fa-solid fa-toolbox', label = L('trolley_take'),
       distance = cfg.interactDistance,
       canInteract = function()
         local current = self.setups[setup.id]
-        return current and current.owner == playerSource() and current.victim
-          and current.seatReady and current.toolState == 'empty' and not current.busy
+        return current and current.owner == playerSource()
+          and current.toolState == 'empty' and not current.busy
       end,
       onSelect = function()
         local current = self.setups[setup.id]
         if not current then return end
+        if not current.victim or not current.seatReady then return notify('invalid_state') end
         local options = {}
         for _, tool in ipairs(cfg.toolOrder) do
           if current.props[tool] then
@@ -351,7 +367,18 @@ function Impl:AddTargets(setup)
         end,
       }
     end
-    exports.ox_target:addEntity(setup.props.trolley, trolleyOptions)
+    local trolley = NetworkGetEntityFromNetworkId(setup.props.trolley)
+    local min, max = GetModelDimensions(GetEntityModel(trolley))
+    local center = GetOffsetFromEntityInWorldCoords(trolley,
+      (min.x + max.x) * 0.5, (min.y + max.y) * 0.5, (min.z + max.z) * 0.5)
+    local padding = cfg.trolleyTargetPadding
+    names.trolleyZone = exports.ox_target:addBoxZone({
+      name = targetName('trolley_zone'), coords = center,
+      size = vector3(max.x - min.x + padding.x,
+        max.y - min.y + padding.y, max.z - min.z + padding.z),
+      rotation = GetEntityHeading(trolley), debug = Config.Debug,
+      options = trolleyOptions,
+    })
   end
   self.targets[setup.id] = names
 end
@@ -359,10 +386,9 @@ end
 function Impl:RemoveTargets(setup)
   local names = self.targets[setup.id]
   if names then
-    for key, optionNames in pairs(names) do
-      if setup.props[key] then
-        exports.ox_target:removeEntity(setup.props[key], optionNames)
-      end
+    if names.trolleyZone then exports.ox_target:removeZone(names.trolleyZone) end
+    if names.chair and setup.props.chair then
+      exports.ox_target:removeEntity(setup.props.chair, names.chair)
     end
   end
   self.targets[setup.id] = nil
@@ -947,9 +973,10 @@ function Impl:StartPreview(token)
       self:EndPreview(token, true)
       return notify('invalid_state')
     end
-    if not loadDict(cfg.layoutDict, 4000) then
+    if not loadDict(cfg.layoutDict, 4000)
+      or not loadDict(cfg.seatAlignment.dict, 4000) then
       self:EndPreview(token, true)
-      return previewFailed('layout_dict:' .. cfg.layoutDict)
+      return previewFailed('scene_dict')
     end
     for _, key in ipairs(cfg.propOrder) do
       if self.preview ~= preview then return end
@@ -999,6 +1026,10 @@ function Impl:StartPreview(token)
         break
       end
       local placement = placementLayout(ped, preview.bounds, preview.clips, preview.objects)
+      if not placement then
+        self:EndPreview(token, true)
+        return previewFailed('scene_alignment')
+      end
       for key, entity in pairs(preview.objects) do
         local position = placement.positions[key]
         if position then
@@ -1185,6 +1216,18 @@ function Impl:OnReady()
     self.previousInvBusy = LocalPlayer.state.invBusy
     LocalPlayer.state.invBusy = true
     if not self:PlayIdle(setup) then
+      self:ReleaseSeat(setup.id)
+      return self:EmitNet(self, 'seatReady', setup.id, false)
+    end
+    Wait(250)
+    local position = GetEntityCoords(PlayerPedId())
+    local chair = setup.positions and setup.positions.chair
+    local distanceSq = chair and ((position.x - chair.x) ^ 2 + (position.y - chair.y) ^ 2)
+    local aligned = distanceSq and distanceSq <= cfg.seatAlignment.maxDistance ^ 2
+      and IsEntityPlayingAnim(PlayerPedId(), 'missfbi3_waterboard', 'waterboard_idle_victim', 3)
+    if not aligned then
+      if Config.Debug then print(('[vx_torture] seat alignment failed: %.2f m'):format(
+        distanceSq and math.sqrt(distanceSq) or -1.0)) end
       self:ReleaseSeat(setup.id)
       return self:EmitNet(self, 'seatReady', setup.id, false)
     end
