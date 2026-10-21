@@ -27,7 +27,7 @@ local function stage(dict, actor, victim, chair, tool, durationMs, effect)
 end
 
 Config.Torture = {
-  item = 'toture',
+  item = 'torture',
   placementDistance = 1.8,
   placementTimeoutMs = 60000,
   previewAlpha = 170,

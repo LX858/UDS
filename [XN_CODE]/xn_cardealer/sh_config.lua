@@ -228,6 +228,18 @@ Config.DiscountCoupons = {
         vehicle = 'omnisegt',
         event = true,
     },
+    ['ve_doi_xe_hlw2'] = {
+        label = 'Vé đổi xe Comet6',
+        discount = 100,
+        vehicle = 'did_hallocomet6',
+        event = true,
+    },
+    ['ve_doi_xe_hlw1'] = {
+        label = 'Vé đổi xe Tity3',
+        discount = 100,
+        vehicle = 'did_halloentity3',
+        event = true,
+    },
 }
 
 -- =========================================================================

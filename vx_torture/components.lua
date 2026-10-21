@@ -2,6 +2,6 @@ Components = {
   Main = {
     enabled = true,
     type = 'both',
-    priority = 1,
+    priority = 2,
   },
 }

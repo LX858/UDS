@@ -2,7 +2,7 @@
 Framework = nil
 if Config.Framework == 'esx' then
   Framework = exports["es_extended"]:getSharedObject()
-elseif Config.Framework == "qb" then
+elseif Config.Framework == "qb" or Config.Framework == "qbx" then
   Framework = exports['qb-core']:GetCoreObject()
 elseif Config.Framework == "ProjectStarboy" then
   Framework = CORE
