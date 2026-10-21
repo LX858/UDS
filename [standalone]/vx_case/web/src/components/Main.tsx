@@ -109,7 +109,7 @@ const Main = observer(() => {
                 <Box ref={arrowRef} rWidth={105} rHeight={105} background='url(./assets/muiten.png) no-repeat center center / contain' />
                 <Box ref={viewportRef} className='w-full overflow-hidden' rHeight={180}>
                     <Box ref={trackRef} className='flex h-full w-max items-center gap-[15px] px-[32px]'>
-                        {spinningItems.map((item, index) => <Box key={`${item.name}-${index}`} ref={element => { if (element) itemRefs.current.set(index, element); else itemRefs.current.delete(index); }} rWidth={150} rHeight={150} className='flex flex-shrink-0 items-center justify-center' rPadding={[15, 0, 0, 0]} background='url(./assets/item-bg.png) no-repeat center center / contain'>
+                        {spinningItems.map((item, index) => <Box key={`${item.name}-${index}`} ref={element => { if (element) itemRefs.current.set(index, element); else itemRefs.current.delete(index); }} rWidth={150} rHeight={150} className='flex flex-shrink-0 items-center justify-center' rPadding={[5, 0, 0, 0]} background='url(./assets/item-bg.png) no-repeat center center / contain'>
                             <Box rWidth={69} rHeight={69} background={`url(${getItemImage(item)}) no-repeat center center / contain`} />
                         </Box>)}
                     </Box>
