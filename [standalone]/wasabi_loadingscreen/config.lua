@@ -12,7 +12,7 @@ Config.UseLocalVideo = false -- If above you set video and you want to use a loc
 
 Config.Platform = 'streamable'  -- youtube or streamable (only used if UseLocalVideo is set to false)
 
-Config.VideoID = '2urn05' -- Only used if UseLocalVideo is set to false (if you are using a youtube video get the video code from the URL after the v= & if you are using streamable get the video code from the URL after the /)
+Config.VideoID = 'ld2rng' -- Only used if UseLocalVideo is set to false (if you are using a youtube video get the video code from the URL after the v= & if you are using streamable get the video code from the URL after the /)
 
 Config.AddBlurToBackground = false               -- Add blur to the background image/video
 
