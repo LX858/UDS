@@ -55,6 +55,7 @@ Config.Torture = {
   toolPrepareTimeoutMs = 12000,
   toolSelectTimeoutMs = 16000,
   toolIdleTimeoutMs = 10000,
+  scenePeerTimeoutMs = 4000,
   toolExitTimeoutMs = 15000,
   toolReturnAnimMs = 1000,
   toolReturnOffset = vector3(0.0, -0.85, 0.0),
@@ -99,6 +100,7 @@ Config.Torture = {
   toolScenes = {
     wrench = {
       select = { dict = 'missfbi3_weapon_select', actor = 'weapon_select_wrench_player',
+        victimLoop = true,
         victim = 'waterboard_idle_victim', camera = 'weapon_select_wrench_cam',
         chair = 'waterboard_idle_chair', tool = 'weapon_select_wrench_wrench',
         bench = { clipRight = 'weapon_bench_wrench_clip2', electric = 'weapon_bench_wrench_clip1',
@@ -124,6 +126,7 @@ Config.Torture = {
     },
     electric = {
       select = { dict = 'missfbi3_weapon_select', actor = 'weapon_select_electrocute_player',
+        victimLoop = true,
         victim = 'waterboard_idle_victim', camera = 'weapon_select_electrocute_cam',
         chair = 'waterboard_idle_chair',
         props = { electric = 'weapon_select_electrocute_r_clip',
@@ -135,6 +138,7 @@ Config.Torture = {
     },
     waterboard = {
       select = { dict = 'missfbi3_weapon_select', actor = 'weapon_select_waterboard_player',
+        victimLoop = true,
         victim = 'waterboard_idle_victim', camera = 'weapon_select_waterboard_cam',
         chair = 'waterboard_idle_chair', tool = 'weapon_select_waterboard_jerrycan',
         props = { rag = 'weapon_select_waterboard_rag' },
