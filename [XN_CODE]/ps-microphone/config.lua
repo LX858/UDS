@@ -1,6 +1,6 @@
 Config = {}
 
-Config.Showzone = false
+Config.Showzone = true
 
 Config.MicrophoneZones = {
     [1] = {
@@ -21,11 +21,11 @@ Config.MicrophoneZones = {
     },
 
     [2] = {
-        name = "quanan", 
-        coords = vector3(-570.20, -1077.03, 22.49),
+        name = "hociven", 
+        coords = vector3(2497.9719, -320.6680, 98.6852), --vector3(2497.9719, -320.6680, 98.6852)
         length = 3.4,
         width = 3.6,
-        spawnProp = false, -- if set to true, it will let you spawn the prop at location
+        spawnProp = true, -- if set to true, it will let you spawn the prop at location
         data = {
             debugPoly = Config.Showzone,
             heading = 0.0, -- Adjust this angle (0-360) to rotate the box if needed

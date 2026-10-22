@@ -17,14 +17,12 @@ return {
     treats = {
         { item = 'candy_corn', chance = 45 },
         { item = 'chocolate_bar', chance = 45 },
-        { item = 'pumpkin_basket', chance = 10 }
+        { item = 'pumpkin_basket', chance = 5 }
     },
 
     trickChance = 30, -- Chance out of 100 that player will be tricked (30 = 30%)
     trickPeds = {
-        `u_m_y_zombie_01`,
-        `u_m_m_prolsec_01`,
-        `s_m_y_clown_01`
+        `u_m_y_zombie_01`
     },
     trickWeapons = {
         `weapon_bat`,

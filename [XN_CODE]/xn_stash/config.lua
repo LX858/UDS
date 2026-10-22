@@ -82,6 +82,33 @@ Config.Stashes = {
         }
     },
 
+    balo_policehocvien = {
+        coords = vec3(2543.2028808594,-287.18615722656,93.260955810547), --
+        label = "Kho Trang Bị Học Viện",
+        job = "police",
+        stashId = "balo_policehociven",
+        slots = 100,
+        weight = 50000,
+        icon = "fas fa-shield-alt",
+        groups = {
+            police = 11
+        },
+        whitelist = {
+            'cloth_bags',
+            'cloth_helmet',
+            'cloth_bproof',
+            'stevo_policebadge',
+            'handcuffs',
+            'weapon_stungun',
+            'weapon_nightstick',
+            'nuocdua_utso',
+            'com_suon_tam_9h',
+            'ciga_hp',
+            'trada_utso',
+            'radio',
+        }
+    },
+
     kho_mechanic = {
         coords = vec3(-322.32666015625,-146.61672973633,39.015670776367),
         label = "Kho Mechanic",
