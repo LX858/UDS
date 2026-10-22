@@ -38,10 +38,16 @@ Các clip, prop và effect FBI3 lấy từ [FiveM_Torture_Research.md](./FiveM_T
 
 ## Kiểm thử trong FiveM
 
-Thử với ít nhất ba client: một/nhiều người trong 3 m, khác bucket, người khác cố target ghế/tủ, cảnh chọn và chờ của cả năm món, menu sau mỗi đòn, Thoát/trả món, spam option, giảm máu đến 101, tiêm quá liều, ngắt kết nối và restart resource giữa từng giai đoạn. Kiểm tra cả freemode nam/nữ, trang phục cồng kềnh và map dự kiến dùng. Actor và object dùng network scene; client nạn nhân chạy clip tương ứng bằng `TaskPlayAnimAdvanced` vì ped đó thuộc client nạn nhân. Các offset và thời điểm attach cần được căn chỉnh trực tiếp trên server.
+Thử với ít nhất ba client: một/nhiều người trong 3 m, khác bucket, người khác cố target ghế/tủ, cảnh chọn và chờ của cả năm món, menu sau mỗi đòn, Thoát/trả món, spam option, giảm máu đến 101, tiêm quá liều, ngắt kết nối và restart resource giữa từng giai đoạn. Kiểm tra cả freemode nam/nữ, trang phục cồng kềnh và map dự kiến dùng. Actor và object dùng network scene. Server chuyển ID scene đúng token/epoch sang nạn nhân; client sở hữu ped nạn nhân lấy local scene handle rồi dùng `TaskSynchronizedScene` tham gia cùng scene. Actor tiếp tục phát scene trong lúc chờ nạn nhân xác nhận; nếu thiếu xác nhận thì hủy thao tác. Nạn nhân không có quyền dừng network scene của actor. Trạng thái ngồi ngoài phiên dụng cụ dùng clip `waterboard_idle_victim` trong scene 0 của FBI3 (`missfbi3_weapon_select`); ghế chỉ được actor điều khiển khi chạy cảnh dụng cụ.
 
 Khi thay đổi `config.lua` hoặc mã Lua, chạy `restart vx_torture`. Bộ ghế không lưu qua restart; tất cả session và object của resource sẽ được dọn.
 
 Để căn điểm target của từng món, đặt `Config.Debug = true` rồi restart resource. Khi chủ ghế đứng gần trolley, dấu cầu màu cam chỉ tâm chọn của các món đang để trên bàn. Chỉnh `targetOffset` tương ứng trong `Config.Torture.props` nếu tâm nằm lệch khỏi phần muốn nhắm, rồi restart và thử lại. Dấu cầu chỉ hiện trong chế độ debug.
+
+`Config.DebugZones` điều khiển riêng việc vẽ BoxZone; mặc định `false`. Dòng “Creating new BoxZone with debug enabled” của ox_target là thông báo khi bật lựa chọn này, không phải lỗi target.
+
+Nếu nạn nhân vẫn lệch hoặc không vào scene, mở F8 trên cả actor và victim rồi chạy `vx_torture_diag` tại thời điểm lỗi. Log cho biết role, token/epoch, trạng thái menu, network/local scene ID, phase/rate, gốc scene và tọa độ ghế/nạn nhân. Hai client có thể có local handle khác nhau nhưng phải có cùng network scene ID trong phiên dụng cụ. Lỗi “Victim cannot resolve actor scene” chỉ việc scene chưa stream; “Victim scene missing/off chair” chỉ việc ped chưa thực hiện clip hoặc vị trí cách ghế quá xa. Thiếu xác nhận nạn nhân sẽ hủy scene và không gây sát thương.
+
+Harness hồi quy: cài Python package `lupa`, chạy `python tests/run_scene_flow.py`. Harness thực thi các hàm Lua thật với native giả lập để kiểm tra năm menu/scene chờ, cleanup camera, scene dùng chung, token/epoch, xác nhận hai phía và sát thương một lần. Nó không chứng minh vị trí skeleton, camera hiển thị hoặc OneSync replication trong FiveM.
 
 Nếu vẫn hiện “Không thể đặt bộ ghế tại đây”, đặt `Config.Debug = true` rồi restart resource. Lỗi trước khi preview xuất hiện sẽ ghi lý do vào F8 của client; lỗi sau khi nhấn E sẽ ghi lý do vào console server (ví dụ `wrench:scene_bounds` hoặc `chair:spawn`).

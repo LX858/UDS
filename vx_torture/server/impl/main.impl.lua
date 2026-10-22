@@ -418,9 +418,6 @@ function Impl:StartStage(setup, index)
   local snapshot = self:Snapshot(setup)
   self:EmitNet(self, 'playStage', setup.owner, snapshot, busy.token, busy.key, index)
   self:EmitNet(self, 'playStage', setup.victim, snapshot, busy.token, busy.key, index)
-  if stageData.effect then
-    self:EmitNet(self, 'stageEffect', -1, snapshot, busy.token, busy.key, index)
-  end
   SetTimeout(cfg.stageTimeoutMs, function()
     if self.setups[setup.owner] == setup and setup.busy == busy and busy.stage == index then
       self:CancelAction(setup, true)
@@ -552,6 +549,12 @@ function Impl:OnReady()
       or peer.step ~= step or peer.netScene ~= netScene or not sceneStage(setup, token, kind, step) then return end
     peer.ready = success == true and isAlive(source) and GetPlayerRoutingBucket(source) == setup.bucket
     self:EmitNet(self, 'victimSceneReady', setup.owner, token, kind, step, netScene, peer.ready)
+    if peer.ready and kind == 'action' then
+      local stage = sceneStage(setup, token, kind, step)
+      if stage.effect then
+        self:EmitNet(self, 'stageEffect', -1, self:Snapshot(setup), token, setup.busy.key, step)
+      end
+    end
   end)
   self:OnNet('seatReady', function(setupId, success)
     local setup

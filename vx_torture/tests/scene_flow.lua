@@ -7,7 +7,7 @@ vecmt.__add = function(a, b) return vector3(a.x+b.x, a.y+b.y, a.z+b.z) end
 vecmt.__len = function(a) return math.sqrt(a.x*a.x+a.y*a.y+a.z*a.z) end
 Locales = { default = {} }
 function L(key) return key end
-local now, nextScene, nextCam = 0, 100, 5000
+local now, nextScene, nextLocalScene, nextCam = 0, 100, 50000, 5000
 local scenes, cams, attached, positions, activePed = {}, {}, {}, {}, {}
 local pedTasks = {}
 local events, threads, timers, menus, openMenu = {}, {}, {}, {}, nil
@@ -103,12 +103,19 @@ function NetworkStopSynchronisedScene(scene)
   if activePed[scenes[scene].ped] == scene then activePed[scenes[scene].ped]=nil end
 end
 function NetworkGetLocalSceneFromNetworkId(scene) return scene+1000 end
-function SetSynchronizedSceneLooped(id,v) scenes[id-1000].looped=v end
-function SetSynchronizedSceneHoldLastFrame(id,v) scenes[id-1000].hold=v end
-function SetSynchronizedSceneRate(id,rate) scenes[id-1000].rate=rate end
-function IsSynchronizedSceneRunning(id) return scenes[id-1000] and scenes[id-1000].running end
+function CreateSynchronizedScene(x,y,z,rx,ry,rz)
+  nextLocalScene=nextLocalScene+1
+  scenes[nextLocalScene]={pos=vector3(x,y,z),heading=rz,tracks={},localScene=true}
+  return nextLocalScene
+end
+local function sceneFor(id) return scenes[id>=50000 and id or id-1000] end
+function SetSynchronizedSceneLooped(id,v) sceneFor(id).looped=v end
+function SetSynchronizedSceneHoldLastFrame(id,v) sceneFor(id).hold=v end
+function SetSynchronizedSceneRate(id,rate) sceneFor(id).rate=rate end
+function SetSynchronizedScenePhase(id,phase) sceneFor(id).phase=phase end
+function IsSynchronizedSceneRunning(id) return sceneFor(id) and sceneFor(id).running end
 function GetSynchronizedScenePhase(id)
-  local s=scenes[id-1000]; local phase=(now-s.started)/1000
+  local s=sceneFor(id); local phase=(s.phase or 0)+(now-s.started)/1000
   return s.looped and phase%1 or math.min(1,phase)
 end
 function IsEntityPlayingAnim(ped,dict,clip)
@@ -116,12 +123,20 @@ function IsEntityPlayingAnim(ped,dict,clip)
   local task=pedTasks[ped]
   return s and s.running and task and task.dict==dict and task.clip==clip or false
 end
-function TaskSynchronizedScene(ped,localScene,dict,clip,a,b,flags)
-  assert(scenes[localScene-1000], 'victim requires the local handle of the actor scene')
-  assert((flags & 8)==0, 'victim cannot abort its borrowed scene')
-  activePed[ped]=localScene-1000; pedTasks[ped]={dict=dict,clip=clip}
+function TaskSynchronizedScene(ped,localScene,dict,clip,a,b,flags,ragdoll,mover,ik)
+  assert(scenes[localScene] and scenes[localScene].localScene,
+    'victim must task its own local scene')
+  assert((flags & 4)~=0 and (flags & 1024)~=0 and (flags & 2048)~=0)
+  assert((flags & 8)==0, 'victim task must not abort the actor scene')
+  assert(ragdoll==0 and mover==1000.0 and ik==0)
+  scenes[localScene].running=true; scenes[localScene].started=now
+  activePed[ped]=localScene; pedTasks[ped]={dict=dict,clip=clip}
 end
-function ClearPedTasks(ped) activePed[ped]=nil end
+function ClearPedTasks(ped)
+  local id=activePed[ped]
+  if id and scenes[id] and scenes[id].localScene then scenes[id].running=false end
+  activePed[ped]=nil
+end
 ClearPedTasksImmediately=ClearPedTasks
 function CreateCam() nextCam=nextCam+1; cams[nextCam]=true; return nextCam end
 function DoesCamExist(id) return cams[id] end
@@ -178,11 +193,17 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   for _=1,4 do Wait(7300); client:ShowToolMenu(setup) end
   assert(stops==before and scene.running and scene.looped, 'menu must not stop idle playback')
   lib.hideContext()
-  local actorScene=client.scene; local count=nextScene
+  local actorScene=client.scene; local count=nextScene; local localCount=nextLocalScene
   client.seated=7; currentPlayer=2
   assert(client:JoinVictimScene(setup,Config.Torture.toolScenes[tool].idle,actorScene,true,function() return true end))
-  assert(client.victimMasterScene==actorScene and client.victimLocalScene==actorScene+1000)
-  assert(nextScene==count, 'victim must not create a competing scene')
+  assert(client.victimMasterScene==actorScene and client.victimLocalScene==nextLocalScene)
+  assert(nextScene==count and nextLocalScene==localCount+1,
+    'victim must create only a local ped scene')
+  assert(scenes[client.victimLocalScene].pos.x==origin.x
+    and scenes[client.victimLocalScene].pos.y==origin.y
+    and scenes[client.victimLocalScene].heading==heading,
+    'victim and actor must use the same scene origin')
+  assert(scene.rate~=0, 'actor scene must not pause while waiting for the victim')
   client:StopVictimScene(); assert(scene.running, 'victim cleanup must not stop the actor scene')
   client.seated=nil; currentPlayer=1
   client:StopStage() -- StopCamAnim deliberately does not exist in this environment.
@@ -193,7 +214,19 @@ print(('PASS: select -> looping idle/menu, camera cleanup, matching peer origins
 client.seated=7; currentPlayer=2
 assert(client:PlayIdle(setup))
 assert(scenes[client.victimScene].dict=='missfbi3_weapon_select')
-assert(scenes[client.victimScene].tracks[setup.props.chair].clip=='waterboard_idle_chair')
+assert(scenes[client.victimScene].tracks[setup.props.chair]==nil,
+  'victim base idle must not compete for control of the chair')
+ClearPedTasks(2)
+local beforeRecovery=nextLocalScene
+client.victimSceneStarting=true
+client.intervals.seatControl()
+assert(nextLocalScene==beforeRecovery, 'seat watchdog must not restart a scene still starting')
+client.victimSceneStarting=false
+client.nextSeatRecoveryAt=0
+client.intervals.seatControl()
+assert(nextLocalScene==beforeRecovery+1, 'seat watchdog must recover a lost task once')
+client.intervals.seatControl()
+assert(nextLocalScene==beforeRecovery+1, 'seat watchdog must be rate limited')
 client:StopVictimScene(); client.seated=nil; currentPlayer=1
 
 session('wrench'); client.toolSession.phase='select'; setup.toolReady=false
@@ -219,7 +252,7 @@ assert(client.scene==nil and client.camera==nil)
 failCamera=false
 autoAck=false
 assert(not client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
-assert(client.scene==nil and client.camera==nil, 'missing victim ack must clean up paused scene/camera')
+assert(client.scene==nil and client.camera==nil, 'missing victim ack must clean up scene/camera')
 autoAck=true
 print('PASS: readiness ordering, stale epochs, action menu, rejection recovery, camera failure cleanup')
 
