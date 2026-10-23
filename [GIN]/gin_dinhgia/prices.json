@@ -1,14 +1,14 @@
 {
+    "diamond": {
+        "price": 2332,
+        "oldPrice": 2455
+    },
     "goldchain": {
-        "oldPrice": 54044,
-        "price": 53503
+        "price": 71061,
+        "oldPrice": 64019
     },
     "rolex": {
-        "oldPrice": 2708,
-        "price": 2518
-    },
-    "diamond": {
-        "oldPrice": 3743,
-        "price": 4304
+        "price": 1194,
+        "oldPrice": 1207
     }
 }

@@ -210,7 +210,7 @@ Config.PersonalStashes = {
         weight = 100000, -- 200kg
         icon = "fas fa-warehouse",
         groups = nil,
-        takeOnly = false -- Chỉ có thể lấy đồ ra, không thể cất vào
+        takeOnly = true -- Chỉ có thể lấy đồ ra, không thể cất vào
     }
 }
 

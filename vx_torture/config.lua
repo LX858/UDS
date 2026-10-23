@@ -2,7 +2,7 @@ Config = {}
 Config.Dependencies = {}
 Config.Locale = 'default'
 Config.Settings = { locale = Locales[Config.Locale] or Locales['default'] }
-Config.Debug = false
+Config.Debug = true
 Config.DebugZones = false
 Config.Nui = false
 Config.Dev = false
