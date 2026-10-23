@@ -22,6 +22,9 @@ local failActorTask, loseActorAt, delayedStops = false, nil, {}
 local loseActorAgainAt, failActorRecovery = nil, false
 local frozenActorPhase, localHandleDelay = nil, 0
 local numericAnimResult=false
+local remoteSceneReadyAt, remoteActorMissing, waitHook
+local sceneAccess = {}
+function SetEntityRemoteSyncedScenesAllowed(entity,allowed) sceneAccess[entity]=allowed end
 local realClipLengths=false
 local shortWaterTransitions=false
 local retainStoppedSceneState=false
@@ -80,6 +83,7 @@ SetEntityNoCollisionEntity, DisableAllControlActions, EnableControlAction = noop
 function GetGameTimer() return now end
 function Wait(ms)
   now = now + math.max(ms,20)
+  if waitHook then local hook=waitHook; waitHook=nil; hook() end
   -- Model the reported delayed stop: stopping the old scene AFTER assigning
   -- the same ped/props to a successor can erase their tasks on the next tick.
   for _, stop in ipairs(delayedStops) do
@@ -198,6 +202,8 @@ end
 function NetworkAddEntityToSynchronisedScene(entity,scene,dict,clip,a,b,flags)
   assert(GetAnimDuration(dict,clip)>0, 'unknown entity clip: '..dict..'/'..clip)
   scenes[scene].tracks[entity] = { dict=dict,clip=clip,flags=flags }
+  local count=0; for _ in pairs(scenes[scene].tracks) do count=count+1 end
+  assert(count<=3, 'network scene exceeds portable non-ped track capacity')
 end
 function NetworkStartSynchronisedScene(scene)
   local s=scenes[scene]; s.started=now; s.running=true
@@ -214,6 +220,7 @@ function NetworkStopSynchronisedScene(scene)
   delayedStops[#delayedStops+1]={ped=scenes[scene].ped,scene=scene,retain=retainStoppedSceneState}
 end
 function NetworkGetLocalSceneFromNetworkId(scene)
+  if currentPlayer==2 and remoteSceneReadyAt and now<remoteSceneReadyAt then return -1 end
   if scenes[scene] and now-scenes[scene].started<localHandleDelay then return -1 end
   return scene+1000
 end
@@ -230,6 +237,7 @@ function GetSynchronizedScenePhase(id)
   return s.looped and phase%1 or math.min(1,phase)
 end
 function IsEntityPlayingAnim(ped,dict,clip)
+  if currentPlayer==2 and ped==1 and remoteActorMissing then return 0 end
   local s=scenes[activePed[ped]]
   local task=pedTasks[ped]
   local playing = task and task.dict==dict and task.clip==clip
@@ -321,10 +329,24 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   assert(client:ValidateSceneAssets(setup,Config.Torture.toolScenes[tool].idle), tool..' idle assets')
   local transitionClears=clears
   assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes[tool].select,false))
+  local selectedBench=client.benchScenes
+  if selectedBench then
+    local tracks=0
+    for _,id in ipairs(selectedBench) do
+      assert(not scenes[id].ped, 'bench scene must never contain a second actor task')
+      for _ in pairs(scenes[id].tracks) do tracks=tracks+1 end
+    end
+    local expectedTracks=0
+    for key in pairs(Config.Torture.toolScenes[tool].select.bench or {}) do
+      if key~='trolley' then expectedTracks=expectedTracks+1 end
+    end
+    assert(tracks==expectedTracks and #selectedBench==math.ceil(tracks/3))
+  end
   local selectedScene, selectedCamera = client.scene, client.camera
   assert(scenes[selectedScene].running and scenes[selectedScene].hold and cams[selectedCamera],
     'selection must keep its task and camera while waiting for the idle event')
   assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes[tool].idle,true))
+  for _,id in ipairs(selectedBench or {}) do assert(not scenes[id].running, 'every bench group must stop at handoff') end
   assert(clears==transitionClears, 'select-to-idle must not clear the actor task')
   for key,clip in pairs(Config.Torture.toolScenes[tool].idle.handProps or {}) do
     assert(attached[setup.props[key]] and handAnims[setup.props[key]].clip==clip)
@@ -480,13 +502,47 @@ client:StopVictimScene(); client.seated=nil; currentPlayer=1
 client.seated=7; currentPlayer=2
 client.toolSession={setupId=7,token='token',tool='wrench',actor=false,phase='prepare'}
 local delayedEvents=#events
-client.handlers.joinVictimScene(setup,'token','select',0,444,
+Wait(0) -- deliver the previous test's queued engine stop before its successor
+local replicatedSelect=NetworkCreateSynchronisedScene(0,0,0,0,0,0,2,true,false)
+client:AddActorTrack(replicatedSelect,1,'missfbi3_weapon_select','weapon_select_wrench_player',false)
+NetworkStartSynchronisedScene(replicatedSelect)
+remoteSceneReadyAt=now+120
+client.handlers.joinVictimScene(setup,'token','select',0,replicatedSelect,
   Config.Torture.toolScenes.wrench.select,true)
 assert(#threads==1 and #events==delayedEvents)
 client.toolSession.phase='select'
 drain()
+assert(advancedTasks[2].phase>=.12, 'join must sample replicated scene after streaming delay')
+remoteSceneReadyAt=nil
 assert(events[#events].name=='victimSceneReady' and events[#events].args[6]==true,
   'victim must acknowledge a bind delivered before its select phase')
+local joinedTasks=advancedCount
+client.handlers.joinVictimScene(setup,'token','select',0,replicatedSelect,
+  Config.Torture.toolScenes.wrench.select,true)
+drain(); assert(advancedCount==joinedTasks, 'duplicate bind cannot restart/teleport a ped')
+
+-- Previously both cases silently started phase 0 and returned success.
+local beforeMissing=advancedCount
+local ok,why=client:JoinVictimScene(setup,Config.Torture.toolScenes.wrench.select,
+  987654,true,function() return true end)
+assert(not ok and why=='remote_scene_timeout' and advancedCount==beforeMissing)
+remoteActorMissing=true
+ok,why=client:JoinVictimScene(setup,Config.Torture.toolScenes.wrench.select,
+  replicatedSelect,true,function() return true end)
+assert(not ok and why=='remote_actor_timeout' and advancedCount==beforeMissing,
+  'numeric false on remote actor must not authorize independent victim motion')
+remoteActorMissing=false
+
+-- If the session changes while the engine scene streams, the old coroutine
+-- must not start its TaskPlayAnimAdvanced over the successor.
+local joinCurrent=true
+remoteSceneReadyAt=now+200
+waitHook=function() joinCurrent=false end
+ok,why=client:JoinVictimScene(setup,Config.Torture.toolScenes.wrench.select,
+  replicatedSelect,true,function() return joinCurrent end)
+assert(not ok and why=='victim_state_changed' and advancedCount==beforeMissing)
+remoteSceneReadyAt=nil
+print('PASS: delayed remote replication, missing actor/clock rejection, duplicate binds and canceled join leave ped untouched')
 client:StopVictimScene(); client.toolSession=nil; client.seated=nil; currentPlayer=1
 
 session('wrench'); client.toolSession.phase='select'; setup.toolReady=false
@@ -789,6 +845,22 @@ local function bind(token,kind,step)
 end
 server:TakeTool(1,7,'wrench'); local token=setup.toolToken
 assert(setup.toolState=='selecting')
+for _,entity in pairs(setup.props) do assert(sceneAccess[entity]==true) end
+assert(sceneAccess[1]==nil and sceneAccess[2]==nil, 'never allow remote control of player peds')
+local packet={sceneId=77,animDictHash=joaat('missfbi3_wrench'),
+  nonPedEntities={{objectId=setup.props.chair},{objectId=setup.props.wrench}},
+  pedEntities={{objectId=1}},mapEntities={}}
+assert(server:ValidatePropScene(1,packet))
+assert(not server:ValidatePropScene(3,packet), 'remote scene opt-in must still reject non-owner operators')
+packet.pedEntities={{objectId=2}}
+assert(not server:ValidatePropScene(1,packet), 'operator must not task victim ped from its scene')
+packet.pedEntities={{objectId=1}}; packet.animDictHash=joaat('unrelated_dictionary')
+assert(not server:ValidatePropScene(1,packet))
+packet.animDictHash=joaat('missfbi3_wrench')
+packet.nonPedEntities[#packet.nonPedEntities+1]={objectId=99999}
+assert(not server:ValidatePropScene(1,packet), 'cannot smuggle unrelated props into authorized scene')
+table.remove(packet.nonPedEntities)
+assert(server:ValidatePropScene(3,{nonPedEntities={{objectId=99999}}}), 'unrelated resource scenes are untouched')
 send(1,'readyTool',7,token,true); send(2,'readyTool',7,token,true)
 assertVictimFirst('playToolSelect')
 bind(token,'select',0)
@@ -826,7 +898,9 @@ send(1,'toolIdleReady',7,token,1,true); send(2,'toolIdleReady',7,token,1,true); 
 send(1,'toolIdleReady',7,token,2,true); send(2,'toolIdleReady',7,token,2,true)
 send(1,'exitTool',7,token); assert(setup.toolState=='exiting')
 send(1,'toolExited',7,token,true); assert(setup.toolState=='empty' and setup.tool==nil)
-print('PASS: server select -> idle -> action -> idle -> exit, two-peer readiness and damage once')
+for _,entity in pairs(setup.props) do assert(sceneAccess[entity]==false) end
+assert(not server:ValidatePropScene(1,packet), 'closed session cannot animate resource props')
+print('PASS: server select -> idle -> action -> idle -> exit, guarded prop scene permission, two-peer readiness and damage once')
 
 -- A completed actor animation without a matching victim handshake cannot deal damage.
 setup.tool='wrench'; setup.toolState='idle'; setup.toolReady=true; setup.toolToken='second'

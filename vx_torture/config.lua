@@ -96,6 +96,7 @@ Config.Torture = {
   toolSelectTimeoutMs = 16000,
   toolIdleTimeoutMs = 10000,
   scenePeerTimeoutMs = 4000,
+  sceneReplicationTimeoutMs = 2000,
   toolExitTimeoutMs = 15000,
   toolReturnAnimMs = 1000,
   toolReturnOffset = vector3(0.0, -0.85, 0.0),

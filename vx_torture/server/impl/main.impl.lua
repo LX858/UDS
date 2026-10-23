@@ -43,6 +43,58 @@ function Impl:Notify(src, key)
   self:EmitNet(self, 'notify', src, key)
 end
 
+function Impl:SetPropSceneAccess(setup, allowed)
+  for key, entity in pairs(setup.entities) do
+    if DoesEntityExist(entity) then
+      local net = NetworkGetNetworkIdFromEntity(entity)
+      self.sceneProps[net] = { setup = setup, key = key }
+      -- Allow only our props, never either player ped. The native engine
+      -- owner may change between RequestControl and the scene packet arriving.
+      if SetEntityRemoteSyncedScenesAllowed then SetEntityRemoteSyncedScenesAllowed(entity, allowed) end
+    end
+  end
+end
+
+function Impl:ValidatePropScene(sender, data)
+  local setup
+  for _, track in ipairs(data.nonPedEntities or {}) do
+    local entry = self.sceneProps[track.objectId]
+    if entry then
+      if setup and setup ~= entry.setup then return false end
+      setup = entry.setup
+    end
+  end
+  if not setup then return true end -- unrelated resources keep their own policy
+  if self.setups[setup.owner] ~= setup or tonumber(sender) ~= setup.owner
+    or setup.toolState == 'empty' or setup.toolState == 'exiting'
+    or not setup.seatReady or not isAlive(setup.owner) or not isAlive(setup.victim)
+    or GetPlayerRoutingBucket(setup.owner) ~= setup.bucket
+    or GetPlayerRoutingBucket(setup.victim) ~= setup.bucket
+    or not near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0) then return false end
+  local dictionaries = { [joaat('missfbi3_weapon_select_trolley')] = true }
+  for _, scene in pairs(cfg.toolScenes[setup.tool] or {}) do dictionaries[joaat(scene.dict)] = true end
+  for _, action in pairs(cfg.actions) do
+    if action.tool == setup.tool then
+      for _, scene in ipairs(action.stages) do dictionaries[joaat(scene.dict)] = true end
+    end
+  end
+  -- Hashes arrive as unsigned uint32; joaat can be signed in Lua runtimes.
+  local dictionaryAllowed = false
+  for hash in pairs(dictionaries) do
+    if hash == data.animDictHash or (type(hash) == 'number' and type(data.animDictHash) == 'number'
+      and (hash & 0xffffffff) == (data.animDictHash & 0xffffffff)) then dictionaryAllowed = true break end
+  end
+  if not dictionaryAllowed or data.hasAttachEntity or #(data.mapEntities or {}) > 0 then return false end
+  for _, track in ipairs(data.nonPedEntities or {}) do
+    local entry = self.sceneProps[track.objectId]
+    if not entry or entry.setup ~= setup then return false end
+  end
+  for _, track in ipairs(data.pedEntities or {}) do
+    if track.objectId ~= NetworkGetNetworkIdFromEntity(GetPlayerPed(setup.owner)) then return false end
+  end
+  return true
+end
+
 function Impl:PlaceFailed(src, reason)
   if Config.Debug then
     print(('[vx_torture] Không đặt được ghế cho %s: %s'):format(src, reason))
@@ -93,6 +145,7 @@ end
 function Impl:StopTool(setup, failed, reason)
   if not setup.tool or setup.toolState == 'empty' then return end
   local token = setup.toolToken
+  self:SetPropSceneAccess(setup, false)
   self:EmitNet(self, 'stopEffects', -1, token)
   if failed then
     local peer = setup.peerScene
@@ -185,6 +238,9 @@ end
 
 function Impl:Pack(setup, notifyOwner)
   self:Release(setup)
+  for net, entry in pairs(self.sceneProps) do
+    if entry.setup == setup then self.sceneProps[net] = nil end
+  end
   self.setups[setup.owner] = nil
   self.pending[setup.owner] = nil
   self:EmitNet(self, 'setupRemoved', -1, setup.id)
@@ -403,6 +459,7 @@ function Impl:TakeTool(src, setupId, tool)
   setup.toolPhase = nil
   setup.toolPhaseAt = GetGameTimer()
   setup.toolReadyPeers = {}
+  self:SetPropSceneAccess(setup, true)
   self:Sync(setup)
   local snapshot = self:Snapshot(setup)
   self:EmitNet(self, 'prepareTool', src, snapshot, setup.toolToken)
@@ -494,6 +551,7 @@ function Impl:FinishAction(setup)
 end
 
 function Impl:Init()
+  self.sceneProps = {}
   self.setups = {}
   self.seated = {}
   self.pending = {}
@@ -503,7 +561,16 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] FBI3 effects v10 loaded (server)')
+  print('[vx_torture] scene replication v11 loaded (server)')
+  self:AddEventHandler('startNetworkSyncedSceneEvent', function(sender, data)
+    if not self:ValidatePropScene(sender, data) then
+      CancelEvent()
+      if Config.Debug then
+        print(('[vx_torture] prop_scene_rejected sender=%s scene=%s dict=%s')
+          :format(sender, data.sceneId, data.animDictHash))
+      end
+    end
+  end)
   exports.qbx_core:CreateUseableItem(cfg.item, function(src)
     self:BeginPlacement(src)
   end)
@@ -581,7 +648,8 @@ function Impl:OnReady()
     peer.ready = success == true and isAlive(source) and GetPlayerRoutingBucket(source) == setup.bucket
     -- Diagnostic reasons are a fixed vocabulary, never client-provided log text.
     local reasons = { victim_wrong_seat = true, victim_state_timeout = true,
-      victim_scene_late = true, victim_track_failed = true, victim_state_changed = true }
+      victim_scene_late = true, victim_track_failed = true, victim_state_changed = true,
+      remote_scene_timeout = true, remote_actor_timeout = true }
     local failure = not peer.ready and (reasons[reason] and reason or 'victim_rejected') or nil
     if failure then
       print(('[vx_torture] peer_ack_failed reason=%s setup=%s token=%s kind=%s step=%s scene=%s')
