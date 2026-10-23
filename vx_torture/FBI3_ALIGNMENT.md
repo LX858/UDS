@@ -56,6 +56,35 @@ Người dùng báo dừng sau khi nghiêng ghế và mở can. Kiểm tra tìm 
 
 Nhánh kết thúc dùng scene **31 → 32** của `func_429`, đúng lệnh `func_428(31, ...)` ở case 4 của luồng nước; scene 30 là quay lại chờ để dội tiếp. Scene 31 dùng actor `Waterboard_Loop_To_Ready_Player`, victim/chair/rag `Waterboard_Loop_*` và camera `Waterboard_Loop_Cam`. Trong bản network, `victimProps.rag` đưa khăn loop cùng clock ghế/nạn nhân để loop nền không kéo dài clip actor ngắn. Hai frame dừng/chuyển scene và cơ chế ped của các dụng cụ khác không đổi.
 
+### Âm thanh và particle của toàn bộ dụng cụ — v10
+
+Đã đối chiếu `func_250/251`, `func_429` và nhánh dụng cụ trong [FBI3 gốc](https://github.com/YimMenu/GTA-V-Decompiled-Scripts/blob/master/decompiled_scripts/fbi3.c). `tests/fbi3_effect_reference.json` lưu 17 tên sound, 6 tên particle, URL và SHA-256 nguồn; cả 6 particle cũng được kiểm tra trong dictionary `scr_fbi3` của [danh mục asset](https://github.com/DurtyFree/gta-v-data-dumps/blob/master/particleEffectsCompact.json). Đây là xác minh tên và cách gọi trong nguồn, chưa chứng minh âm thanh phát được trên build server.
+
+| Luồng | Hiệu ứng bổ sung | Mốc/điểm phát |
+| --- | --- | --- |
+| Chọn dụng cụ | `Choose_Wrench/Pliers/Electric/Water`, `Water_Pick_Up`, `Electric_Hum` | Sound chọn ở đầu scene; lấy can ở phase 0.14; hum ở 0.222, tại battery |
+| Cờ lê | `Wrench_Hit_Shin` | Trái 0.393; giữa 0.185; phải 0.245, tại nạn nhân |
+| Kìm | `Teeth_Initial_Pain`, `Teeth_Pulling`, `Teeth_Tooth_Out`; `blood_mouth`, `blood_extraction`, `blood_throwaway` | Loop mạnh có máu miệng; outro có extraction ở phase 0.071, bone 31086 + offset (0,0.1,0). Răng `prop_ld_tooth` gắn tay trái actor bone 60309, dọn cuối stage. Tooth_Out: outro 0.01, outro_b 0.06 |
+| Điện | Hum, Zap, Spark, `Electrical_Clamp_On/Off`; `elec_smoulder`, `elec_sparks`; rung camera | Smoulder bone 39317; smoke evolution 0 trong shock và giảm 1→0 theo phase outro hai bên; spark tại kẹp; rung ROAD_VIBRATION_SHAKE 0.25 chỉ camera actor |
+| Can nước | `Water_Pour_Water`, `dirty_water_pour` | Chỉ loop dội; particle trên can tại (0.15,0.025,0.2), tiếng nước tại nạn nhân |
+| ECG/ống tiêm | `Heart_Monitor_Single`, `Heart_Monitor_Flatline`; audio mix ADRENALINE | ECG trên object ecg khi có người ngồi, BPM cấu hình mặc định 80; ngừng beep khi flatline của option quá liều bắt đầu |
+
+Tên sound đầy đủ `FBI_03_*` truyền audioRef NULL (`0`) như nguồn. `Electrical_Clamp_On/Off` và `Teeth_Initial_Pain` dùng `FBI_03_Torture_Sounds`. Audio bank tải với thời hạn 2 giây, quản lý số phiên đang dùng và chỉ `ReleaseNamedScriptAudioBank` sau khi sound đã dừng và không còn phiên cần bank đó. Mỗi client gần ghế phát một bản local, tránh phát network sound/particle trùng do broadcast. Audio mix riêng dụng cụ chỉ áp dụng cho hai người tham gia.
+
+Các điều chỉnh để phù hợp menu hiện tại: tiếng chọn được đặt ở đầu scene thay cho hover trong menu gốc; Intensity nhổ nhẹ/mạnh cố định 0.25/1.0; `Teeth_Initial_Pain` ở intro; spark phase 0.11 và tiếng spark 0.146 được gắn vào shock loop thay cho nhánh input `Electrocute_Spark` riêng; clamp-off phát khi trở về idle (hai bên có thêm outro). Không đổi clip, camera track, origin hay cơ chế sync ped. Không thêm thoại cố định của Trevor/MisterK, nhạc hoặc các audio scene ngoài khu vực dụng cụ. Nguồn không khai báo particle hay sound riêng cho mũi tiêm; dùng audio mix và ECG có thật.
+
+Server chỉ gửi FX sau peer readiness đã xác nhận, kèm network scene ID; client đổi sang local handle rồi đọc phase. Mỗi cue chạy một lần trong stage dù loop quay vòng. Không lấy `durationMs` ước lượng làm mốc va chạm. Stage hữu hạn có watchdog `stageTimeoutMs`; loop dùng `loopMs`. Dọn sound ID, loop particle, răng tạm, camera shake và audio mix khi chuyển/hủy/thoát, mất stream, quá xa, nạn nhân chết hoặc resource dừng. Burst particle tự kết thúc theo asset; không dùng `RemoveParticleFxInRange` để xóa hiệu ứng của resource khác.
+
+`Config.Torture.fx` có công tắc `enabled`, `sounds`, `particles`, `cameraShake`, `audioScenes`, `monitor`, BPM và asset timeout. `effects` trong từng stage/select/idle chứa cue và `atPhase`; chỉnh tại đây nếu build thực tế cần căn lại. Log `audio_bank_timeout`, `particle_asset_timeout`, `particle_start_failed` chỉ lỗi tải/khởi tạo; một sound event im lặng dù bank đã tải vẫn phải kiểm tra bằng nghe trực tiếp.
+
+Kiểm tra: `uv run --with lupa python tests/run_scene_flow.py` kiểm tra 21 stage, phase va chạm, 17 sound name/audioRef, 6 particle/điểm gắn, stream/range, duplicate, hủy trong lúc load, cleanup, nhiều phiên dùng chung bank, ECG và observer không bị rung camera/đổi audio mix. Chưa chạy native âm thanh/particle trên FiveM thật. Sau `restart vx_torture`, F8 và server phải hiện `FBI3 effects v10 loaded`; thử cả 5 món với actor/victim/observer, hai bộ ghế cùng lúc, Thoát và restart giữa mỗi loop.
+
+### Hiệu ứng nước — v9
+
+Code cũ dùng `StartParticleFxNonLoopedOnEntity` tại gốc ped nạn nhân. FBI3 dùng emitter loop `scr_fbi3_dirty_water_pour` trên can `Local_389[0]`, offset `Local_2720 = (0.15, 0.025, 0.2)`, rotation `(0,0,0)`, scale 1 (quanh dòng 2848 và 124689). [Danh mục particle trích từ game](https://github.com/DurtyFree/gta-v-data-dumps/blob/master/particleEffectsCompact.json) xác nhận effect nằm trong dictionary `scr_fbi3`.
+
+Bản v9 tải trước asset khi chọn can, rồi mỗi client gần ghế phát một emitter local trên cùng net entity của can sau lệnh `stageEffect` từ server. Không dùng network emitter khi mọi client đều nhận broadcast để tránh nhân bản hiệu ứng. Server gửi `stopEffects` khi chuyển bước; client còn có hạn tự dừng, dọn khi hủy/restart và kiểm tra phiên sau khi tải asset để coroutine cũ không phát lại nước. Harness kiểm tra can/offset/asset, actor-victim-observer, sự kiện trùng, hủy trước/trong lúc tải và tự dừng; hình ảnh thực tế cần xác nhận trong FiveM.
+
 `tests/fbi3_clip_reference.json` lưu danh sách clip trích từ các nhánh nguồn, URL và SHA-256 của snapshot. Harness không còn coi mọi tên clip đều tồn tại ở ba dictionary này: kiểm tra tên camera, ghế, ped, prop; kiểm tra prop gắn tay không bị thêm vào world scene, loop có đủ thời gian, chuyển clock nước và sát thương một lần. `ValidateSceneAssets` còn kiểm tra `GetAnimDuration` trên client thật, in `missing_scene_clip`/`missing_prop_clip` khi thiếu asset. Snapshot nguồn và harness không chứng minh geometry hay replication trên game build của máy chủ.
 
 ## Kiểm tra trực tiếp

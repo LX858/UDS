@@ -15,4 +15,7 @@ lua.globals().FBI3_CLIPS = lua.table_from({
     dictionary: lua.table_from({clip: True for clip in clips})
     for dictionary, clips in reference['clips'].items()
 })
+effects = json.loads((root / 'tests' / 'fbi3_effect_reference.json').read_text())
+lua.globals().FBI3_SOUNDS = lua.table_from({name: True for name in effects['sounds']})
+lua.globals().FBI3_PARTICLES = lua.table_from({name: True for name in effects['particles']})
 lua.execute((root / "tests" / "scene_flow.lua").read_text(encoding="utf-8"))

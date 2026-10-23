@@ -93,6 +93,7 @@ end
 function Impl:StopTool(setup, failed, reason)
   if not setup.tool or setup.toolState == 'empty' then return end
   local token = setup.toolToken
+  self:EmitNet(self, 'stopEffects', -1, token)
   if failed then
     local peer = setup.peerScene
     print(('[vx_torture] tool_failed setup=%s owner=%s victim=%s tool=%s state=%s phase=%s token=%s peer=%s peerReady=%s reason=%s')
@@ -122,6 +123,7 @@ function Impl:StartToolIdle(setup)
     or not near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0) then
     return self:StopTool(setup, true)
   end
+  self:EmitNet(self, 'stopEffects', -1, setup.toolToken)
   setup.toolState = 'idle'
   setup.toolPhase = nil
   setup.toolEpoch = (setup.toolEpoch or 0) + 1
@@ -423,6 +425,7 @@ function Impl:StartStage(setup, index)
   local stageData = action.stages[index]
   print('not found stageData', json.encode(stageData, {indent = true}))
   if not stageData then return self:CancelAction(setup, true) end
+  if busy.stage > 0 then self:EmitNet(self, 'stopEffects', -1, busy.token) end
   busy.stage = index
   busy.stageAt = GetGameTimer()
   setup.peerScene = nil
@@ -452,6 +455,7 @@ function Impl:StartAction(src, setupId, victim, actionKey)
   local token = ('%d:%d'):format(setup.id, self.nextAction)
   local busy = { token = token, key = actionKey, ready = {}, stage = 0, startedAt = nil }
   setup.busy = busy
+  self:EmitNet(self, 'stopEffects', -1, setup.toolToken)
   setup.toolState = 'action'
   setup.toolReady = false
   self:Sync(setup)
@@ -499,7 +503,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] water flow v8 loaded (server)')
+  print('[vx_torture] FBI3 effects v10 loaded (server)')
   exports.qbx_core:CreateUseableItem(cfg.item, function(src)
     self:BeginPlacement(src)
   end)
@@ -586,10 +590,9 @@ function Impl:OnReady()
     self:EmitNet(self, 'victimSceneReady', setup.owner, token, kind, step, netScene, peer.ready, failure)
     if peer.ready and kind == 'action' then
       peer.readyAt = GetGameTimer()
-      local stage = sceneStage(setup, token, kind, step)
-      if stage.effect then
-        self:EmitNet(self, 'stageEffect', -1, self:Snapshot(setup), token, setup.busy.key, step)
-      end
+      self:EmitNet(self, 'stageEffect', -1, self:Snapshot(setup), token, setup.busy.key, step, netScene)
+    elseif peer.ready and (kind == 'select' or kind == 'idle') then
+      self:EmitNet(self, 'toolEffect', -1, self:Snapshot(setup), token, kind, step, netScene)
     end
   end)
   self:OnNet('seatReady', function(setupId, success)
@@ -620,6 +623,7 @@ function Impl:OnReady()
     if setup and setup.toolToken == token and setup.toolState == 'idle'
       and setup.toolReady and not setup.busy
       and near(source, setup.entities.chair, cfg.actionDistance + 1.0) then
+      self:EmitNet(self, 'stopEffects', -1, setup.toolToken)
       setup.toolState = 'exiting'
       setup.toolReady = false
       setup.toolPhaseAt = GetGameTimer()

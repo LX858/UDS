@@ -1,0 +1,34 @@
+{
+  "source": "https://github.com/YimMenu/GTA-V-Decompiled-Scripts/blob/master/decompiled_scripts/fbi3.c",
+  "sourceSha256": "c02703b82e15b042c7551c138209c4ae87ab5ffdb1c7d2ab7bfdd528a24a9a6f",
+  "particleCatalog": "https://raw.githubusercontent.com/DurtyFree/gta-v-data-dumps/master/particleEffectsCompact.json",
+  "particleCatalogSha256": "df82e299fa9fd382f5fa005113db9c9fcdd21fd45fa2aa69d1f6de24d0bc7131",
+  "note": "Names verified against FBI3 source and particle catalog. Does not prove playback or phase alignment in FiveM. Short Electrical_Clamp_* and Teeth_Initial_Pain use FBI_03_Torture_Sounds; full FBI_03_* sound names use null audioRef.",
+  "sounds": [
+    "Electrical_Clamp_Off",
+    "Electrical_Clamp_On",
+    "FBI_03_TORTURE_Choose_Electric",
+    "FBI_03_TORTURE_Choose_Pliers",
+    "FBI_03_TORTURE_Choose_Water",
+    "FBI_03_TORTURE_Choose_Wrench",
+    "FBI_03_TORTURE_Electric_Hum",
+    "FBI_03_TORTURE_Electric_Spark",
+    "FBI_03_TORTURE_Electric_Zap",
+    "FBI_03_TORTURE_Heart_Monitor_Flatline",
+    "FBI_03_TORTURE_Heart_Monitor_Single",
+    "FBI_03_TORTURE_Teeth_Pulling",
+    "FBI_03_TORTURE_Teeth_Tooth_Out",
+    "FBI_03_TORTURE_Water_Pick_Up",
+    "FBI_03_TORTURE_Water_Pour_Water",
+    "FBI_03_TORTURE_Wrench_Hit_Shin",
+    "Teeth_Initial_Pain"
+  ],
+  "particles": [
+    "scr_fbi3_blood_extraction",
+    "scr_fbi3_blood_mouth",
+    "scr_fbi3_blood_throwaway",
+    "scr_fbi3_dirty_water_pour",
+    "scr_fbi3_elec_smoulder",
+    "scr_fbi3_elec_sparks"
+  ]
+}

@@ -12,6 +12,8 @@ local now, nextScene, nextCam = 0, 100, 5000
 local scenes, cams, attached, positions, activePed = {}, {}, {}, {}, {}
 local activeEntity={}
 local handAnims={}
+local particleHandles, particleCalls, particleAsset, nextParticle = {}, {}, nil, 9000
+local particleLoadHook
 local pedTasks = {}
 local advancedTasks, advancedCount = {}, 0
 local events, threads, timers, menus, openMenu = {}, {}, {}, {}, nil
@@ -93,6 +95,64 @@ end
 function CreateThread(fn) threads[#threads+1] = fn end
 function SetTimeout(ms,fn) timers[#timers+1] = fn end
 function RegisterCommand() end
+function RequestNamedPtfxAsset(asset) assert(asset=='scr_fbi3') end
+function HasNamedPtfxAssetLoaded()
+  if particleLoadHook then local hook=particleLoadHook; particleLoadHook=nil; hook(); return false end
+  return true
+end
+function UseParticleFxAssetNextCall(asset) particleAsset=asset end
+function StartParticleFxLoopedOnEntity(name,entity,x,y,z,rx,ry,rz,scale)
+  assert(FBI3_PARTICLES[name], 'particle absent from source/catalog reference: '..name)
+  nextParticle=nextParticle+1
+  local data={name=name,entity=entity,x=x,y=y,z=z,asset=particleAsset}
+  particleHandles[nextParticle]=data; particleCalls[#particleCalls+1]=data
+  return nextParticle
+end
+function StopParticleFxLooped(handle) particleHandles[handle]=nil end
+local soundCalls, soundHandles, bankReleased, audioScenes, cosmeticObjects = {}, {}, {}, {}, {}
+local nextSound, nextObject, bankLoadHook = 10000, 11000, nil
+function RequestScriptAudioBank(bank)
+  if bankLoadHook then local hook=bankLoadHook; bankLoadHook=nil; hook(); return false end
+  return true
+end
+function ReleaseNamedScriptAudioBank(bank) bankReleased[bank]=(bankReleased[bank] or 0)+1 end
+function GetSoundId() nextSound=nextSound+1; return nextSound end
+function PlaySoundFromEntity(id,name,entity,ref,networked)
+  assert(FBI3_SOUNDS[name], 'sound absent from FBI3 reference: '..name)
+  assert(ref==(name:find('^FBI_03_') and 0 or 'FBI_03_Torture_Sounds'), 'incorrect audio reference')
+  assert(networked==false, 'broadcast recipients must not create duplicate network sounds')
+  local data={name=name,entity=entity,ref=ref,variables={}}
+  soundHandles[id]=data; soundCalls[#soundCalls+1]=data
+end
+function SetVariableOnSound(id,key,value) soundHandles[id].variables[key]=value end
+function StopSound(id) soundHandles[id]=nil end
+function ReleaseSoundId(id) assert(not soundHandles[id]) end
+function IsAudioSceneActive(name) return audioScenes[name]==true end
+function StartAudioScene(name) audioScenes[name]=true; return true end
+function StopAudioScene(name) audioScenes[name]=nil end
+function StartParticleFxLoopedOnPedBone(name,entity,x,y,z,rx,ry,rz,bone,scale)
+  local id=StartParticleFxLoopedOnEntity(name,entity,x,y,z,rx,ry,rz,scale)
+  particleHandles[id].bone=bone; return id
+end
+function StartParticleFxNonLoopedOnEntity(name,entity,x,y,z,rx,ry,rz,scale)
+  local id=StartParticleFxLoopedOnEntity(name,entity,x,y,z,rx,ry,rz,scale)
+  particleHandles[id]=nil; return true
+end
+function StartParticleFxNonLoopedOnPedBone(name,entity,x,y,z,rx,ry,rz,bone,scale)
+  StartParticleFxNonLoopedOnEntity(name,entity,x,y,z,rx,ry,rz,scale)
+  particleCalls[#particleCalls].bone=bone; return true
+end
+function SetParticleFxLoopedEvolution(id,key,value) particleHandles[id][key]=value end
+function ShakeCam(id) assert(cams[id]); cams[id]='shaking' end
+function StopCamShaking(id) if cams[id] then cams[id]=true end end
+function IsModelInCdimage() return true end
+function IsModelValid() return true end
+function HasModelLoaded() return true end
+RequestModel,SetModelAsNoLongerNeeded=noop,noop
+function CreateObjectNoOffset(model,x,y,z,networked)
+  assert(networked==false); nextObject=nextObject+1; cosmeticObjects[nextObject]=model; return nextObject
+end
+function DeleteEntity(id) cosmeticObjects[id]=nil; attached[id]=nil end
 function GetGroundZFor_3dCoord() return true,0 end
 function DoesAnimDictExist() return true end
 function HasAnimDictLoaded() return true end
@@ -583,6 +643,125 @@ assert(now-longStart>4500)
 client:StopStage(); client.activeAction=nil; client.toolSession=nil
 realClipLengths=false
 print('PASS: distinct chair/actor clocks, stop-before-start for ped/props, long action clip completion')
+
+-- Water is a local loop on the can for every nearby recipient of the server
+-- broadcast. Cancellation must also invalidate an in-flight asset load.
+for _,player in ipairs({1,2,3}) do
+  currentPlayer=player
+  client.handlers.stageEffect(setup,'water-fx','water_pour',3)
+  drain()
+  local handle,data=next(particleHandles)
+  assert(handle and data.entity==setup.props.waterboard and data.asset=='scr_fbi3')
+  assert(data.name=='scr_fbi3_dirty_water_pour' and data.x==.15 and data.y==.025 and data.z==.2)
+  local count=#particleCalls
+  client.handlers.stageEffect(setup,'water-fx','water_pour',3); drain()
+  assert(#particleCalls==count, 'duplicate stage events must not multiply water')
+  client.handlers.stopEffects('water-fx')
+  assert(next(particleHandles)==nil and client.activeEffects['water-fx']==nil)
+end
+currentPlayer=1
+local beforeCancel=#particleCalls
+client.handlers.stageEffect(setup,'cancel-before-thread','water_pour',3)
+client.handlers.stopEffects('cancel-before-thread'); drain()
+assert(#particleCalls==beforeCancel)
+client.handlers.stageEffect(setup,'cancel-during-load','water_pour',3)
+particleLoadHook=function() client.handlers.stopEffects('cancel-during-load') end
+drain(); assert(#particleCalls==beforeCancel)
+client.handlers.stageEffect(setup,'fx-expiry','water_pour',3)
+local expireWater=timers[#timers]
+drain(); assert(next(particleHandles))
+Wait(4100); expireWater()
+assert(next(particleHandles)==nil and client.activeEffects['fx-expiry']==nil)
+print('PASS: water loop on can for actor/victim/observer, deduplication, cancellation during loading and expiry')
+
+-- A replicated scene is the FX clock. Test mid-scene joining, not timers
+-- derived from durationMs, and make sure a loop wrapping cannot duplicate cues.
+local function effectScene(phase,looped)
+  nextScene=nextScene+1
+  scenes[nextScene]={duration=10000,started=now-phase*10000,running=true,looped=looped}
+  return nextScene
+end
+local fxScene=effectScene(0.1,false)
+setup.tool='wrench'
+local beforeSound=#soundCalls
+client.handlers.stageEffect(setup,'impact','wrench_left',1,fxScene); drain()
+assert(#soundCalls==beforeSound, 'impact cannot play before contact')
+Wait(3000); client.intervals.effectsSync(); drain()
+assert(#soundCalls==beforeSound+1 and soundCalls[#soundCalls].name=='FBI_03_TORTURE_Wrench_Hit_Shin')
+assert(soundCalls[#soundCalls].ref==0 and soundCalls[#soundCalls].entity==2)
+client.intervals.effectsSync(); drain(); assert(#soundCalls==beforeSound+1)
+client.handlers.stopEffects('impact')
+
+local seenParticles={}
+for key,action in pairs(Config.Torture.actions) do
+  setup.tool=action.tool
+  for index,data in ipairs(action.stages) do
+    fxScene=effectScene(0.8,data.loopMs~=nil)
+    local startParticle=#particleCalls
+    client.handlers.stageEffect(setup,'all-fx',key,index,fxScene); drain()
+    for i=startParticle+1,#particleCalls do
+      local fx=particleCalls[i]; seenParticles[fx.name]=true
+      if fx.name=='scr_fbi3_blood_mouth' or fx.name=='scr_fbi3_blood_extraction' then
+        assert(fx.entity==2 and fx.bone==31086 and fx.y==.1)
+      elseif fx.name=='scr_fbi3_elec_smoulder' then assert(fx.entity==2 and fx.bone==39317)
+      elseif fx.name=='scr_fbi3_elec_sparks' then
+        assert(fx.entity==setup.props.electric or fx.entity==setup.props.clipRight)
+      elseif fx.name=='scr_fbi3_blood_throwaway' then
+        assert(cosmeticObjects[fx.entity]=='prop_ld_tooth' and attached[fx.entity]==1)
+      end
+    end
+    local soundCount,particleCount=#soundCalls,#particleCalls
+    client.handlers.stageEffect(setup,'all-fx',key,index,fxScene); drain()
+    assert(#soundCalls==soundCount and #particleCalls==particleCount)
+    client.handlers.stopEffects('all-fx')
+    assert(not next(particleHandles) and not next(soundHandles) and not next(cosmeticObjects))
+  end
+end
+local particleCount=0; for _ in pairs(seenParticles) do particleCount=particleCount+1 end
+assert(particleCount==6, 'all six FBI3 torture particle effects must be exercised')
+for _,tool in ipairs(Config.Torture.toolOrder) do
+  setup.tool=tool
+  for _,kind in ipairs({'select','idle'}) do
+    local id=effectScene(.8,kind=='idle')
+    client.handlers.toolEffect(setup,'tool-fx',kind,1,id); drain()
+    client.handlers.stopEffects('tool-fx')
+  end
+end
+assert(not next(audioScenes) and not next(client.fxBanks))
+
+-- A bank may be shared by multiple chairs. One cancellation cannot unload it.
+setup.tool='waterboard'
+client.handlers.stageEffect(setup,'bank-a','water_pour',3); drain()
+client.handlers.stageEffect(setup,'bank-b','water_pour',3); drain()
+local bank='FBI_03_TORTURE_Water'; local released=bankReleased[bank] or 0
+client.handlers.stopEffects('bank-a'); assert((bankReleased[bank] or 0)==released)
+client.handlers.stopEffects('bank-b'); assert(bankReleased[bank]==released+1)
+beforeSound=#soundCalls
+client.handlers.stageEffect(setup,'bank-race','water_pour',3)
+bankLoadHook=function() client.handlers.stopEffects('bank-race') end
+drain(); assert(#soundCalls==beforeSound and not next(particleHandles) and not next(client.fxBanks))
+
+client:SyncMonitorEffects(); drain()
+assert(soundCalls[#soundCalls].name=='FBI_03_TORTURE_Heart_Monitor_Single')
+assert(soundCalls[#soundCalls].variables.BPM==80 and soundCalls[#soundCalls].entity==setup.props.ecg)
+setup.tool='syringe'
+client.handlers.stageEffect(setup,'flatline','syringe_overdose',2); drain()
+client:SyncMonitorEffects(); drain()
+assert(not client.activeEffects['monitor:7'], 'flatline must silence normal ECG')
+client.handlers.stopEffects('flatline')
+client:SyncMonitorEffects(); drain()
+setup.seatReady=false; client:SyncMonitorEffects(); drain(); setup.seatReady=true
+assert(not next(soundHandles) and not next(client.fxBanks))
+
+currentPlayer=3; setup.tool='electric'
+client.camera=CreateCam()
+fxScene=effectScene(.8,true)
+client.handlers.stageEffect(setup,'observer','electric_both',1,fxScene); drain()
+assert(cams[client.camera]==true and not next(audioScenes), 'observer receives spatial FX, not camera/mix changes')
+positions[3]=vector3(100,0,0); client.intervals.effectsSync(); drain()
+assert(not client.activeEffects.observer and not next(particleHandles) and not next(soundHandles))
+positions[3]=vector3(0,0,0); DestroyCam(client.camera); client.camera=nil; currentPlayer=1
+print('PASS: all six particles, original impact phases/audio refs, cosmetic cleanup, shared banks, ECG, observer range and cancellation race')
 
 dofile(RESOURCE_ROOT .. '/server/impl/main.impl.lua')
 local server=TEST_IMPL; server:Init(); server:OnReady()

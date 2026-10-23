@@ -9,10 +9,10 @@ Config.Dev = false
 Config.Framework = 'qbx'
 Config.ClientLazyLoad = false
 
-local function stage(dict, actor, victim, chair, tool, durationMs, effect)
+local function stage(dict, actor, victim, chair, tool, durationMs)
   local data = {
     dict = dict, actor = actor, victim = victim, chair = chair,
-    tool = tool, durationMs = durationMs, effect = effect,
+    tool = tool, durationMs = durationMs,
   }
   if dict == 'missfbi3_electrocute' then
     local prefix = actor:gsub('_player$', '')
@@ -221,28 +221,23 @@ Config.Torture = {
     } },
     pliers_pull = { tool = 'pliers', label = 'Nhổ mạnh', result = { mode = 'damage', amount = 25 }, stages = {
       stage('missfbi3_toothpull', 'pull_tooth_intro_player', 'pull_tooth_intro_victim', nil, 'pull_tooth_intro_pliers', 2000),
-      timedLoop(stage('missfbi3_toothpull', 'pull_tooth_loop_player', 'pull_tooth_loop_victim', nil, 'pull_tooth_loop_pliers', 3800,
-        { particle = 'scr_fbi3_blood_extraction', sound = 'FBI_03_TORTURE_Teeth_Pulling', bank = 'FBI_03_TORTURE_Teeth' }), 3800, 'pull_tooth_loop_cam'),
+      timedLoop(stage('missfbi3_toothpull', 'pull_tooth_loop_player', 'pull_tooth_loop_victim', nil, 'pull_tooth_loop_pliers', 3800), 3800, 'pull_tooth_loop_cam'),
       stage('missfbi3_toothpull', 'pull_tooth_outro_player', 'pull_tooth_outro_victim', 'pull_tooth_outro_chair', 'pull_tooth_outro_pliers', 2200),
     } },
     electric_left = { tool = 'electric', label = 'Chích điện bên trái', result = { mode = 'damage', amount = 15 }, stages = {
-      timedLoop(stage('missfbi3_electrocute', 'clamp_left_loop_player', 'clamp_left_loop_victim', nil, nil, 4000,
-        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }), 4000, 'clamp_wait_loop_cam'),
+      timedLoop(stage('missfbi3_electrocute', 'clamp_left_loop_player', 'clamp_left_loop_victim', nil, nil, 4000), 4000, 'clamp_wait_loop_cam'),
     } },
     electric_right = { tool = 'electric', label = 'Chích điện bên phải', result = { mode = 'damage', amount = 15 }, stages = {
-      timedLoop(stage('missfbi3_electrocute', 'clamp_right_loop_player', 'clamp_right_loop_victim', nil, nil, 4000,
-        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }), 4000, 'clamp_wait_loop_cam'),
+      timedLoop(stage('missfbi3_electrocute', 'clamp_right_loop_player', 'clamp_right_loop_victim', nil, nil, 4000), 4000, 'clamp_wait_loop_cam'),
     } },
     electric_both = { tool = 'electric', label = 'Chích điện hai bên', result = { mode = 'damage', amount = 30 }, stages = {
-      timedLoop(stage('missfbi3_electrocute', 'electrocute_both_loop_player', 'electrocute_both_loop_victim', nil, nil, 4000,
-        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }), 4000, 'clamp_wait_loop_cam'),
+      timedLoop(stage('missfbi3_electrocute', 'electrocute_both_loop_player', 'electrocute_both_loop_victim', nil, nil, 4000), 4000, 'clamp_wait_loop_cam'),
       stage('missfbi3_electrocute', 'electrocute_both_outro_player', 'electrocute_both_outro_victim', 'electrocute_both_outro_chair', nil, 2000),
     } },
     water_pour = { tool = 'waterboard', label = 'Dội nước', result = { mode = 'damage', amount = 20 }, stages = {
       stage('missfbi3_waterboard', 'waterboard_kick_player', 'waterboard_kick_victim', 'waterboard_kick_chair', nil, 4000),
       waterTransition('waterboard_ready_to_loop', 2000),
-      timedLoop(stage('missfbi3_waterboard', 'waterboard_loop_player', 'waterboard_loop_victim', 'waterboard_loop_chair', nil, 4000,
-        { particle = 'scr_fbi3_dirty_water_pour', sound = 'FBI_03_TORTURE_Water_Pour_Water', bank = 'FBI_03_TORTURE_Water' }), 4000),
+      timedLoop(stage('missfbi3_waterboard', 'waterboard_loop_player', 'waterboard_loop_victim', 'waterboard_loop_chair', nil, 4000), 4000),
       waterFinish(),
       stage('missfbi3_waterboard', 'waterboard_outro_player', 'waterboard_outro_victim', 'waterboard_outro_chair', nil, 4000),
     } },
@@ -251,11 +246,107 @@ Config.Torture = {
     } },
     syringe_overdose = { tool = 'syringe', label = 'Tiêm quá liều', result = { mode = 'kill' }, stages = {
       stage('missfbi3_syringe', 'syringe_use_player', 'syringe_use_victim', 'syringe_use_chair', nil, 4500),
-      stage('missfbi3_syringe', 'flatline_intro_player', 'flatline_intro_victim', 'flatline_intro_chair', nil, 3500,
-        { sound = 'FBI_03_TORTURE_Heart_Monitor_Flatline', bank = 'FBI_03_TORTURE_General' }),
+      stage('missfbi3_syringe', 'flatline_intro_player', 'flatline_intro_victim', 'flatline_intro_chair', nil, 3500),
     } },
   },
 }
+
+-- FBI3 func_250/251 and torture branches. Full FBI_03_* names use audioRef=0;
+-- only short Electrical_Clamp_* / Teeth_Initial_Pain names use the soundset.
+-- Cues use the actual network scene phase, never the durationMs estimate.
+local function sound(name, bank, entity, phase, soundset, variables)
+  return { sound = name, bank = 'FBI_03_TORTURE_' .. bank, entity = entity,
+    atPhase = phase or 0.0, soundset = soundset, variables = variables }
+end
+local function particle(name, entity, bone, looped, phase, offset)
+  return { particle = 'scr_fbi3_' .. name, entity = entity, bone = bone,
+    looped = looped, atPhase = phase or 0.0, offset = offset }
+end
+local function effects(key, index, cues)
+  Config.Torture.actions[key].stages[index].effects = cues
+end
+Config.Torture.fx = {
+  enabled = true, particles = true, sounds = true, cameraShake = true,
+  audioScenes = true, monitor = true, monitorBpm = 80.0,
+  assetTimeoutMs = 2000,
+}
+Config.Torture.toolAudioScenes = {
+  wrench = 'FBI_3_TREVOR_TORTURE_WRENCH',
+  pliers = 'FBI_3_TREVOR_TORTURE_PLIERS',
+  electric = 'FBI_3_TREVOR_TORTURE_ELECTRIC',
+  waterboard = 'FBI_3_TREVOR_TORTURE_WATER',
+  syringe = 'FBI_3_TREVOR_TORTURE_ADRENALINE',
+}
+for key, suffix in pairs({ wrench = 'Wrench', pliers = 'Pliers', electric = 'Electric', waterboard = 'Water' }) do
+  Config.Torture.toolScenes[key].select.effects = {
+    sound('FBI_03_TORTURE_Choose_' .. suffix, 'General', key),
+  }
+end
+table.insert(Config.Torture.toolScenes.waterboard.select.effects,
+  sound('FBI_03_TORTURE_Water_Pick_Up', 'Water', 'actor', 0.14))
+table.insert(Config.Torture.toolScenes.electric.select.effects,
+  sound('FBI_03_TORTURE_Electric_Hum', 'Electric', 'battery', 0.222))
+Config.Torture.toolScenes.electric.idle.effects = {
+  sound('FBI_03_TORTURE_Electric_Hum', 'Electric', 'battery'),
+  sound('Electrical_Clamp_Off', 'Electric', 'electric', 0, 'FBI_03_Torture_Sounds'),
+  sound('Electrical_Clamp_Off', 'Electric', 'clipRight', 0, 'FBI_03_Torture_Sounds'),
+}
+for key, phase in pairs({ wrench_left = 0.393, wrench_mid = 0.185, wrench_right = 0.245 }) do
+  effects(key, 1, { sound('FBI_03_TORTURE_Wrench_Hit_Shin', 'Wrench', 'victim', phase) })
+end
+for _, key in ipairs({ 'pliers_weak', 'pliers_pull' }) do
+  effects(key, 1, { sound('Teeth_Initial_Pain', 'Teeth', 'victim', 0.0, 'FBI_03_Torture_Sounds') })
+  local pulling = { sound('FBI_03_TORTURE_Teeth_Pulling', 'Teeth', 'victim', 0, nil,
+    { Intensity = key == 'pliers_pull' and 1.0 or 0.25 }) }
+  if key == 'pliers_pull' then
+    pulling[#pulling + 1] = particle('blood_mouth', 'victim', 31086, true, 0, vector3(0, 0.1, 0))
+  end
+  effects(key, 2, pulling)
+  local tooth = particle('blood_throwaway', 'actor', nil, true, 0.071)
+  tooth.cosmetic = { model = 'prop_ld_tooth', bone = 60309 }
+  effects(key, 3, {
+    sound('FBI_03_TORTURE_Teeth_Tooth_Out', 'Teeth', 'actor', key == 'pliers_pull' and 0.01 or 0.06),
+    particle('blood_extraction', 'victim', 31086, false, 0.071, vector3(0, 0.1, 0)), tooth,
+  })
+end
+for key, clips in pairs({ electric_left = { 'clipRight' }, electric_right = { 'electric' },
+  electric_both = { 'electric', 'clipRight' } }) do
+  local cues = {
+    sound('FBI_03_TORTURE_Electric_Hum', 'Electric', 'battery'),
+    sound('FBI_03_TORTURE_Electric_Zap', 'Electric', 'victim'),
+    particle('elec_smoulder', 'victim', 39317, true),
+    { shake = 'ROAD_VIBRATION_SHAKE', amplitude = 0.25 },
+  }
+  for _, prop in ipairs(clips) do
+    cues[#cues + 1] = sound('Electrical_Clamp_On', 'Electric', prop, 0, 'FBI_03_Torture_Sounds')
+  end
+  effects(key, 1, cues)
+end
+effects('electric_both', 2, {
+  sound('Electrical_Clamp_Off', 'Electric', 'electric', 0.198, 'FBI_03_Torture_Sounds'),
+  sound('Electrical_Clamp_Off', 'Electric', 'clipRight', 0.198, 'FBI_03_Torture_Sounds'),
+})
+local coolingSmoke = particle('elec_smoulder', 'victim', 39317, true)
+-- The original releases accumulated smoke after the shock. Our finite outro
+-- fades it by scene phase instead of the mission's frame-dependent input value.
+coolingSmoke.evolution = { name = 'smoke', from = 1.0, to = 0.0 }
+table.insert(Config.Torture.actions.electric_both.stages[2].effects, coolingSmoke)
+-- A short clamp spark accompanies the discrete menu shock. Original FBI3 uses
+-- a separate input-driven scene 21; this cue does not add/change any ped clip.
+for _, key in ipairs({ 'electric_left', 'electric_right', 'electric_both' }) do
+  local cues = Config.Torture.actions[key].stages[1].effects
+  cues[#cues + 1] = particle('elec_sparks', key == 'electric_left' and 'clipRight' or 'electric', nil, false, 0.11)
+  cues[#cues + 1] = sound('FBI_03_TORTURE_Electric_Spark', 'Electric', 'actor', 0.146)
+end
+effects('water_pour', 3, {
+  particle('dirty_water_pour', 'waterboard', nil, true, 0, vector3(0.15, 0.025, 0.2)),
+  sound('FBI_03_TORTURE_Water_Pour_Water', 'Water', 'victim'),
+})
+effects('syringe_overdose', 2, {
+  sound('FBI_03_TORTURE_Heart_Monitor_Flatline', 'General', 'ecg'),
+})
+-- No dedicated syringe injection particle/sound is declared by FBI3.
+-- Do not substitute a made-up event or the story's fixed MisterK voice.
 
 function L(key, ...)
   local pattern = Config.Settings.locale[key] or key

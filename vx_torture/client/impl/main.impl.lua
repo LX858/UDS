@@ -604,6 +604,11 @@ function Impl:UpdateSetup(setup)
   if session and session.setupId == setup.id and session.revision
     and setup.revision and setup.revision < session.revision then return end
   self.setups[setup.id] = setup
+  for token, run in pairs(self.activeEffects) do
+    if run.setup.id == setup.id and (run.setup.victim ~= setup.victim or not setup.seatReady) then
+      self:StopEffectSounds(token)
+    end
+  end
   self:ApplyPropCollision(setup)
   self:AddTargets(setup)
   if session and session.setupId == setup.id
@@ -1246,58 +1251,243 @@ function Impl:RunActorStage(setup, token, key, index)
 end
 
 function Impl:StopEffectSounds(token)
-  local sounds = self.activeSounds[token]
-  if not sounds then return end
+  local run = self.activeEffects[token]
+  self.activeEffects[token] = nil
+  for _, id in ipairs(self.activeSounds[token] or {}) do StopSound(id); ReleaseSoundId(id) end
   self.activeSounds[token] = nil
-  for _, soundId in ipairs(sounds) do
-    StopSound(soundId)
-    ReleaseSoundId(soundId)
-  end
-  ReleaseScriptAudioBank()
-end
-
-function Impl:PlayEffect(setup, token, key, index)
-  local stageData = cfg.actions[key].stages[index]
-  local effect = stageData.effect
-  if not effect then return end
-  local chair = fromNet(setup.props.chair, 300)
-  if not chair or #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(chair)) > cfg.observerFxDistance then return end
-  local entity = chair
-  if setup.victim then
-    local player = GetPlayerFromServerId(setup.victim)
-    if player ~= -1 then entity = GetPlayerPed(player) end
-  end
-  if effect.particle then
-    RequestNamedPtfxAsset('scr_fbi3')
-    local untilTime = GetGameTimer() + 2000
-    while not HasNamedPtfxAssetLoaded('scr_fbi3') and GetGameTimer() < untilTime do Wait(0) end
-    if HasNamedPtfxAssetLoaded('scr_fbi3') then
-      UseParticleFxAssetNextCall('scr_fbi3')
-      StartParticleFxNonLoopedOnEntity(effect.particle, entity,
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, false, false, false)
+  if run then
+    for _, handle in ipairs(run.particles) do StopParticleFxLooped(handle, false) end
+    for _, entity in ipairs(run.objects) do
+      if DoesEntityExist(entity) then DeleteEntity(entity) end
     end
-  end
-  if effect.sound and effect.bank and RequestScriptAudioBank(effect.bank, false) then
-    local soundId = GetSoundId()
-    PlaySoundFromEntity(soundId, effect.sound, chair, effect.soundset or 'FBI_03_Torture_Sounds', false, 0)
-    self.activeSounds[token] = self.activeSounds[token] or {}
-    self.activeSounds[token][#self.activeSounds[token] + 1] = soundId
-    SetTimeout(math.min(stageData.durationMs, 5000), function()
-      local sounds = self.activeSounds[token]
-      if not sounds then return end
-      for i, id in ipairs(sounds) do
-        if id == soundId then
-          StopSound(id)
-          ReleaseSoundId(id)
-          table.remove(sounds, i)
-          if #sounds == 0 then
-            self.activeSounds[token] = nil
-            ReleaseScriptAudioBank()
-          end
-          break
+    if run.camera and DoesCamExist(run.camera) then StopCamShaking(run.camera, true) end
+    for bank in pairs(run.banks) do
+      self.fxBanks[bank] = (self.fxBanks[bank] or 1) - 1
+      if self.fxBanks[bank] <= 0 then
+        self.fxBanks[bank] = nil
+        ReleaseNamedScriptAudioBank(bank)
+      end
+    end
+    if run.audioScene then
+      local entry = self.fxAudioScenes[run.audioScene]
+      if entry then
+        entry.count = entry.count - 1
+        if entry.count <= 0 then
+          if entry.owned then StopAudioScene(run.audioScene) end
+          self.fxAudioScenes[run.audioScene] = nil
         end
       end
+    end
+  end
+end
+
+local function effectEntity(setup, key)
+  if key == 'actor' or key == 'victim' then
+    local player = GetPlayerFromServerId(key == 'actor' and setup.owner or setup.victim)
+    if player == -1 then return nil end
+    local ped = GetPlayerPed(player)
+    return ped ~= 0 and DoesEntityExist(ped) and ped or nil
+  end
+  local net = setup.props[key or 'chair']
+  if targetReady(net) then return NetworkGetEntityFromNetworkId(net) end
+end
+
+function Impl:EffectCurrent(token, run)
+  return self.activeEffects[token] == run and GetGameTimer() < run.expiresAt
+end
+
+function Impl:QueueSceneEffects(setup, token, identity, data, netScene, kind)
+  if not cfg.fx.enabled then return end
+  local previous = self.activeEffects[token]
+  if previous and previous.identity == identity then return end
+  self:StopEffectSounds(token)
+  local duration
+  if kind == 'idle' or kind == 'ambient' then duration = math.huge
+  else duration = data.loopMs or cfg.stageTimeoutMs end
+  local run = { setup = setup, identity = identity, data = data, netScene = netScene,
+    kind = kind, particles = {}, evolutions = {}, objects = {}, banks = {}, fired = {},
+    expiresAt = GetGameTimer() + duration }
+  self.activeEffects[token] = run
+  for _, cue in ipairs(data.effects or {}) do
+    if cue.sound == 'FBI_03_TORTURE_Heart_Monitor_Flatline' then
+      self:StopEffectSounds(('monitor:%s'):format(setup.id))
+    end
+  end
+  -- Audio mixes affect only the two participants, never nearby observers.
+  local audioScene = kind ~= 'ambient' and cfg.toolAudioScenes[setup.tool]
+  if cfg.fx.sounds and cfg.fx.audioScenes and audioScene
+    and (playerSource() == setup.owner or playerSource() == setup.victim) then
+    local entry = self.fxAudioScenes[audioScene]
+    if not entry then
+      local active = nativeTrue(IsAudioSceneActive(audioScene))
+      entry = { count = 0, owned = not active and nativeTrue(StartAudioScene(audioScene)) }
+      self.fxAudioScenes[audioScene] = entry
+    end
+    entry.count = entry.count + 1
+    run.audioScene = audioScene
+  end
+  if duration < math.huge then
+    SetTimeout(duration, function()
+      if self.activeEffects[token] == run then self:StopEffectSounds(token) end
     end)
+  end
+  for _, cue in ipairs(data.effects or {}) do
+    if cue.particle and cfg.fx.particles then RequestNamedPtfxAsset('scr_fbi3') end
+    if cue.sound and cfg.fx.sounds and not run.banks[cue.bank] then
+      run.banks[cue.bank] = true
+      self.fxBanks[cue.bank] = (self.fxBanks[cue.bank] or 0) + 1
+      RequestScriptAudioBank(cue.bank, false)
+    end
+  end
+  self:TickEffect(token, run)
+end
+
+function Impl:QueueEffect(setup, token, key, index, netScene)
+  local data = cfg.actions[key] and cfg.actions[key].stages[index]
+  if data then self:QueueSceneEffects(setup, token, key .. ':' .. index, data, netScene, 'action') end
+end
+
+function Impl:TickEffect(token, run)
+  local chair = effectEntity(run.setup, 'chair')
+  local victim = effectEntity(run.setup, 'victim')
+  if not self:EffectCurrent(token, run) or not chair or not victim or IsEntityDead(victim)
+    or #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(chair)) > cfg.observerFxDistance then
+    return self:StopEffectSounds(token)
+  end
+  local phase = 0.0
+  if run.netScene then
+    local scene = NetworkGetLocalSceneFromNetworkId(run.netScene)
+    if not scene or scene < 0 then return end -- wait for replication; never guess a phase
+    if not nativeTrue(IsSynchronizedSceneRunning(scene)) then
+      if run.seenScene then self:StopEffectSounds(token) end
+      return
+    end
+    run.seenScene = true
+    phase = GetSynchronizedScenePhase(scene)
+  end
+  for index, cue in ipairs(run.data.effects or {}) do
+    if not run.fired[index] and phase >= (cue.atPhase or 0.0) then
+      run.fired[index] = true
+      CreateThread(function() self:PlayEffect(run.setup, token, cue, run) end)
+    end
+  end
+  for handle, evolution in pairs(run.evolutions) do
+    SetParticleFxLoopedEvolution(handle, evolution.name,
+      evolution.from + (evolution.to - evolution.from) * phase, false)
+  end
+end
+
+function Impl:PlayEffect(setup, token, cue, run)
+  local function current() return self:EffectCurrent(token, run) end
+  if not current() then return end
+  if cue.shake then
+    if cfg.fx.cameraShake and setup.owner == playerSource() and self.camera and DoesCamExist(self.camera) then
+      run.camera = self.camera
+      ShakeCam(run.camera, cue.shake, cue.amplitude or 0.25)
+    end
+    return
+  end
+  local entity = effectEntity(setup, cue.entity)
+  if not entity then return end
+  if cue.particle and cfg.fx.particles then
+    local untilTime = GetGameTimer() + cfg.fx.assetTimeoutMs
+    RequestNamedPtfxAsset('scr_fbi3')
+    while current() and not HasNamedPtfxAssetLoaded('scr_fbi3') and GetGameTimer() < untilTime do Wait(0) end
+    if not current() then return end
+    if not HasNamedPtfxAssetLoaded('scr_fbi3') then
+      print('[vx_torture] particle_asset_timeout asset=scr_fbi3')
+      return
+    end
+    if cue.cosmetic then
+      local model = joaat(cue.cosmetic.model)
+      local loaded = loadModel(model, cfg.fx.assetTimeoutMs)
+      if not current() or not loaded or not DoesEntityExist(entity) then
+        SetModelAsNoLongerNeeded(model); return
+      end
+      local pos = GetEntityCoords(entity)
+      local object = CreateObjectNoOffset(model, pos.x, pos.y, pos.z, false, false, false)
+      SetModelAsNoLongerNeeded(model)
+      if not object or object == 0 then return end
+      run.objects[#run.objects + 1] = object
+      SetEntityCollision(object, false, false)
+      AttachEntityToEntity(object, entity, GetPedBoneIndex(entity, cue.cosmetic.bone),
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false, false, 2, true)
+      entity = object
+    end
+    if not current() or not DoesEntityExist(entity) then return end
+    local o, r = cue.offset or vector3(0, 0, 0), cue.rotation or vector3(0, 0, 0)
+    UseParticleFxAssetNextCall('scr_fbi3')
+    local handle
+    if cue.bone then
+      -- These natives take the skeleton bone ID used by FBI3, not GetPedBoneIndex.
+      if cue.looped then
+        handle = StartParticleFxLoopedOnPedBone(cue.particle, entity, o.x, o.y, o.z,
+          r.x, r.y, r.z, cue.bone, cue.scale or 1.0, false, false, false)
+      else
+        StartParticleFxNonLoopedOnPedBone(cue.particle, entity, o.x, o.y, o.z,
+          r.x, r.y, r.z, cue.bone, cue.scale or 1.0, false, false, false)
+      end
+    elseif cue.looped then
+      handle = StartParticleFxLoopedOnEntity(cue.particle, entity, o.x, o.y, o.z,
+        r.x, r.y, r.z, cue.scale or 1.0, false, false, false)
+    else
+      StartParticleFxNonLoopedOnEntity(cue.particle, entity, o.x, o.y, o.z,
+        r.x, r.y, r.z, cue.scale or 1.0, false, false, false)
+    end
+    if cue.looped then
+      if handle and handle ~= 0 then
+        run.particles[#run.particles + 1] = handle
+        if cue.evolution then
+          run.evolutions[handle] = cue.evolution
+          SetParticleFxLoopedEvolution(handle, cue.evolution.name, cue.evolution.from, false)
+        elseif cue.particle == 'scr_fbi3_elec_smoulder' then
+          SetParticleFxLoopedEvolution(handle, 'smoke', 0.0, false)
+        end
+      else print(('[vx_torture] particle_start_failed effect=%s'):format(cue.particle)) end
+    end
+  end
+  if cue.sound and cfg.fx.sounds then
+    local untilTime = GetGameTimer() + cfg.fx.assetTimeoutMs
+    local loaded = nativeTrue(RequestScriptAudioBank(cue.bank, false))
+    while current() and not loaded and GetGameTimer() < untilTime do
+      Wait(0)
+      if current() then loaded = nativeTrue(RequestScriptAudioBank(cue.bank, false)) end
+    end
+    if not current() or not DoesEntityExist(entity) then return end
+    if not loaded then
+      print(('[vx_torture] audio_bank_timeout bank=%s sound=%s'):format(cue.bank, cue.sound))
+      return
+    end
+    local id = GetSoundId()
+    PlaySoundFromEntity(id, cue.sound, entity, cue.soundset or 0, false, 0)
+    self.activeSounds[token] = self.activeSounds[token] or {}
+    self.activeSounds[token][#self.activeSounds[token] + 1] = id
+    for name, value in pairs(cue.variables or {}) do SetVariableOnSound(id, name, value) end
+  end
+end
+
+function Impl:SyncMonitorEffects()
+  for _, setup in pairs(self.setups) do
+    local token = ('monitor:%s'):format(setup.id)
+    local entity = effectEntity(setup, 'ecg')
+    local victim = setup.victim and effectEntity(setup, 'victim')
+    local enabled = cfg.fx.enabled and cfg.fx.sounds and cfg.fx.monitor and setup.seatReady
+      and entity and victim and not IsEntityDead(victim)
+      and #(GetEntityCoords(PlayerPedId()) - GetEntityCoords(entity)) <= cfg.observerFxDistance
+    local flatline = false
+    for _, run in pairs(self.activeEffects) do
+      if run.setup.id == setup.id then
+        for _, cue in ipairs(run.data.effects or {}) do
+          if cue.sound == 'FBI_03_TORTURE_Heart_Monitor_Flatline' then flatline = true end
+        end
+      end
+    end
+    if enabled and not flatline then
+      self:QueueSceneEffects(setup, token, 'monitor', { effects = {
+        { sound = 'FBI_03_TORTURE_Heart_Monitor_Single', bank = 'FBI_03_TORTURE_General',
+          entity = 'ecg', variables = { BPM = cfg.fx.monitorBpm } },
+      } }, nil, 'ambient')
+    else self:StopEffectSounds(token) end
   end
 end
 
@@ -1424,6 +1614,9 @@ function Impl:Init()
   self.stageChair = nil
   self.actorStageActive = false
   self.activeSounds = {}
+  self.activeEffects = {}
+  self.fxBanks = {}
+  self.fxAudioScenes = {}
   self.toolSession = nil
   self.toolMenuId = nil
   self.nextToolHealthAt = 0
@@ -1431,7 +1624,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] water flow v8 loaded (client)')
+  print('[vx_torture] FBI3 effects v10 loaded (client)')
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('victimSceneReady', function(token, kind, step, scene, success, reason)
     local pending = self.peerScene
@@ -1500,6 +1693,9 @@ function Impl:OnReady()
   end)
   self:OnNet('setupUpdated', function(setup) self:UpdateSetup(setup) end)
   self:OnNet('setupRemoved', function(setupId)
+    for token, run in pairs(self.activeEffects) do
+      if run.setup.id == setupId then self:StopEffectSounds(token) end
+    end
     self.removed[setupId] = true
     local setup = self.setups[setupId]
     if not setup then return end
@@ -1527,6 +1723,7 @@ function Impl:OnReady()
     local session = { setupId = setup.id, token = token, tool = setup.tool,
       actor = actor, phase = 'prepare', menuPending = false, revision = setup.revision }
     self.toolSession = session
+    if cfg.fx.enabled and cfg.fx.particles then RequestNamedPtfxAsset('scr_fbi3') end
     CreateThread(function()
       local ready = fromNet(setup.props.chair, 2000) ~= nil
         and fromNet(setup.props.trolley, 2000) ~= nil
@@ -1684,8 +1881,12 @@ function Impl:OnReady()
       end)
     end
   end)
-  self:OnNet('stageEffect', function(setup, token, key, index)
-    CreateThread(function() self:PlayEffect(setup, token, key, index) end)
+  self:OnNet('stageEffect', function(setup, token, key, index, netScene)
+    self:QueueEffect(setup, token, key, index, netScene)
+  end)
+  self:OnNet('toolEffect', function(setup, token, kind, epoch, netScene)
+    local data = cfg.toolScenes[setup.tool] and cfg.toolScenes[setup.tool][kind]
+    if data then self:QueueSceneEffects(setup, token, kind .. ':' .. epoch, data, netScene, kind) end
   end)
   self:OnNet('stopEffects', function(token) self:StopEffectSounds(token) end)
   self:OnNet('stopAction', function(setupId, token, resumeIdle)
@@ -1730,6 +1931,7 @@ function Impl:OnReady()
     end
   end)
   self:Interval('targetSync', 1000, function()
+    self:SyncMonitorEffects()
     for _, setup in pairs(self.setups) do
       self:ApplyPropCollision(setup)
       self:AddTargets(setup)
@@ -1754,6 +1956,9 @@ function Impl:OnReady()
       end
     end)
   end
+  self:Interval('effectsSync', 50, function()
+    for token, run in pairs(self.activeEffects) do self:TickEffect(token, run) end
+  end)
   self:Interval('seatControl', 0, function()
     self:SyncHandProps()
     if self.activeAction and GetGameTimer() > self.activeAction.expiresAt then
@@ -1830,6 +2035,7 @@ end
 function Impl:OnDestroy()
   self:EndPreview(nil, false)
   self.activeAction = nil
+  for token in pairs(self.activeEffects) do self:StopEffectSounds(token) end
   for token in pairs(self.activeSounds) do self:StopEffectSounds(token) end
   if self.toolSession then
     local setup = self.setups[self.toolSession.setupId]
