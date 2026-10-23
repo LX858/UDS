@@ -82,7 +82,8 @@ function GetAnimInitialOffsetRotation(dict,clip,x,y,z,rx,ry,rz)
 end
 function GetAnimInitialOffsetPosition(dict,clip,x,y,z,rx,ry,rz)
   local r = math.rad(rz)
-  return vector3(x+1.3*math.cos(r)+.4*math.sin(r), y+1.3*math.sin(r)-.4*math.cos(r),z+.25)
+  local zOffset = clip:find('victim') and 1.05 or .25
+  return vector3(x+1.3*math.cos(r)+.4*math.sin(r), y+1.3*math.sin(r)-.4*math.cos(r),z+zOffset)
 end
 function NetworkCreateSynchronisedScene(x,y,z,rx,ry,rz,order,hold,looped)
   nextScene = nextScene+1
@@ -119,13 +120,18 @@ function IsEntityPlayingAnim(ped,dict,clip)
   return task and task.dict==dict and task.clip==clip
     and (task.advanced or s and s.running) or false
 end
-function TaskPlayAnimAdvanced(ped,dict,clip,x,y,z,rx,ry,rz,blendIn,blendOut,duration,flags,phase)
-  assert(duration==-1 and (flags==0 or flags==1))
+function TaskPlayAnimAdvanced(ped,dict,clip,x,y,z,rx,ry,rz,blendIn,blendOut,duration,flags,phase,rotationOrder)
+  assert(duration==-1 and rotationOrder==2)
+  assert((flags & 1024)~=0 and (flags & 4096)~=0 and (flags & 524288)~=0,
+    'authored FBI3 tracks require physics override and initial/mover extraction')
+  assert((flags & 3)==1 or (flags & 3)==2, 'loop or hold the final frame')
   assert(phase>=0 and phase<1)
   advancedCount=advancedCount+1
   local pos=vector3(x,y,z)
   advancedTasks[ped]={dict=dict,clip=clip,pos=pos,rot=vector3(rx,ry,rz),phase=phase,flags=flags}
-  positions[ped]=pos
+  -- Advanced task with mover extraction consumes the common scene origin.
+  -- Model its extracted world transform, including the authored vertical offset.
+  positions[ped]=GetAnimInitialOffsetPosition(dict,clip,x,y,z,rx,ry,rz)
   activePed[ped]=nil
   pedTasks[ped]={dict=dict,clip=clip,advanced=true}
 end
@@ -174,8 +180,14 @@ end
 local cases=0
 for _,tool in ipairs(Config.Torture.toolOrder) do
   session(tool)
+  local transitionClears=clears
   assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes[tool].select,false))
+  local selectedScene, selectedCamera = client.scene, client.camera
+  assert(scenes[selectedScene].running and scenes[selectedScene].hold and cams[selectedCamera],
+    'selection must keep its task and camera while waiting for the idle event')
   assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes[tool].idle,true))
+  assert(clears==transitionClears, 'select-to-idle must not clear the actor task')
+  assert(not cams[selectedCamera] and cams[client.camera], 'replace the old camera without leaking it')
   local scene=scenes[client.scene]
   assert(scene.looped and (scene.flags & 64)~=0)
   for _,track in pairs(scene.tracks) do assert((track.flags & 64)~=0) end
@@ -186,6 +198,7 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   local menu=menus[openMenu]; local expected=1
   for _,action in pairs(Config.Torture.actions) do if action.tool==tool then expected=expected+1 end end
   assert(#menu.options==expected and menu.canClose==false)
+  drain() -- optional bench restoration runs after idle and menu are available
   local before=stops
   for _=1,4 do Wait(7300); client:ShowToolMenu(setup) end
   assert(stops==before and scene.running and scene.looped, 'menu must not stop idle playback')
@@ -198,11 +211,11 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
     'victim must not create a competing synchronized scene')
   local expectedPos=GetAnimInitialOffsetPosition(Config.Torture.toolScenes[tool].idle.dict,
     Config.Torture.toolScenes[tool].idle.victim,origin.x,origin.y,origin.z,0,0,heading)
-  assert(math.abs(advancedTasks[2].pos.x-expectedPos.x)<.001
-    and math.abs(advancedTasks[2].pos.y-expectedPos.y)<.001
-    and math.abs(advancedTasks[2].pos.z-expectedPos.z)<.001,
-    'victim task must start at its clip transform, not the scene root')
-  assert(advancedTasks[2].flags==1, 'victim idle must loop')
+  assert(#(advancedTasks[2].pos-origin)<.001,
+    'victim must pass the same scene root as actor, without pre-applying its track offset')
+  assert(#(GetEntityCoords(2)-expectedPos)<.001,
+    'victim authored offset must be applied exactly once, including height')
+  assert((advancedTasks[2].flags & 1)~=0, 'victim idle must loop')
   assert(scene.rate~=0, 'actor scene must not pause while waiting for the victim')
   client:StopVictimScene(); assert(scene.running, 'victim cleanup must not stop the actor scene')
   client.seated=nil; currentPlayer=1
@@ -211,6 +224,44 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   cases=cases+1
 end
 print(('PASS: select -> looping idle/menu, camera cleanup, matching peer origins (%d tools)'):format(cases))
+
+-- Emulate slow control acquisition while returning unused props. It may take
+-- seconds, but must happen after the idle scene and menu, with the actor held.
+session('wrench')
+local originalPutPropBack = client.PutPropBack
+local restored=0
+client.PutPropBack=function(self,...)
+  assert(openMenu==self.toolMenuId, 'bench restoration must not gate the menu')
+  restored=restored+1
+  Wait(1500)
+  return originalPutPropBack(self,...)
+end
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
+local selectDoneAt=now
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
+client:ShowToolMenu(setup)
+assert(now==selectDoneAt and restored==0 and openMenu==client.toolMenuId,
+  'no synchronous bench/control waits between selection and the ready menu')
+drain()
+assert(restored>0 and now>selectDoneAt)
+client.PutPropBack=originalPutPropBack
+lib.hideContext()
+
+-- Action completion uses the same held-frame handoff. A genuine stop still
+-- clears the scene/camera, so release/restart cannot leave the actor locked.
+client.activeAction={setupId=7,token='attack',key='wrench_left',actor=true,stage=1}
+local beforeActionClears=clears
+assert(client:RunActorStage(setup,'attack','wrench_left',1))
+local actionScene,actionCamera=client.scene,client.camera
+assert(scenes[actionScene].running and scenes[actionScene].hold and cams[actionCamera])
+client.handlers.stopAction(7,'attack',true)
+assert(client.scene==actionScene and client.camera==actionCamera and clears==beforeActionClears)
+client.activeAction={setupId=7,token='release',key='wrench_left',actor=true}
+client.handlers.stopAction(7,'release',false)
+assert(client.scene==nil and client.camera==nil and not cams[actionCamera])
+client.toolSession=nil
+print('PASS: slow bench cleanup does not delay menu; action handoff preserves pose/camera; release cleans up')
+
 client.seated=7; currentPlayer=2
 assert(client:PlayIdle(setup))
 assert(client.victimScene.dict=='missfbi3_weapon_select')
@@ -223,6 +274,9 @@ assert(clears==beforeTransition and client.victimScene,
   'return-to-seat transition must retain the seated task')
 assert(client:PlayIdle(setup))
 assert(clears==beforeTransition, 'return to base seat must not flash a standing frame')
+assert(client:PlayVictimTrack(setup,Config.Torture.actions.wrench_left.stages[1],false,0.35,124))
+assert((advancedTasks[2].flags & 3)==2, 'finite victim tracks hold until the next stage')
+assert(advancedTasks[2].phase==0.35, 'late victim starts at the sampled actor phase')
 ClearPedTasks(2)
 local beforeRecovery=advancedCount
 client.victimSceneStarting=true

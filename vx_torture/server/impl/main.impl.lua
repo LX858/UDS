@@ -137,14 +137,15 @@ function Impl:CancelAction(setup, notifyOwner)
   local busy = setup.busy
   if not busy then return end
   setup.busy = nil
+  local resumeIdle = setup.toolState == 'action' and setup.victim and setup.seatReady
+    and isAlive(setup.victim) and GetPlayerRoutingBucket(setup.victim) == setup.bucket
   self:EmitNet(self, 'stopEffects', -1, busy.token)
-  self:EmitNet(self, 'stopAction', setup.owner, setup.id, busy.token)
+  self:EmitNet(self, 'stopAction', setup.owner, setup.id, busy.token, resumeIdle == true)
   if setup.victim then
-    self:EmitNet(self, 'stopAction', setup.victim, setup.id, busy.token)
+    self:EmitNet(self, 'stopAction', setup.victim, setup.id, busy.token, resumeIdle == true)
   end
   if notifyOwner then self:Notify(setup.owner, 'action_failed') end
-  if setup.toolState == 'action' and setup.victim and setup.seatReady
-    and isAlive(setup.victim) and GetPlayerRoutingBucket(setup.victim) == setup.bucket then
+  if resumeIdle then
     self:StartToolIdle(setup)
   elseif setup.toolState == 'action' then
     self:StopTool(setup)
