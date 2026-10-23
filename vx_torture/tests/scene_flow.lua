@@ -6,6 +6,7 @@ vecmt.__sub = function(a, b) return vector3(a.x-b.x, a.y-b.y, a.z-b.z) end
 vecmt.__add = function(a, b) return vector3(a.x+b.x, a.y+b.y, a.z+b.z) end
 vecmt.__len = function(a) return math.sqrt(a.x*a.x+a.y*a.y+a.z*a.z) end
 Locales = { default = {} }
+json = { encode = function() return '<mock diagnostic>' end }
 function L(key) return key end
 local now, nextScene, nextCam = 0, 100, 5000
 local scenes, cams, attached, positions, activePed = {}, {}, {}, {}, {}
@@ -73,7 +74,9 @@ function Wait(ms)
   -- A network stop can be delivered after the successor has been submitted.
   -- It must never own/delete the locally assigned actor task.
   for _, stop in ipairs(delayedStops) do
-    if stop.ped then pedTasks[stop.ped]=nil; activePed[stop.ped]=nil end
+    if stop.ped and activePed[stop.ped]==stop.scene then
+      pedTasks[stop.ped]=nil; activePed[stop.ped]=nil
+    end
   end
   delayedStops={}
   if loseActorAt and now>=loseActorAt then pedTasks[1]=nil; loseActorAt=nil end
@@ -102,6 +105,8 @@ function NetworkCreateSynchronisedScene(x,y,z,rx,ry,rz,order,hold,looped)
   return nextScene
 end
 function NetworkAddPedToSynchronisedScene(ped,scene,dict,clip,a,b,flags)
+  assert(not scenes[scene].started, 'register actor before starting network scene')
+  assert((flags & 12)==0, 'do not prevent successor tasks or stop scene on task replacement')
   local s=scenes[scene]; s.ped=ped; s.dict=dict; s.clip=clip; s.flags=flags
 end
 function NetworkAddEntityToSynchronisedScene(entity,scene,dict,clip,a,b,flags)
@@ -109,25 +114,19 @@ function NetworkAddEntityToSynchronisedScene(entity,scene,dict,clip,a,b,flags)
 end
 function NetworkStartSynchronisedScene(scene)
   local s=scenes[scene]; s.started=now; s.running=true
-  if s.ped then activePed[s.ped]=scene; pedTasks[s.ped]={dict=s.dict,clip=s.clip} end
+  if s.ped and not failActorTask then activePed[s.ped]=scene; pedTasks[s.ped]={dict=s.dict,clip=s.clip,flags=s.flags} end
 end
 function NetworkStopSynchronisedScene(scene)
   stops=stops+1; scenes[scene].running=false
-  delayedStops[#delayedStops+1]={ped=scenes[scene].ped}
+  delayedStops[#delayedStops+1]={ped=scenes[scene].ped,scene=scene}
 end
 function NetworkGetLocalSceneFromNetworkId(scene)
   if scenes[scene] and now-scenes[scene].started<localHandleDelay then return -1 end
   return scene+1000
 end
 local function sceneFor(id) return scenes[id-1000] end
-function TaskSynchronizedScene(ped,id,dict,clip,blendIn,blendOut,flags,ragdoll,mover,ik)
-  local s=assert(sceneFor(id), 'actor task requires a LOCAL scene handle')
-  assert(s.ped==nil, 'network scene must not also schedule this player task')
-  assert(flags>=0 and (flags & 12)==0, 'successor must replace the previous task')
-  assert(ragdoll==0 and mover==1000.0 and ik==0, 'native argument positions')
-  if failActorTask then return end
-  activePed[ped]=id-1000
-  pedTasks[ped]={dict=dict,clip=clip,flags=flags}
+function TaskSynchronizedScene()
+  error('do not mix local TaskSynchronizedScene into a running network scene')
 end
 function SetSynchronizedSceneLooped(id,v) sceneFor(id).looped=v end
 function SetSynchronizedSceneHoldLastFrame(id,v) sceneFor(id).hold=v end
@@ -218,7 +217,7 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   assert(clears==transitionClears, 'select-to-idle must not clear the actor task')
   assert(not cams[selectedCamera] and cams[client.camera], 'replace the old camera without leaking it')
   local scene=scenes[client.scene]
-  assert(scene.looped and (pedTasks[1].flags & 64)~=0 and scene.ped==nil)
+  assert(scene.looped and (pedTasks[1].flags & 64)~=0 and scene.ped==1)
   for _,track in pairs(scene.tracks) do assert((track.flags & 64)~=0) end
   local origin,heading=scene.pos,scene.heading
   assert(math.abs(heading-313)<.001, 'chair rotation must come from the animation track')
@@ -373,6 +372,36 @@ assert(not client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wren
 assert(client.scene==nil and client.camera==nil, 'missing victim ack must clean up scene/camera')
 autoAck=true
 print('PASS: readiness ordering, stale epochs, action menu, rejection recovery, camera failure cleanup')
+
+-- The network scene is the completion clock. A separate entity-time query
+-- returning zero must not time out an otherwise playing synchronized track.
+frozenActorPhase=0
+localHandleDelay=120
+session('wrench')
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
+local stageCount=0
+for key,action in pairs(Config.Torture.actions) do
+  session(action.tool)
+  for index in ipairs(action.stages) do
+    client.activeAction={setupId=7,token='all-actions',key=key,actor=true,stage=index}
+    assert(client:RunActorStage(setup,'all-actions',key,index), key..'/'..index)
+    stageCount=stageCount+1
+  end
+end
+client:StopStage(); client.activeAction=nil
+frozenActorPhase=nil; localHandleDelay=0
+session('wrench'); failActorTask=true
+assert(not client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
+assert(client.scene==nil and client.camera==nil and client.actorTrack==nil)
+failActorTask=false
+client.activeAction={setupId=7,token='lost-actor',key='wrench_left',actor=true,stage=1}
+loseActorAt=now+300
+assert(not client:RunActorStage(setup,'lost-actor','wrench_left',1),
+  'props advancing without actor task must not complete an attack')
+assert(client.scene==nil and client.camera==nil)
+client.activeAction=nil; client.toolSession=nil
+print(('PASS: delayed scene handles, independent entity time, %d action stages, actor start/loss cleanup'):format(stageCount))
 
 dofile(RESOURCE_ROOT .. '/server/impl/main.impl.lua')
 local server=TEST_IMPL; server:Init(); server:OnReady()

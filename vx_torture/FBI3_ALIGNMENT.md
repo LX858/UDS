@@ -42,4 +42,8 @@ Khi đánh bằng cờ lê, kìm, can nước hoặc kẹp điện, prop đượ
 
 ## Kiểm tra trực tiếp
 
+Actor được đăng ký bằng `NetworkAddPedToSynchronisedScene` **trước** `NetworkStartSynchronisedScene`, theo [trình tự network scene của Cfx](https://github.com/citizenfx/natives/blob/master/NETWORK/NetworkCreateSynchronisedScene.md). Không ghép `TaskSynchronizedScene` vào local handle của network scene đã start: nhánh thử nghiệm này đã bị loại sau báo lỗi lấy dụng cụ. Local handle dùng cho camera và phase. Actor dùng cờ `HIDE_WEAPON`, `ABORT_ON_DEATH` và `LOOP_WITHIN_SCENE` khi chờ; không dùng `DONT_INTERRUPT` hoặc `ON_ABORT_STOP_SCENE` ở điểm thay task. Trước khi báo hoàn tất, kiểm tra actor còn chạy đúng clip và phase của synchronized scene đạt mốc; không bắt buộc `GetEntityAnimCurrentTime` của ped cũng đạt mốc. Cơ chế nạn nhân giữ nguyên. Đây là sửa theo API và kiểm thử giả lập, chưa phải xác nhận runtime trên máy chơi.
+
+Lỗi lấy/chờ dụng cụ ghi `[vx_torture] tool_scene_failed reason=...` trong F8: `actor_start`, `actor_track_lost`, `camera_start`, `peer_ready`, `chair_control`, `prop_control:<món>` hoặc `selection_timeout_or_cancelled`. Console server ghi `tool_failed` kèm state/phase/peer trước khi dọn phiên. Thu log cả hai client và server tại cùng lần tái hiện để xác định nhánh thất bại.
+
 Sau `restart vx_torture`, đặt một bộ ghế mới trên nền phẳng. Kiểm tra ghế, chân trolley và stool chạm nền; đầu hai kẹp và từng món nằm đúng theo cảnh gốc trên trolley; target từng món trúng vùng trên bàn; lấy, đổi, trả từng món; hai kẹp vào hai tay và trở lại hai chỗ cũ; sau scene, dụng cụ và ghế không bị lệch. Lặp lại trên freemode nam/nữ và trang phục khác nhau. Các native và animation có thể thay đổi theo build GTA V/FiveM, nên kiểm tra này là bước nghiệm thu cuối.

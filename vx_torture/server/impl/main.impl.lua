@@ -93,6 +93,12 @@ end
 function Impl:StopTool(setup, failed)
   if not setup.tool or setup.toolState == 'empty' then return end
   local token = setup.toolToken
+  if failed then
+    local peer = setup.peerScene
+    print(('[vx_torture] tool_failed setup=%s owner=%s victim=%s tool=%s state=%s phase=%s token=%s peer=%s peerReady=%s')
+      :format(setup.id, setup.owner, setup.victim, setup.tool, setup.toolState,
+        setup.toolPhase, token, peer and peer.kind, peer and peer.ready))
+  end
   self:EmitNet(self, 'stopTool', setup.owner, setup.id, token)
   if setup.victim then self:EmitNet(self, 'stopTool', setup.victim, setup.id, token) end
   setup.tool = nil
