@@ -499,7 +499,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] scene handoff v6 loaded (server)')
+  print('[vx_torture] FBI3 tool tracks v7 loaded (server)')
   exports.qbx_core:CreateUseableItem(cfg.item, function(src)
     self:BeginPlacement(src)
   end)
@@ -526,7 +526,8 @@ function Impl:OnReady()
     if kind == 'action' then
       local busy = setup.busy
       if busy and busy.token == token and busy.stage == step then
-        return cfg.actions[busy.key].stages[step], false
+        local stage = cfg.actions[busy.key].stages[step]
+        return stage, stage.loopMs ~= nil or stage.victimLoop == true
       end
     elseif setup.toolToken == token and setup.tool and cfg.toolScenes[setup.tool] then
       if kind == 'select' and step == 0 and setup.toolState == 'selecting'
@@ -549,7 +550,7 @@ function Impl:OnReady()
     end
     local scene, looped = sceneStage(setup, token, kind, step)
     if not scene then return reject('server_stage_mismatch') end
-    if victimClock ~= nil and (kind ~= 'select' or not scene.victimLoop
+    if victimClock ~= nil and ((kind ~= 'select' and kind ~= 'action') or not scene.victimLoop
       or not finite(victimClock) or victimClock < 0 or victimClock % 1 ~= 0
       or victimClock > 2147483647 or victimClock == netScene) then
       return reject('invalid_victim_clock')
@@ -584,6 +585,7 @@ function Impl:OnReady()
     end
     self:EmitNet(self, 'victimSceneReady', setup.owner, token, kind, step, netScene, peer.ready, failure)
     if peer.ready and kind == 'action' then
+      peer.readyAt = GetGameTimer()
       local stage = sceneStage(setup, token, kind, step)
       if stage.effect then
         self:EmitNet(self, 'stageEffect', -1, self:Snapshot(setup), token, setup.busy.key, step)
@@ -739,6 +741,9 @@ function Impl:OnReady()
     if not success or not peer or not peer.ready or peer.kind ~= 'action'
       or peer.token ~= token or peer.step ~= index then return self:CancelAction(setup, true) end
     local stageData = cfg.actions[busy.key].stages[index]
+    if stageData.loopMs and (not peer.readyAt or GetGameTimer() - peer.readyAt < stageData.loopMs) then
+      return self:CancelAction(setup, true)
+    end
     if GetGameTimer() - busy.stageAt < math.min(stageData.durationMs * 0.5, 1200) then
       return self:CancelAction(setup, true)
     end

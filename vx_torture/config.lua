@@ -17,13 +17,36 @@ local function stage(dict, actor, victim, chair, tool, durationMs, effect)
   if dict == 'missfbi3_electrocute' then
     local prefix = actor:gsub('_player$', '')
     data.tool = nil
-    data.props = {
+    data.attachTool = true
+    data.handProps = {
       electric = prefix .. '_r_clip',
       clipRight = prefix .. '_l_clip',
     }
+  elseif dict == 'missfbi3_toothpull' then
+    -- FBI3 func_429 defaults f_23=1: pliers clips animate on PH_R_Hand.
+    data.tool = nil
+    data.attachTool = true
+    data.handProps = { pliers = tool }
   elseif dict == 'missfbi3_waterboard' then
+    -- Only weapon selection has a world-space jerrycan track.
+    data.tool = nil
+    data.attachTool = true
     data.props = { rag = actor:gsub('_player$', '_rag') }
   end
+  return data
+end
+
+local function timedLoop(data, durationMs, camera)
+  data.loopMs = durationMs
+  data.camera = camera
+  return data
+end
+
+local function waterTransition(actor, durationMs)
+  local data = stage('missfbi3_waterboard', actor .. '_player',
+    'waterboard_ready_loop_victim', 'waterboard_ready_loop_chair', nil, durationMs)
+  -- FBI3 scenes 28/30: actor/rag transition while victim/chair keep their loop.
+  data.victimLoop = true
   return data
 end
 
@@ -123,7 +146,7 @@ Config.Torture = {
           syringe = 'weapon_bench_toothpull_syringe', rag = 'weapon_bench_toothpull_rag' } },
       idle = { dict = 'missfbi3_toothpull', actor = 'pull_tooth_idle_player',
         victim = 'pull_tooth_idle_victim', camera = 'pull_tooth_idle_cam',
-        tool = 'pull_tooth_idle_pliers' },
+        handProps = { pliers = 'pull_tooth_idle_pliers' } },
     },
     electric = {
       select = { dict = 'missfbi3_weapon_select', actor = 'weapon_select_electrocute_player',
@@ -134,8 +157,7 @@ Config.Torture = {
           clipRight = 'weapon_select_electrocute_l_clip' } },
       idle = { dict = 'missfbi3_electrocute', actor = 'clamp_wait_loop_player',
         victim = 'clamp_wait_loop_victim', camera = 'clamp_wait_loop_cam',
-        chair = 'clamp_wait_loop_chair',
-        props = { electric = 'clamp_wait_loop_r_clip', clipRight = 'clamp_wait_loop_l_clip' } },
+        handProps = { electric = 'clamp_wait_loop_r_clip', clipRight = 'clamp_wait_loop_l_clip' } },
     },
     waterboard = {
       select = { dict = 'missfbi3_weapon_select', actor = 'weapon_select_waterboard_player',
@@ -177,38 +199,40 @@ Config.Torture = {
       stage('missfbi3_wrench', 'wrench_attack_right_player', 'wrench_attack_right_victim', 'wrench_attack_right_chair', 'wrench_attack_right_wrench', 4100),
     } },
     pliers_weak = { tool = 'pliers', label = 'Nhổ nhẹ', result = { mode = 'damage', amount = 12 }, stages = {
-      stage('missfbi3_toothpull', 'pull_tooth_ready_intro_player', 'pull_tooth_ready_intro_victim', nil, 'pull_tooth_ready_intro_pliers', 2000),
-      stage('missfbi3_toothpull', 'pull_tooth_loop_weak_player', 'pull_tooth_loop_weak_victim', nil, 'pull_tooth_loop_weak_pliers', 3800),
+      stage('missfbi3_toothpull', 'pull_tooth_intro_player', 'pull_tooth_intro_victim', nil, 'pull_tooth_intro_pliers', 2000),
+      timedLoop(stage('missfbi3_toothpull', 'pull_tooth_loop_weak_player', 'pull_tooth_loop_weak_victim', nil, 'pull_tooth_loop_weak_pliers', 3800), 3800, 'pull_tooth_loop_cam'),
       stage('missfbi3_toothpull', 'pull_tooth_outro_b_player', 'pull_tooth_outro_b_victim', nil, 'pull_tooth_outro_b_pliers', 2000),
     } },
     pliers_pull = { tool = 'pliers', label = 'Nhổ mạnh', result = { mode = 'damage', amount = 25 }, stages = {
       stage('missfbi3_toothpull', 'pull_tooth_intro_player', 'pull_tooth_intro_victim', nil, 'pull_tooth_intro_pliers', 2000),
-      stage('missfbi3_toothpull', 'pull_tooth_loop_player', 'pull_tooth_loop_victim', nil, 'pull_tooth_loop_pliers', 3800,
-        { particle = 'scr_fbi3_blood_extraction', sound = 'FBI_03_TORTURE_Teeth_Pulling', bank = 'FBI_03_TORTURE_Teeth' }),
+      timedLoop(stage('missfbi3_toothpull', 'pull_tooth_loop_player', 'pull_tooth_loop_victim', nil, 'pull_tooth_loop_pliers', 3800,
+        { particle = 'scr_fbi3_blood_extraction', sound = 'FBI_03_TORTURE_Teeth_Pulling', bank = 'FBI_03_TORTURE_Teeth' }), 3800, 'pull_tooth_loop_cam'),
       stage('missfbi3_toothpull', 'pull_tooth_outro_player', 'pull_tooth_outro_victim', 'pull_tooth_outro_chair', 'pull_tooth_outro_pliers', 2200),
     } },
     electric_left = { tool = 'electric', label = 'Chích điện bên trái', result = { mode = 'damage', amount = 15 }, stages = {
-      stage('missfbi3_electrocute', 'electrocute_left_intro_player', 'electrocute_left_intro_victim', nil, 'electrocute_left_intro_l_clip', 4000,
-        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }),
+      timedLoop(stage('missfbi3_electrocute', 'clamp_left_loop_player', 'clamp_left_loop_victim', nil, nil, 4000,
+        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }), 4000, 'clamp_wait_loop_cam'),
     } },
     electric_right = { tool = 'electric', label = 'Chích điện bên phải', result = { mode = 'damage', amount = 15 }, stages = {
-      stage('missfbi3_electrocute', 'electrocute_right_intro_player', 'electrocute_right_intro_victim', nil, 'electrocute_right_intro_r_clip', 4000,
-        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }),
+      timedLoop(stage('missfbi3_electrocute', 'clamp_right_loop_player', 'clamp_right_loop_victim', nil, nil, 4000,
+        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }), 4000, 'clamp_wait_loop_cam'),
     } },
     electric_both = { tool = 'electric', label = 'Chích điện hai bên', result = { mode = 'damage', amount = 30 }, stages = {
-      stage('missfbi3_electrocute', 'electrocute_both_intro_player', 'electrocute_both_intro_victim', 'electrocute_both_intro_chair', nil, 2000),
-      stage('missfbi3_electrocute', 'electrocute_both_loop_player', 'electrocute_both_loop_victim', 'electrocute_both_loop_chair', nil, 4000,
-        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }),
+      timedLoop(stage('missfbi3_electrocute', 'electrocute_both_loop_player', 'electrocute_both_loop_victim', nil, nil, 4000,
+        { particle = 'scr_fbi3_elec_sparks', sound = 'FBI_03_TORTURE_Electric_Zap', bank = 'FBI_03_TORTURE_Electric' }), 4000, 'clamp_wait_loop_cam'),
       stage('missfbi3_electrocute', 'electrocute_both_outro_player', 'electrocute_both_outro_victim', 'electrocute_both_outro_chair', nil, 2000),
     } },
     water_pour = { tool = 'waterboard', label = 'Dội nước', result = { mode = 'damage', amount = 20 }, stages = {
-      stage('missfbi3_waterboard', 'waterboard_ready_to_loop_player', 'waterboard_ready_to_loop_victim', 'waterboard_ready_to_loop_chair', 'waterboard_ready_to_loop_jerrycan', 2000),
-      stage('missfbi3_waterboard', 'waterboard_loop_player', 'waterboard_loop_victim', 'waterboard_loop_chair', 'waterboard_loop_jerrycan', 4000,
-        { particle = 'scr_fbi3_dirty_water_pour', sound = 'FBI_03_TORTURE_Water_Pour_Water', bank = 'FBI_03_TORTURE_Water' }),
-      stage('missfbi3_waterboard', 'waterboard_loop_to_ready_player', 'waterboard_loop_to_ready_victim', 'waterboard_loop_to_ready_chair', 'waterboard_loop_to_ready_jerrycan', 2000),
+      stage('missfbi3_waterboard', 'waterboard_kick_player', 'waterboard_kick_victim', 'waterboard_kick_chair', nil, 4000),
+      waterTransition('waterboard_ready_to_loop', 2000),
+      timedLoop(stage('missfbi3_waterboard', 'waterboard_loop_player', 'waterboard_loop_victim', 'waterboard_loop_chair', nil, 4000,
+        { particle = 'scr_fbi3_dirty_water_pour', sound = 'FBI_03_TORTURE_Water_Pour_Water', bank = 'FBI_03_TORTURE_Water' }), 4000),
+      waterTransition('waterboard_loop_to_ready', 2000),
+      stage('missfbi3_waterboard', 'waterboard_outro_player', 'waterboard_outro_victim', 'waterboard_outro_chair', nil, 4000),
     } },
     water_kick = { tool = 'waterboard', label = 'Đạp ghế', result = { mode = 'damage', amount = 15 }, stages = {
-      stage('missfbi3_waterboard', 'waterboard_kick_player', 'waterboard_kick_victim', 'waterboard_kick_chair', 'waterboard_kick_jerrycan', 4000),
+      stage('missfbi3_waterboard', 'waterboard_kick_player', 'waterboard_kick_victim', 'waterboard_kick_chair', nil, 4000),
+      stage('missfbi3_waterboard', 'waterboard_outro_player', 'waterboard_outro_victim', 'waterboard_outro_chair', nil, 4000),
     } },
     syringe_inject = { tool = 'syringe', label = 'Tiêm thuốc', result = { mode = 'damage', amount = 20 }, stages = {
       stage('missfbi3_syringe', 'syringe_use_player', 'syringe_use_victim', 'syringe_use_chair', nil, 4500),

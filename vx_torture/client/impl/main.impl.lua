@@ -535,6 +535,65 @@ function Impl:EndToolSession(setup)
   end
 end
 
+-- FBI3 f_23 tracks are local to the hand bone, unlike weapon-select tracks.
+function Impl:StartHandProps(setup, stageData, looped, localScene)
+  self.handPropTracks = {}
+  for key, clip in pairs(stageData.handProps or {}) do
+    local entity = fromNet(setup.props[key], 500)
+    if not entity or not IsEntityAttachedToEntity(entity, PlayerPedId()) then return false end
+    local phase = GetSynchronizedScenePhase(localScene)
+    if not nativeTrue(PlayEntityAnim(entity, clip, stageData.dict, 8.0,
+      looped, not looped, false, phase, 0)) then return false end
+    self.handPropTracks[#self.handPropTracks + 1] = { entity = entity, dict = stageData.dict, clip = clip }
+  end
+  return true
+end
+
+function Impl:SyncHandProps()
+  if not self.localScene then return true end
+  for _, track in ipairs(self.handPropTracks or {}) do
+    if not DoesEntityExist(track.entity) or not IsEntityAttachedToEntity(track.entity, PlayerPedId()) then return false end
+    -- Use the actor clock for the attached object's internal animation too.
+    SetEntityAnimCurrentTime(track.entity, track.dict, track.clip, GetSynchronizedScenePhase(self.localScene))
+  end
+  return true
+end
+
+function Impl:StaticChair(setup)
+  local chair = fromNet(setup.props.chair, 500)
+  if not chair or not requestControl(chair, 1000) then return false end
+  local pos = setup.positions.chair
+  SetEntityCoordsNoOffset(chair, pos.x, pos.y, pos.z, false, false, false)
+  setDisplayRotation(chair, setup.heading, cfg.props.chair, setup.rotations and setup.rotations.chair)
+  FreezeEntityPosition(chair, true)
+  self.stageChair = nil
+  self.stageChairRestore = nil
+  return true
+end
+
+function Impl:ValidateSceneAssets(setup, stageData)
+  if not loadDict(stageData.dict, 3000) then return false end
+  local clips = { actor = stageData.actor, victim = stageData.victim,
+    chair = stageData.chair, tool = stageData.tool,
+    camera = stageData.camera or stageData.actor:gsub('_player$', '_cam') }
+  for role, clip in pairs(clips) do
+    if GetAnimDuration(stageData.dict, clip) <= 0.0 then
+      print(('[vx_torture] missing_scene_clip role=%s dict=%s clip=%s'):format(role, stageData.dict, clip))
+      return false
+    end
+  end
+  for _, tracks in ipairs({ stageData.props or {}, stageData.handProps or {} }) do
+    for key, clip in pairs(tracks) do
+      if not setup.props[key] or not fromNet(setup.props[key], 300)
+        or GetAnimDuration(stageData.dict, clip) <= 0.0 then
+        print(('[vx_torture] missing_prop_clip prop=%s dict=%s clip=%s'):format(key, stageData.dict, clip))
+        return false
+      end
+    end
+  end
+  return true
+end
+
 function Impl:UpdateSetup(setup)
   if self.removed[setup.id] then return end
   local old = self.setups[setup.id]
@@ -575,6 +634,10 @@ end
 function Impl:StopStage(keepVictimTask, transitioning)
   self.stageGeneration = (self.stageGeneration or 0) + 1
   local generation = self.stageGeneration
+  for _, track in ipairs(self.handPropTracks or {}) do
+    if DoesEntityExist(track.entity) then StopEntityAnim(track.entity, track.clip, track.dict, -8.0) end
+  end
+  self.handPropTracks = nil
   if self.peerScene and self.peerScene.ready == nil then
     self.peerScene.reason = self.peerScene.reason or 'session_stopped_before_ack'
   end
@@ -718,7 +781,8 @@ function Impl:WaitForVictimScene(setup, token, kind, step, scene, localScene)
   while self.peerScene == pending and self.scene == scene and pending.ready == nil
     and GetGameTimer() < expires do
     if not self:ActorTrackRunning(scene) then pending.reason = 'actor_track_lost' break end
-    if kind ~= 'idle' and GetSynchronizedScenePhase(localScene) >= 0.95 then
+    if kind ~= 'idle' and not (self.actorTrack and self.actorTrack.looped)
+      and GetSynchronizedScenePhase(localScene) >= 0.95 then
       pending.reason = 'scene_ended_before_ack'
       break
     end
@@ -917,6 +981,7 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   if self.toolSession ~= session then return false end
   if not self:StopStage(false, true) then return fail('previous_scene_stop') end
   if self.toolSession ~= session then return false end
+  if not stageData.chair and not self:StaticChair(setup) then return fail('static_chair') end
   if attachSelected and not self:HoldTool(setup, session.tool) then
     return fail('attach_tool')
   end
@@ -979,6 +1044,7 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
     return fail('actor_start')
   end
   self.localScene = localScene
+  if not self:StartHandProps(setup, stageData, looped, localScene) then return fail('hand_prop_start') end
   local cam = CreateCam('DEFAULT_ANIMATED_CAMERA', true)
   if not PlaySynchronizedCamAnim(cam, localScene, stageData.camera, stageData.dict) then
     DestroyCam(cam, false)
@@ -1068,6 +1134,7 @@ function Impl:RunActorStage(setup, token, key, index)
   local startedAt = GetGameTimer()
   local action = cfg.actions[key]
   local stageData = action.stages[index]
+  local looped = stageData.loopMs ~= nil
   local coords, heading = sceneOrigin(setup)
   if not coords or not self.activeAction or self.activeAction.token ~= token then return false end
   local ped = PlayerPedId()
@@ -1091,35 +1158,47 @@ function Impl:RunActorStage(setup, token, key, index)
     return false
   end
   if not self.activeAction or self.activeAction.token ~= token then return false end
+  if not stageData.chair and not self:StaticChair(setup) then return false end
+  if stageData.attachTool and not self:HoldTool(setup, action.tool) then return false end
+  if not self.activeAction or self.activeAction.token ~= token then return false end
   local scene = NetworkCreateSynchronisedScene(
     coords.x, coords.y, coords.z, 0.0, 0.0, heading,
-    2, true, false, 1.0, 0.0, 1.0
+    2, not looped, looped, 1.0, 0.0, 1.0
   )
   if scene and scene ~= -1 then
     self.actorStageActive = true
     self.scene = scene
-    self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, false, coords, heading)
+    self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, looped, coords, heading)
     if stageData.chair then
       FreezeEntityPosition(chair, false)
       self.stageChair = chair
       self.stageChairRestore = { coords = setup.positions.chair, heading = setup.heading,
         rotation = setup.rotations and setup.rotations.chair }
-      NetworkAddEntityToSynchronisedScene(chair, scene, stageData.dict, stageData.chair,
-        8.0, -8.0, 0)
+      local chairScene = scene
+      if stageData.victimLoop and not looped then
+        chairScene = NetworkCreateSynchronisedScene(coords.x, coords.y, coords.z,
+          0.0, 0.0, heading, 2, false, true, 1.0, 0.0, 1.0)
+        if not chairScene or chairScene == -1 then self:StopStage() return false end
+        self.chairScene = chairScene
+      end
+      NetworkAddEntityToSynchronisedScene(chair, chairScene, stageData.dict, stageData.chair,
+        8.0, -8.0, (looped or stageData.victimLoop) and 64 or 0)
+      if chairScene ~= scene then NetworkStartSynchronisedScene(chairScene) end
     end
     for propKey, clip in pairs(sceneProps) do
       local entity = propEntities[propKey]
       DetachEntity(entity, true, true)
       FreezeEntityPosition(entity, false)
       NetworkAddEntityToSynchronisedScene(entity, scene, stageData.dict, clip,
-        8.0, -8.0, 0)
+        8.0, -8.0, looped and 64 or 0)
     end
     NetworkStartSynchronisedScene(scene)
-    local localScene = self:WaitForActorTrack(scene, ped, stageData.dict, stageData.actor, false,
+    local localScene = self:WaitForActorTrack(scene, ped, stageData.dict, stageData.actor, looped,
       function() return self.scene == scene and self.activeAction and self.activeAction.token == token end)
     if localScene then
       self.localScene = localScene
-      local camName = stageData.actor:gsub('_player$', '_cam')
+      if not self:StartHandProps(setup, stageData, looped, localScene) then self:StopStage() return false end
+      local camName = stageData.camera or stageData.actor:gsub('_player$', '_cam')
       local cam = CreateCam('DEFAULT_ANIMATED_CAMERA', true)
       if PlaySynchronizedCamAnim(cam, localScene, camName, stageData.dict) then
         self:ReplaceSceneCamera(cam)
@@ -1136,13 +1215,15 @@ function Impl:RunActorStage(setup, token, key, index)
       -- durationMs is an effect/gameplay estimate, not the loaded clip length.
       -- Advance by the real scene phase, with the same hard deadline as server.
       local untilTime = startedAt + cfg.stageTimeoutMs
+      local loopStartedAt = GetGameTimer() -- count only after both peers are ready
       while self.activeAction and self.activeAction.token == token
         and GetGameTimer() < untilTime do
-        if not self:ActorTrackRunning(scene) then
+        if not self:ActorTrackRunning(scene) or not self:SyncHandProps() then
           if self.scene == scene then self:StopStage() end
           return false
         end
-        if GetSynchronizedScenePhase(localScene) >= 0.97 then
+        if (looped and GetGameTimer() - loopStartedAt >= stageData.loopMs)
+          or (not looped and GetSynchronizedScenePhase(localScene) >= 0.97) then
           return true -- hold this frame until the next stage/idle is prepared
         end
         Wait(0)
@@ -1346,7 +1427,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] scene handoff v6 loaded (client)')
+  print('[vx_torture] FBI3 tool tracks v7 loaded (client)')
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('victimSceneReady', function(token, kind, step, scene, success, reason)
     local pending = self.peerScene
@@ -1454,18 +1535,7 @@ function Impl:OnReady()
       end
       if ready then
         for _, scene in pairs(toolScenes) do
-          if not loadDict(scene.dict, 3000)
-            or GetAnimDuration(scene.dict, scene.actor) <= 0.0
-            or GetAnimDuration(scene.dict, scene.victim) <= 0.0 then
-            ready = false
-            break
-          end
-          for key in pairs(scene.props or {}) do
-            if not setup.props[key] or not fromNet(setup.props[key], 300) then
-              ready = false
-              break
-            end
-          end
+          ready = self:ValidateSceneAssets(setup, scene)
           if not ready then break end
         end
       end
@@ -1575,25 +1645,12 @@ function Impl:OnReady()
       local ready = fromNet(setup.props.chair, 2000) ~= nil
       if ready then
         for index, stageData in ipairs(action.stages) do
-          if not loadDict(stageData.dict, 3000)
-            or GetAnimDuration(stageData.dict, stageData.actor) <= 0.0
-            or GetAnimDuration(stageData.dict, stageData.victim) <= 0.0
-            or (stageData.chair and GetAnimDuration(stageData.dict, stageData.chair) <= 0.0)
-            or (stageData.tool and GetAnimDuration(stageData.dict, stageData.tool) <= 0.0) then
+          if not self:ValidateSceneAssets(setup, stageData) then
             print(('[vx_torture] action_asset_failed action=%s stage=%s dict=%s actor=%s victim=%s chair=%s tool=%s')
               :format(key, index, stageData.dict, stageData.actor, stageData.victim, stageData.chair, stageData.tool))
             ready = false
             break
           end
-          for propKey, clip in pairs(stageData.props or {}) do
-            if not setup.props[propKey] or GetAnimDuration(stageData.dict, clip) <= 0.0 then
-              print(('[vx_torture] action_prop_failed action=%s stage=%s prop=%s dict=%s clip=%s')
-                :format(key, index, propKey, stageData.dict, clip))
-              ready = false
-              break
-            end
-          end
-          if not ready then break end
         end
       end
       if ready then
@@ -1690,6 +1747,7 @@ function Impl:OnReady()
     end)
   end
   self:Interval('seatControl', 0, function()
+    self:SyncHandProps()
     if self.activeAction and GetGameTimer() > self.activeAction.expiresAt then
       self.activeAction = nil
       self:StopStage()
@@ -1705,7 +1763,7 @@ function Impl:OnReady()
         local healthy = targetReady(setup.props.chair)
           and targetReady(setup.props[session.tool])
         if session.actor then
-          healthy = healthy and self:ActorTrackRunning(self.scene)
+          healthy = healthy and self:ActorTrackRunning(self.scene) and self:SyncHandProps()
           -- Only the current idle session may request cleanup.
           if self.toolSession ~= session or session.phase ~= 'idle' or self.activeAction then return end
         else

@@ -11,6 +11,7 @@ function L(key) return key end
 local now, nextScene, nextCam = 0, 100, 5000
 local scenes, cams, attached, positions, activePed = {}, {}, {}, {}, {}
 local activeEntity={}
+local handAnims={}
 local pedTasks = {}
 local advancedTasks, advancedCount = {}, 0
 local events, threads, timers, menus, openMenu = {}, {}, {}, {}, nil
@@ -96,6 +97,7 @@ function DoesAnimDictExist() return true end
 function HasAnimDictLoaded() return true end
 RequestAnimDict = noop
 function GetAnimDuration(dict,clip)
+  if FBI3_CLIPS[dict] and not FBI3_CLIPS[dict][clip] then return 0 end
   if realClipLengths and dict=='missfbi3_weapon_select' then
     if clip=='waterboard_idle_chair' or clip=='waterboard_idle_victim' then return 13.333 end
     if clip:find('^weapon_select_wrench_') then return 7.433 end
@@ -128,6 +130,7 @@ function NetworkAddPedToSynchronisedScene(ped,scene,dict,clip,a,b,flags)
   local s=scenes[scene]; s.ped=ped; s.dict=dict; s.clip=clip; s.flags=flags
 end
 function NetworkAddEntityToSynchronisedScene(entity,scene,dict,clip,a,b,flags)
+  assert(GetAnimDuration(dict,clip)>0, 'unknown entity clip: '..dict..'/'..clip)
   scenes[scene].tracks[entity] = { dict=dict,clip=clip,flags=flags }
 end
 function NetworkStartSynchronisedScene(scene)
@@ -174,6 +177,18 @@ function GetEntityAnimCurrentTime(ped,dict,clip)
   if ped==1 and frozenActorPhase then return frozenActorPhase end
   if activePed[ped] then return GetSynchronizedScenePhase(activePed[ped]+1000) end
   return 0
+end
+
+function PlayEntityAnim(entity,clip,dict,blend,looped,hold)
+  assert(attached[entity], 'hand-local prop animation must be attached')
+  assert(GetAnimDuration(dict,clip)>0, 'unknown hand clip: '..dict..'/'..clip)
+  handAnims[entity]={dict=dict,clip=clip,looped=looped,hold=hold}
+  return true
+end
+function StopEntityAnim(entity) handAnims[entity]=nil end
+function SetEntityAnimCurrentTime(entity,dict,clip,phase)
+  assert(handAnims[entity] and handAnims[entity].clip==clip)
+  handAnims[entity].phase=phase
 end
 function TaskPlayAnimAdvanced(ped,dict,clip,x,y,z,rx,ry,rz,blendIn,blendOut,duration,flags,phase,rotationOrder)
   if ped==1 and failActorRecovery then return end
@@ -236,6 +251,8 @@ end
 local cases=0
 for _,tool in ipairs(Config.Torture.toolOrder) do
   session(tool)
+  assert(client:ValidateSceneAssets(setup,Config.Torture.toolScenes[tool].select), tool..' select assets')
+  assert(client:ValidateSceneAssets(setup,Config.Torture.toolScenes[tool].idle), tool..' idle assets')
   local transitionClears=clears
   assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes[tool].select,false))
   local selectedScene, selectedCamera = client.scene, client.camera
@@ -243,6 +260,10 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
     'selection must keep its task and camera while waiting for the idle event')
   assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes[tool].idle,true))
   assert(clears==transitionClears, 'select-to-idle must not clear the actor task')
+  for key,clip in pairs(Config.Torture.toolScenes[tool].idle.handProps or {}) do
+    assert(attached[setup.props[key]] and handAnims[setup.props[key]].clip==clip)
+    assert(not scenes[client.scene].tracks[setup.props[key]], 'hand clip must not enter world scene')
+  end
   assert(not cams[selectedCamera] and cams[client.camera], 'replace the old camera without leaking it')
   local scene=scenes[client.scene]
   assert(scene.looped and (pedTasks[1].flags & 64)~=0 and scene.ped==1)
@@ -278,10 +299,15 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   client:StopVictimScene(); assert(scene.running, 'victim cleanup must not stop the actor scene')
   client.seated=nil; currentPlayer=1
   client:StopStage() -- StopCamAnim deliberately does not exist in this environment.
+  assert(next(handAnims)==nil, 'cleanup must stop all attached prop animations')
   client.toolSession=nil
   cases=cases+1
 end
 print(('PASS: select -> looping idle/menu, camera cleanup, matching peer origins (%d tools)'):format(cases))
+local badIdle={}
+for key,value in pairs(Config.Torture.toolScenes.electric.idle) do badIdle[key]=value end
+badIdle.chair='clamp_wait_loop_chair'
+assert(not client:ValidateSceneAssets(setup,badIdle), 'reject the old unsupported electric chair track')
 
 -- A stopped local scene can retain its last pose/handle. Neither its running
 -- query nor the old clip query is a network-stop acknowledgement.
@@ -461,8 +487,18 @@ local stageCount=0
 for key,action in pairs(Config.Torture.actions) do
   session(action.tool)
   for index in ipairs(action.stages) do
+    local stage=action.stages[index]
+    assert(client:ValidateSceneAssets(setup,stage),key..'/'..index..' assets')
     client.activeAction={setupId=7,token='all-actions',key=key,actor=true,stage=index}
+    local started=now
     assert(client:RunActorStage(setup,'all-actions',key,index), key..'/'..index)
+    if stage.loopMs then assert(now-started>=stage.loopMs and scenes[client.scene].looped) end
+    if stage.victimLoop then assert(client.chairScene and client.chairScene~=client.scene) end
+    for propKey,clip in pairs(stage.handProps or {}) do
+      assert(attached[setup.props[propKey]] and handAnims[setup.props[propKey]].clip==clip)
+      assert(not scenes[client.scene].tracks[setup.props[propKey]])
+    end
+    if action.tool=='waterboard' then assert(attached[setup.props.waterboard]) end
     stageCount=stageCount+1
   end
 end
@@ -596,6 +632,41 @@ send(1,'readyAction',7,actionToken,true); send(2,'readyAction',7,actionToken,tru
 Wait(5000); send(1,'stageDone',7,actionToken,1,true)
 assert(damageCount()==1 and setup.toolState=='idle')
 print('PASS: missing victim scene acknowledgement prevents damage')
+
+-- Exercise every repaired option through server authority, including its loop
+-- duration and the separate victim/chair clock on water transitions.
+for key,action in pairs(Config.Torture.actions) do
+  if action.tool=='pliers' or action.tool=='electric' or action.tool=='waterboard' then
+    setup.tool=action.tool; setup.toolState='idle'; setup.toolReady=true; setup.toolToken='flow-'..key
+    local damageBefore=damageCount()
+    server:StartAction(1,7,2,key)
+    local t=setup.busy.token
+    send(1,'readyAction',7,t,true); send(2,'readyAction',7,t,true)
+    for index,stage in ipairs(action.stages) do
+      send(1,'bindVictimScene',7,t,'action',index,999,stage.victimLoop and 1001 or nil)
+      assert(setup.peerScene and not setup.peerScene.ready)
+      local join=events[#events]
+      assert(join.name=='joinVictimScene' and join.args[8]==(stage.loopMs~=nil or stage.victimLoop==true))
+      if stage.victimLoop then assert(join.args[9]==1001) end
+      send(2,'victimSceneReady',7,t,'action',index,999,true)
+      assert(setup.peerScene.ready)
+      Wait(math.max(stage.loopMs or 0,5000))
+      send(1,'stageDone',7,t,index,true)
+      assert(setup.toolState==(index==#action.stages and 'idle' or 'action'))
+    end
+    assert(damageCount()==damageBefore+1, key..' must deal damage only once after the whole sequence')
+    send(1,'stageDone',7,t,#action.stages,true)
+    assert(damageCount()==damageBefore+1)
+  end
+end
+setup.tool='electric'; setup.toolState='idle'; setup.toolReady=true; setup.toolToken='early-loop'
+server:StartAction(1,7,2,'electric_left'); local early=setup.busy.token
+send(1,'readyAction',7,early,true); send(2,'readyAction',7,early,true)
+bind(early,'action',1)
+local damageBefore=damageCount()
+Wait(1500); send(1,'stageDone',7,early,1,true)
+assert(setup.busy==nil and damageCount()==damageBefore, 'cannot skip configured loop duration')
+print('PASS: all repaired options, water clock relay, loop deadlines, damage once and early completion rejection')
 
 -- The reported scene handle is larger than an entity net ID. It is an opaque
 -- scene handle, and the same handle may legitimately recur in a new token.
