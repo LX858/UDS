@@ -401,6 +401,7 @@ function Impl:TakeTool(src, setupId, tool)
   self:EmitNet(self, 'prepareTool', setup.victim, snapshot, setup.toolToken)
   local token, phaseAt = setup.toolToken, setup.toolPhaseAt
   SetTimeout(cfg.toolPrepareTimeoutMs, function()
+    print(json.encode(setup, {indent = true}))
     if self.setups[src] == setup and setup.toolToken == token
       and setup.toolState == 'selecting' and setup.toolPhase == nil
       and setup.toolPhaseAt == phaseAt then
