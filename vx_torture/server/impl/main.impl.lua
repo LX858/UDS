@@ -499,7 +499,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] scene clocks v5 loaded (server)')
+  print('[vx_torture] scene handoff v6 loaded (server)')
   exports.qbx_core:CreateUseableItem(cfg.item, function(src)
     self:BeginPlacement(src)
   end)

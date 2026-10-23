@@ -562,13 +562,19 @@ function Impl:StopRetiredScenes()
   local retired = self.retiredScenes
   self.retiredScenes = nil
   if retired and #retired > 0 then self.sceneStopPending = true end
-  for _, scene in ipairs(retired or {}) do NetworkStopSynchronisedScene(scene) end
+  for _, scene in ipairs(retired or {}) do
+    local localScene = NetworkGetLocalSceneFromNetworkId(scene)
+    if localScene and localScene >= 0 then
+      SetSynchronizedSceneHoldLastFrame(localScene, false)
+      SetSynchronizedSceneLooped(localScene, false)
+    end
+    NetworkStopSynchronisedScene(scene)
+  end
 end
 
 function Impl:StopStage(keepVictimTask, transitioning)
   self.stageGeneration = (self.stageGeneration or 0) + 1
   local generation = self.stageGeneration
-  local oldLocal, oldTrack = self.localScene, self.actorTrack
   if self.peerScene and self.peerScene.ready == nil then
     self.peerScene.reason = self.peerScene.reason or 'session_stopped_before_ack'
   end
@@ -585,20 +591,19 @@ function Impl:StopStage(keepVictimTask, transitioning)
   self.actorTrack = nil
   -- Stop every old network task BEFORE assigning these peds/props again.
   -- Stopping the old scene after starting the successor can abort its tasks
-  -- one frame later. Preserve only the camera while waiting for the stop ack.
+  -- one frame later. NetworkStopSynchronisedScene has no acknowledgement;
+  -- a retained local handle/held clip is not proof that the stop failed.
   self:StopRetiredScenes()
   if transitioning then
-    if oldLocal or oldTrack or self.sceneStopPending then
-      local expires = GetGameTimer() + 1000
-      repeat
+    if self.sceneStopPending then
+      -- Drain the queued stop before assigning successor tasks. Do not clear
+      -- the ped here: the successor network task replaces its previous pose.
+      -- WaitForActorTrack validates the NEW scene before camera/menu readiness.
+      for _ = 1, 2 do
         Wait(0)
         if self.stageGeneration ~= generation then return false end
-        local running = oldLocal and nativeTrue(IsSynchronizedSceneRunning(oldLocal))
-        local playing = oldTrack and nativeTrue(IsEntityPlayingAnim(PlayerPedId(), oldTrack.dict, oldTrack.clip, 3))
-        if not running and not playing then self.sceneStopPending = nil return true end
-      until GetGameTimer() >= expires
-      print('[vx_torture] previous_scene_stop_timeout')
-      return false
+      end
+      self.sceneStopPending = nil
     end
     return true
   end
@@ -1341,7 +1346,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] scene clocks v5 loaded (client)')
+  print('[vx_torture] scene handoff v6 loaded (client)')
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('victimSceneReady', function(token, kind, step, scene, success, reason)
     local pending = self.peerScene

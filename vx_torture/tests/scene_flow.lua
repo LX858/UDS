@@ -20,6 +20,7 @@ local loseActorAgainAt, failActorRecovery = nil, false
 local frozenActorPhase, localHandleDelay = nil, 0
 local numericAnimResult=false
 local realClipLengths=false
+local retainStoppedSceneState=false
 local autoAck = true
 local function noop() end
 function NewImpl()
@@ -78,7 +79,7 @@ function Wait(ms)
   -- Model the reported delayed stop: stopping the old scene AFTER assigning
   -- the same ped/props to a successor can erase their tasks on the next tick.
   for _, stop in ipairs(delayedStops) do
-    if stop.ped then
+    if stop.ped and not stop.retain then
       pedTasks[stop.ped]=nil; activePed[stop.ped]=nil
     end
     for entity in pairs(scenes[stop.scene].tracks) do activeEntity[entity]=nil end
@@ -139,8 +140,9 @@ function NetworkStartSynchronisedScene(scene)
   if s.ped and not failActorTask then activePed[s.ped]=scene; pedTasks[s.ped]={dict=s.dict,clip=s.clip,flags=s.flags} end
 end
 function NetworkStopSynchronisedScene(scene)
-  stops=stops+1; scenes[scene].running=false
-  delayedStops[#delayedStops+1]={ped=scenes[scene].ped,scene=scene}
+  stops=stops+1
+  if not retainStoppedSceneState then scenes[scene].running=false end
+  delayedStops[#delayedStops+1]={ped=scenes[scene].ped,scene=scene,retain=retainStoppedSceneState}
 end
 function NetworkGetLocalSceneFromNetworkId(scene)
   if scenes[scene] and now-scenes[scene].started<localHandleDelay then return -1 end
@@ -280,6 +282,28 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   cases=cases+1
 end
 print(('PASS: select -> looping idle/menu, camera cleanup, matching peer origins (%d tools)'):format(cases))
+
+-- A stopped local scene can retain its last pose/handle. Neither its running
+-- query nor the old clip query is a network-stop acknowledgement.
+session('wrench')
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
+local heldScene=client.scene
+local heldCamera=client.camera
+local handoffStart=now
+retainStoppedSceneState=true
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true),
+  'retained old scene state must not cancel the select-to-idle handoff')
+assert(now-handoffStart<250, 'handoff must not wait one second for old native flags')
+assert(scenes[heldScene].running and activePed[1]==client.scene,
+  'new actor task must replace the old task even if old handle still reports running')
+assert(not scenes[heldScene].hold and not scenes[heldScene].looped)
+assert(not cams[heldCamera] and cams[client.camera])
+Wait(40)
+assert(client:ActorTrackRunning(client.scene))
+for entity in pairs(scenes[client.scene].tracks) do assert(activeEntity[entity]==client.scene) end
+retainStoppedSceneState=false
+drain(); client:StopStage(); client.toolSession=nil
+print('PASS: retained stopped scene state cannot abort idle or leave old actor/prop tasks')
 
 -- Emulate slow control acquisition while returning unused props. It may take
 -- seconds, but must happen after the idle scene and menu, with the actor held.
