@@ -499,7 +499,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] peer diagnostics v2 loaded (server)')
+  print('[vx_torture] scene clocks v5 loaded (server)')
   exports.qbx_core:CreateUseableItem(cfg.item, function(src)
     self:BeginPlacement(src)
   end)
@@ -538,7 +538,7 @@ function Impl:OnReady()
       end
     end
   end
-  self:OnNet('bindVictimScene', function(setupId, token, kind, step, netScene)
+  self:OnNet('bindVictimScene', function(setupId, token, kind, step, netScene, victimClock)
     local setup = self:GetOwned(source, setupId)
     if not setup or not setup.victim or not finite(netScene) or netScene < 0
       or netScene % 1 ~= 0 or netScene > 2147483647 then return end
@@ -549,6 +549,11 @@ function Impl:OnReady()
     end
     local scene, looped = sceneStage(setup, token, kind, step)
     if not scene then return reject('server_stage_mismatch') end
+    if victimClock ~= nil and (kind ~= 'select' or not scene.victimLoop
+      or not finite(victimClock) or victimClock < 0 or victimClock % 1 ~= 0
+      or victimClock > 2147483647 or victimClock == netScene) then
+      return reject('invalid_victim_clock')
+    end
     if not isAlive(setup.victim) then return reject('victim_not_alive') end
     if GetPlayerRoutingBucket(setup.victim) ~= setup.bucket then return reject('victim_bucket') end
     if not near(source, setup.entities.chair, cfg.actionDistance + 1.0) then
@@ -556,8 +561,9 @@ function Impl:OnReady()
     end
     local previous = setup.peerScene
     if previous and previous.token == token and previous.kind == kind and previous.step == step then return end
-    setup.peerScene = { token = token, kind = kind, step = step, netScene = netScene, ready = false }
-    self:EmitNet(self, 'joinVictimScene', setup.victim, self:Snapshot(setup), token, kind, step, netScene, scene, looped)
+    setup.peerScene = { token = token, kind = kind, step = step, netScene = netScene,
+      victimClock = victimClock, ready = false }
+    self:EmitNet(self, 'joinVictimScene', setup.victim, self:Snapshot(setup), token, kind, step, netScene, scene, looped, victimClock)
   end)
   self:OnNet('victimSceneReady', function(setupId, token, kind, step, netScene, success, reason)
     local setup
