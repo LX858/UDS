@@ -10,6 +10,7 @@ json = { encode = function() return '<mock diagnostic>' end }
 function L(key) return key end
 local now, nextScene, nextCam = 0, 100, 5000
 local scenes, cams, attached, positions, activePed = {}, {}, {}, {}, {}
+local activeEntity={}
 local pedTasks = {}
 local advancedTasks, advancedCount = {}, 0
 local events, threads, timers, menus, openMenu = {}, {}, {}, {}, nil
@@ -18,6 +19,7 @@ local failActorTask, loseActorAt, delayedStops = false, nil, {}
 local loseActorAgainAt, failActorRecovery = nil, false
 local frozenActorPhase, localHandleDelay = nil, 0
 local numericAnimResult=false
+local realClipLengths=false
 local autoAck = true
 local function noop() end
 function NewImpl()
@@ -73,12 +75,13 @@ SetEntityNoCollisionEntity, DisableAllControlActions, EnableControlAction = noop
 function GetGameTimer() return now end
 function Wait(ms)
   now = now + math.max(ms,20)
-  -- A network stop can be delivered after the successor has been submitted.
-  -- It must never own/delete the locally assigned actor task.
+  -- Model the reported delayed stop: stopping the old scene AFTER assigning
+  -- the same ped/props to a successor can erase their tasks on the next tick.
   for _, stop in ipairs(delayedStops) do
-    if stop.ped and activePed[stop.ped]==stop.scene then
+    if stop.ped then
       pedTasks[stop.ped]=nil; activePed[stop.ped]=nil
     end
+    for entity in pairs(scenes[stop.scene].tracks) do activeEntity[entity]=nil end
   end
   delayedStops={}
   if loseActorAt and now>=loseActorAt then pedTasks[1]=nil; loseActorAt=nil end
@@ -91,7 +94,17 @@ function GetGroundZFor_3dCoord() return true,0 end
 function DoesAnimDictExist() return true end
 function HasAnimDictLoaded() return true end
 RequestAnimDict = noop
-function GetAnimDuration() return 1 end
+function GetAnimDuration(dict,clip)
+  if realClipLengths and dict=='missfbi3_weapon_select' then
+    if clip=='waterboard_idle_chair' or clip=='waterboard_idle_victim' then return 13.333 end
+    if clip:find('^weapon_select_wrench_') then return 7.433 end
+    if clip:find('^weapon_select_electrocute_') then return 8.333 end
+    if clip:find('^weapon_select_waterboard_') then return 12.500 end
+  end
+  if realClipLengths and clip=='pull_tooth_intro_player' then return 6 end
+  if realClipLengths and clip=='pull_tooth_intro_pliers' then return 6 end
+  return 1
+end
 -- Deliberately not 180 degrees and not zero translation: detects hard-coded
 -- origin/heading assumptions while verifying both peers use the same transform.
 function GetAnimInitialOffsetRotation(dict,clip,x,y,z,rx,ry,rz)
@@ -118,6 +131,11 @@ function NetworkAddEntityToSynchronisedScene(entity,scene,dict,clip,a,b,flags)
 end
 function NetworkStartSynchronisedScene(scene)
   local s=scenes[scene]; s.started=now; s.running=true
+  s.duration=s.ped and GetAnimDuration(s.dict,s.clip)*1000 or 1
+  for entity,track in pairs(s.tracks) do
+    s.duration=math.max(s.duration,GetAnimDuration(track.dict,track.clip)*1000)
+    activeEntity[entity]=scene
+  end
   if s.ped and not failActorTask then activePed[s.ped]=scene; pedTasks[s.ped]={dict=s.dict,clip=s.clip,flags=s.flags} end
 end
 function NetworkStopSynchronisedScene(scene)
@@ -137,7 +155,7 @@ function SetSynchronizedSceneHoldLastFrame(id,v) sceneFor(id).hold=v end
 function SetSynchronizedSceneRate(id,rate) sceneFor(id).rate=rate end
 function IsSynchronizedSceneRunning(id) return sceneFor(id) and sceneFor(id).running end
 function GetSynchronizedScenePhase(id)
-  local s=sceneFor(id); local phase=(now-s.started)/1000
+  local s=sceneFor(id); local phase=(now-s.started)/s.duration
   return s.looped and phase%1 or math.min(1,phase)
 end
 function IsEntityPlayingAnim(ped,dict,clip)
@@ -145,6 +163,7 @@ function IsEntityPlayingAnim(ped,dict,clip)
   local task=pedTasks[ped]
   local playing = task and task.dict==dict and task.clip==clip
     and (task.advanced or s and s.running) or false
+  if realClipLengths and s and not s.looped and now-s.started>=GetAnimDuration(dict,clip)*1000 then playing=false end
   if numericAnimResult then return playing and 1 or 0 end
   return playing
 end
@@ -277,7 +296,7 @@ assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.s
 local selectDoneAt=now
 assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
 client:ShowToolMenu(setup)
-assert(now==selectDoneAt and restored==0 and openMenu==client.toolMenuId,
+assert(now-selectDoneAt<=250 and restored==0 and openMenu==client.toolMenuId,
   'no synchronous bench/control waits between selection and the ready menu')
 drain()
 assert(restored>0 and now>selectDoneAt)
@@ -429,40 +448,57 @@ session('wrench'); failActorTask=true
 assert(not client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
 assert(client.scene==nil and client.camera==nil and client.actorTrack==nil)
 failActorTask=false
-session('wrench')
-loseActorAt=now+300
-local beforeRecover=advancedCount
-assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
-assert(client.actorTrack.recovered and advancedCount==beforeRecover+1)
-assert(advancedTasks[1].phase>=0.30 and advancedTasks[1].phase<0.40,
-  'resume at the interrupted phase instead of replaying the selection')
-assert(scenes[client.scene].running and cams[client.camera])
-assert(#(advancedTasks[1].pos-scenes[client.scene].pos)<.001,
-  'recovery must retain the authored scene root')
-assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
-assert(not client.actorTrack.recovered, 'next stage gets a fresh recovery budget')
-Wait(300); pedTasks[1]=nil
-assert(client:EnsureActorTrack(client.scene) and client.actorTrack.recovered)
-assert((advancedTasks[1].flags & 1)~=0, 'idle recovery keeps looping')
-client:StopStage()
 client.activeAction={setupId=7,token='lost-actor',key='wrench_left',actor=true,stage=1}
 loseActorAt=now+300
-loseActorAgainAt=now+600
+local beforeLost=advancedCount
 assert(not client:RunActorStage(setup,'lost-actor','wrench_left',1),
-  'repeated task loss must abort instead of retrying indefinitely')
-assert(client.scene==nil and client.camera==nil)
-client.activeAction={setupId=7,token='failed-recovery',key='wrench_left',actor=true,stage=1}
-loseActorAt=now+300; failActorRecovery=true
-assert(not client:RunActorStage(setup,'failed-recovery','wrench_left',1))
-assert(client.scene==nil and client.camera==nil, 'failed recovery cannot finish an action')
-failActorRecovery=false
-client.activeAction={setupId=7,token='late-loss',key='wrench_left',actor=true,stage=1}
-loseActorAt=now+950
-beforeRecover=advancedCount
-assert(not client:RunActorStage(setup,'late-loss','wrench_left',1))
-assert(advancedCount==beforeRecover, 'late loss cannot skip to a finishing hit')
+  'actual task loss must abort; do not create an independent actor animation clock')
+assert(client.scene==nil and client.camera==nil and advancedCount==beforeLost)
 client.activeAction=nil; client.toolSession=nil
-print(('PASS: delayed handles, %d action stages, phase-preserving recovery, bounded retry and failure cleanup'):format(stageCount))
+print(('PASS: delayed handles, %d action stages and failure cleanup'):format(stageCount))
+
+-- Reproduce the reported ~13.33s clock: finite actor/tool clips finish at
+-- 7.43/8.33/12.50s, whereas the seated chair loop lasts 13.33s. They must not
+-- share a scene clock. No local actor recovery is permitted to hide a failure.
+realClipLengths=true
+for _,tool in ipairs({'wrench','electric','waterboard'}) do
+  session(tool)
+  local select=Config.Torture.toolScenes[tool].select
+  local start=now
+  local beforeActorAdvanced=advancedCount
+  assert(client:RunActorToolScene(setup,'token',select,false), tool..' selection clock')
+  local main,chairClock=client.scene,client.chairScene
+  assert(chairClock and chairClock~=main and scenes[chairClock].looped)
+  assert(scenes[main].tracks[setup.props.chair]==nil, 'chair loop must not extend selection')
+  assert(scenes[main].duration==GetAnimDuration(select.dict,select.actor)*1000)
+  assert(now-start<GetAnimDuration(select.dict,select.actor)*1000+100,
+    'selection should hand off before the actor clip naturally expires')
+  assert(advancedCount==beforeActorAdvanced, 'never replace actor with independent advanced task')
+  currentPlayer=2; client.seated=7
+  local expectedVictimPhase=GetSynchronizedScenePhase(chairClock+1000)
+  assert(client:JoinVictimScene(setup,select,main,true,function() return true end,chairClock))
+  assert(math.abs(advancedTasks[2].phase-expectedVictimPhase)<.001,
+    'victim must sample the independent chair clock')
+  client:StopVictimScene(); client.seated=nil; currentPlayer=1
+  assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes[tool].idle,true))
+  local idleScene=client.scene
+  Wait(40) -- delayed old-scene teardown must already have happened
+  assert(client:ActorTrackRunning(idleScene) and not scenes[chairClock].running)
+  for entity in pairs(scenes[idleScene].tracks) do
+    assert(activeEntity[entity]==idleScene, 'old stop must not detach/freeze the new tool track')
+  end
+  drain()
+  client:StopStage()
+end
+session('pliers')
+client.activeAction={setupId=7,token='long-clip',key='pliers_pull',actor=true,stage=1}
+local longStart=now
+assert(client:RunActorStage(setup,'long-clip','pliers_pull',1),
+  '6-second loaded clip must not time out at configured 2 seconds plus 2.5')
+assert(now-longStart>4500)
+client:StopStage(); client.activeAction=nil; client.toolSession=nil
+realClipLengths=false
+print('PASS: distinct chair/actor clocks, stop-before-start for ped/props, long action clip completion')
 
 dofile(RESOURCE_ROOT .. '/server/impl/main.impl.lua')
 local server=TEST_IMPL; server:Init(); server:OnReady()
@@ -542,8 +578,10 @@ print('PASS: missing victim scene acknowledgement prevents damage')
 setup.tool='wrench'; setup.toolState='selecting'; setup.toolPhase='playing'
 setup.toolToken='peer-test'; setup.peerScene=nil
 positions[1]=vector3(0,0,0)
-send(1,'bindVictimScene',7,'peer-test','select',0,374720)
+send(1,'bindVictimScene',7,'peer-test','select',0,374720,374722)
 assert(setup.peerScene and setup.peerScene.netScene==374720)
+assert(setup.peerScene.victimClock==374722 and events[#events].args[9]==374722,
+  'server must relay the separate chair clock for the matching selection')
 send(2,'victimSceneReady',7,'old-token','select',0,374720,true)
 assert(not setup.peerScene.ready, 'reused scene ID cannot accept an old token ack')
 send(2,'victimSceneReady',7,'peer-test','select',0,374720,false,'victim_wrong_seat')

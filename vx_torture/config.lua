@@ -51,7 +51,8 @@ Config.Torture = {
   referenceHeading = 96.61,
   seatTimeoutMs = 6000,
   prepareTimeoutMs = 7000,
-  stageTimeoutMs = 12000,
+  -- Hard failure ceiling; normal stages finish on the actual animation phase.
+  stageTimeoutMs = 30000,
   toolPrepareTimeoutMs = 12000,
   toolSelectTimeoutMs = 16000,
   toolIdleTimeoutMs = 10000,
