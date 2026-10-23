@@ -111,14 +111,17 @@ function Impl:WaitForActorTrack(scene, ped, dict, clip, looped, current)
   return nil
 end
 
-function Impl:AddActorTrack(scene, ped, dict, clip, looped)
+function Impl:AddActorTrack(scene, ped, dict, clip, looped, origin, heading)
   -- Register the owning player BEFORE NetworkStartSynchronisedScene. The
   -- local handle is only used for phase/camera; do not inject a local task
   -- into the network scene after it starts.
-  local flags = 1024 | 2048 | (looped and 64 or 0)
+  -- DONT_INTERRUPT blocks ambient events, not scripted successor tasks.
+  -- Do not add ON_ABORT_STOP_SCENE: recovery must retain the prop/camera clock.
+  local flags = 4 | 1024 | 2048 | (looped and 64 or 0)
   NetworkAddPedToSynchronisedScene(ped, scene, dict, clip,
     8.0, -8.0, flags, 0, 1000.0, 0)
-  self.actorTrack = { scene = scene, dict = dict, clip = clip, looped = looped }
+  self.actorTrack = { scene = scene, dict = dict, clip = clip, looped = looped,
+    origin = origin, heading = heading, startedAt = GetGameTimer() }
 end
 
 function Impl:ActorTrackRunning(scene)
@@ -133,10 +136,46 @@ function Impl:ActorTrackRunning(scene)
   local playing = not nativeTrue(IsEntityDead(PlayerPedId()))
     and nativeTrue(running) and nativeTrue(anim)
   if not playing then
-    print(('[vx_torture] Actor track lost: %s / %s (network=%s, local=%s, running=%s/%s, anim=%s/%s)')
-      :format(track.dict, track.clip, scene, self.localScene, running, type(running), anim, type(anim)))
+    print(('[vx_torture] Actor track lost: %s / %s (network=%s, local=%s, running=%s/%s, anim=%s/%s, phase=%.3f, elapsed=%s, recovered=%s)')
+      :format(track.dict, track.clip, scene, self.localScene, running, type(running), anim, type(anim),
+        self.localScene and GetSynchronizedScenePhase(self.localScene) or -1.0,
+        GetGameTimer() - (track.startedAt or GetGameTimer()), track.recovered == true))
   end
   return playing == true
+end
+
+function Impl:EnsureActorTrack(scene)
+  if self:ActorTrackRunning(scene) then return true end
+  local track = self.actorTrack
+  local localScene = self.localScene
+  -- A missing/ended scene, death or second interruption must never be repaired
+  -- into a successful action. Only recover a live scene whose ped lost its task.
+  if not track or track.scene ~= scene or self.scene ~= scene or track.recovered
+    or not track.origin or not localScene or nativeTrue(IsEntityDead(PlayerPedId()))
+    or not nativeTrue(IsSynchronizedSceneRunning(localScene))
+    or not HasAnimDictLoaded(track.dict) then return false end
+  local phase = GetSynchronizedScenePhase(localScene)
+  if phase < 0.0 or phase >= 1.0 or (not track.looped and phase >= 0.90) then return false end
+  track.recovered = true
+  local root = track.origin
+  -- Use the same authored root/offset extraction as the working victim path.
+  -- Start at the existing phase once; do not restart the scene or other player.
+  TaskPlayAnimAdvanced(PlayerPedId(), track.dict, track.clip,
+    root.x, root.y, root.z, 0.0, 0.0, track.heading,
+    8.0, -8.0, -1, VICTIM_TRACK_FLAGS | 8 | 1048576 | (track.looped and 1 or 2), phase, 2, 0)
+  local expires = GetGameTimer() + 300
+  repeat
+    if self.actorTrack ~= track or self.scene ~= scene
+      or nativeTrue(IsEntityDead(PlayerPedId()))
+      or not nativeTrue(IsSynchronizedSceneRunning(localScene)) then return false end
+    if nativeTrue(IsEntityPlayingAnim(PlayerPedId(), track.dict, track.clip, 3)) then
+      print(('[vx_torture] actor_track_recovered clip=%s scene=%s phase=%.3f')
+        :format(track.clip, scene, phase))
+      return true
+    end
+    Wait(0)
+  until GetGameTimer() >= expires
+  return false
 end
 
 local function loadModel(model, timeoutMs)
@@ -689,7 +728,7 @@ function Impl:WaitForVictimScene(setup, token, kind, step, scene, localScene)
   local expires = GetGameTimer() + cfg.scenePeerTimeoutMs
   while self.peerScene == pending and self.scene == scene and pending.ready == nil
     and GetGameTimer() < expires do
-    if not self:ActorTrackRunning(scene) then pending.reason = 'actor_track_lost' break end
+    if not self:EnsureActorTrack(scene) then pending.reason = 'actor_track_lost' break end
     if kind ~= 'idle' and GetSynchronizedScenePhase(localScene) >= 0.95 then
       pending.reason = 'scene_ended_before_ack'
       break
@@ -701,7 +740,7 @@ function Impl:WaitForVictimScene(setup, token, kind, step, scene, localScene)
       :format(pending.reason or 'ack_timeout', token, kind, step, scene, pending.ready))
     return false
   end
-  return self:ActorTrackRunning(scene)
+  return self:EnsureActorTrack(scene)
 end
 
 function Impl:JoinVictimScene(setup, stageData, scene, looped, current)
@@ -898,7 +937,7 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   if not scene or scene == -1 then return fail('create_scene') end
   self.scene = scene
   self.actorStageActive = true
-  self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, looped)
+  self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, looped, coords, heading)
   if chair then
     FreezeEntityPosition(chair, false)
     self.stageChair = chair
@@ -964,7 +1003,7 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   local attached = false
   while self.toolSession == session and session.token == token and self.scene == scene
     and GetGameTimer() < untilTime do
-    if not self:ActorTrackRunning(scene) then return fail('actor_track_lost') end
+    if not self:EnsureActorTrack(scene) then return fail('actor_track_lost') end
     local phase = GetSynchronizedScenePhase(localScene)
     if stageData.attachAt and not attached and phase >= stageData.attachAt then
       attached = self:HoldTool(setup, session.tool)
@@ -1054,7 +1093,7 @@ function Impl:RunActorStage(setup, token, key, index)
   if scene and scene ~= -1 then
     self.actorStageActive = true
     self.scene = scene
-    self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, false)
+    self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, false, coords, heading)
     if stageData.chair then
       FreezeEntityPosition(chair, false)
       self.stageChair = chair
@@ -1092,8 +1131,8 @@ function Impl:RunActorStage(setup, token, key, index)
       local untilTime = GetGameTimer() + math.min(cfg.stageTimeoutMs, stageData.durationMs + 2500)
       while self.activeAction and self.activeAction.token == token
         and GetGameTimer() < untilTime do
-        if not self:ActorTrackRunning(scene) then
-          self:StopStage()
+        if not self:EnsureActorTrack(scene) then
+          if self.scene == scene then self:StopStage() end
           return false
         end
         if GetSynchronizedScenePhase(localScene) >= 0.97 then
@@ -1300,7 +1339,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] peer fix v3 loaded (client)')
+  print('[vx_torture] actor recovery v4 loaded (client)')
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('victimSceneReady', function(token, kind, step, scene, success, reason)
     local pending = self.peerScene
@@ -1654,11 +1693,13 @@ function Impl:OnReady()
         local clip = session.actor and idle.actor or idle.victim
         local healthy = targetReady(setup.props.chair)
           and targetReady(setup.props[session.tool])
-          and IsEntityPlayingAnim(PlayerPedId(), idle.dict, clip, 3)
         if session.actor then
-          healthy = healthy and self.localScene and IsSynchronizedSceneRunning(self.localScene)
+          healthy = healthy and self:EnsureActorTrack(self.scene)
+          -- Recovery can yield; a new action/exit must retain its own task.
+          if self.toolSession ~= session or session.phase ~= 'idle' or self.activeAction then return end
         else
           healthy = healthy and self.victimScene and self.victimMasterScene
+            and nativeTrue(IsEntityPlayingAnim(PlayerPedId(), idle.dict, clip, 3))
             and #(GetEntityCoords(PlayerPedId()) - setup.positions.chair)
               <= cfg.seatAlignment.maxDistance + 0.8
         end

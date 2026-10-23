@@ -15,6 +15,7 @@ local advancedTasks, advancedCount = {}, 0
 local events, threads, timers, menus, openMenu = {}, {}, {}, {}, nil
 local currentPlayer, failCamera, stops, shown, clears = 1, false, 0, 0, 0
 local failActorTask, loseActorAt, delayedStops = false, nil, {}
+local loseActorAgainAt, failActorRecovery = nil, false
 local frozenActorPhase, localHandleDelay = nil, 0
 local numericAnimResult=false
 local autoAck = true
@@ -81,6 +82,7 @@ function Wait(ms)
   end
   delayedStops={}
   if loseActorAt and now>=loseActorAt then pedTasks[1]=nil; loseActorAt=nil end
+  if loseActorAgainAt and now>=loseActorAgainAt then pedTasks[1]=nil; loseActorAgainAt=nil end
 end
 function CreateThread(fn) threads[#threads+1] = fn end
 function SetTimeout(ms,fn) timers[#timers+1] = fn end
@@ -107,7 +109,8 @@ function NetworkCreateSynchronisedScene(x,y,z,rx,ry,rz,order,hold,looped)
 end
 function NetworkAddPedToSynchronisedScene(ped,scene,dict,clip,a,b,flags)
   assert(not scenes[scene].started, 'register actor before starting network scene')
-  assert((flags & 12)==0, 'do not prevent successor tasks or stop scene on task replacement')
+  assert((flags & 4)~=0 and (flags & 8)==0,
+    'block external interruption without stopping the clock on task replacement')
   local s=scenes[scene]; s.ped=ped; s.dict=dict; s.clip=clip; s.flags=flags
 end
 function NetworkAddEntityToSynchronisedScene(entity,scene,dict,clip,a,b,flags)
@@ -152,6 +155,7 @@ function GetEntityAnimCurrentTime(ped,dict,clip)
   return 0
 end
 function TaskPlayAnimAdvanced(ped,dict,clip,x,y,z,rx,ry,rz,blendIn,blendOut,duration,flags,phase,rotationOrder)
+  if ped==1 and failActorRecovery then return end
   assert(duration==-1 and rotationOrder==2)
   assert((flags & 1024)~=0 and (flags & 4096)~=0 and (flags & 524288)~=0,
     'authored FBI3 tracks require physics override and initial/mover extraction')
@@ -425,13 +429,40 @@ session('wrench'); failActorTask=true
 assert(not client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
 assert(client.scene==nil and client.camera==nil and client.actorTrack==nil)
 failActorTask=false
+session('wrench')
+loseActorAt=now+300
+local beforeRecover=advancedCount
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
+assert(client.actorTrack.recovered and advancedCount==beforeRecover+1)
+assert(advancedTasks[1].phase>=0.30 and advancedTasks[1].phase<0.40,
+  'resume at the interrupted phase instead of replaying the selection')
+assert(scenes[client.scene].running and cams[client.camera])
+assert(#(advancedTasks[1].pos-scenes[client.scene].pos)<.001,
+  'recovery must retain the authored scene root')
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
+assert(not client.actorTrack.recovered, 'next stage gets a fresh recovery budget')
+Wait(300); pedTasks[1]=nil
+assert(client:EnsureActorTrack(client.scene) and client.actorTrack.recovered)
+assert((advancedTasks[1].flags & 1)~=0, 'idle recovery keeps looping')
+client:StopStage()
 client.activeAction={setupId=7,token='lost-actor',key='wrench_left',actor=true,stage=1}
 loseActorAt=now+300
+loseActorAgainAt=now+600
 assert(not client:RunActorStage(setup,'lost-actor','wrench_left',1),
-  'props advancing without actor task must not complete an attack')
+  'repeated task loss must abort instead of retrying indefinitely')
 assert(client.scene==nil and client.camera==nil)
+client.activeAction={setupId=7,token='failed-recovery',key='wrench_left',actor=true,stage=1}
+loseActorAt=now+300; failActorRecovery=true
+assert(not client:RunActorStage(setup,'failed-recovery','wrench_left',1))
+assert(client.scene==nil and client.camera==nil, 'failed recovery cannot finish an action')
+failActorRecovery=false
+client.activeAction={setupId=7,token='late-loss',key='wrench_left',actor=true,stage=1}
+loseActorAt=now+950
+beforeRecover=advancedCount
+assert(not client:RunActorStage(setup,'late-loss','wrench_left',1))
+assert(advancedCount==beforeRecover, 'late loss cannot skip to a finishing hit')
 client.activeAction=nil; client.toolSession=nil
-print(('PASS: delayed scene handles, independent entity time, %d action stages, actor start/loss cleanup'):format(stageCount))
+print(('PASS: delayed handles, %d action stages, phase-preserving recovery, bounded retry and failure cleanup'):format(stageCount))
 
 dofile(RESOURCE_ROOT .. '/server/impl/main.impl.lua')
 local server=TEST_IMPL; server:Init(); server:OnReady()
