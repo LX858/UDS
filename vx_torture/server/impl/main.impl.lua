@@ -104,6 +104,7 @@ function Impl:StopTool(setup, failed)
   setup.toolReadyPeers = nil
   setup.peerScene = nil
   self:Sync(setup)
+  print(failed, 'action_failed')
   if failed then self:Notify(setup.owner, 'action_failed') end
 end
 
@@ -413,6 +414,7 @@ function Impl:StartStage(setup, index)
   if not busy then return end
   local action = cfg.actions[busy.key]
   local stageData = action.stages[index]
+  print('not found stageData', json.encode(stageData, {indent = true}))
   if not stageData then return self:CancelAction(setup, true) end
   busy.stage = index
   busy.stageAt = GetGameTimer()
