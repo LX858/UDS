@@ -499,7 +499,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] FBI3 tool tracks v7 loaded (server)')
+  print('[vx_torture] water flow v8 loaded (server)')
   exports.qbx_core:CreateUseableItem(cfg.item, function(src)
     self:BeginPlacement(src)
   end)
@@ -744,7 +744,10 @@ function Impl:OnReady()
     if stageData.loopMs and (not peer.readyAt or GetGameTimer() - peer.readyAt < stageData.loopMs) then
       return self:CancelAction(setup, true)
     end
-    if GetGameTimer() - busy.stageAt < math.min(stageData.durationMs * 0.5, 1200) then
+    local minimumMs = stageData.minimumMs or math.min(stageData.durationMs * 0.5, 1200)
+    if GetGameTimer() - busy.stageAt < minimumMs then
+      print(('[vx_torture] stage_too_early action=%s stage=%d elapsed=%d minimum=%d')
+        :format(busy.key, index, GetGameTimer() - busy.stageAt, minimumMs))
       return self:CancelAction(setup, true)
     end
     if cfg.actions[busy.key].stages[index + 1] then

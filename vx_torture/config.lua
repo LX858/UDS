@@ -47,6 +47,22 @@ local function waterTransition(actor, durationMs)
     'waterboard_ready_loop_victim', 'waterboard_ready_loop_chair', nil, durationMs)
   -- FBI3 scenes 28/30: actor/rag transition while victim/chair keep their loop.
   data.victimLoop = true
+  -- This is a short pose change, not the damaging loop. A completed clip
+  -- must not be rejected by the generic durationMs / 2 estimate.
+  data.minimumMs = 0
+  return data
+end
+
+local function waterFinish()
+  -- FBI3 scene 31 (finish pouring), followed by 32. Scene 30 returns to
+  -- Ready_Loop for another pour and is a different branch.
+  local data = stage('missfbi3_waterboard', 'waterboard_loop_to_ready_player',
+    'waterboard_loop_victim', 'waterboard_loop_chair', nil, 2000)
+  data.camera = 'waterboard_loop_cam'
+  data.props = { rag = 'waterboard_loop_rag' }
+  data.victimLoop = true
+  data.victimProps = { rag = true }
+  data.minimumMs = 0
   return data
 end
 
@@ -227,11 +243,7 @@ Config.Torture = {
       waterTransition('waterboard_ready_to_loop', 2000),
       timedLoop(stage('missfbi3_waterboard', 'waterboard_loop_player', 'waterboard_loop_victim', 'waterboard_loop_chair', nil, 4000,
         { particle = 'scr_fbi3_dirty_water_pour', sound = 'FBI_03_TORTURE_Water_Pour_Water', bank = 'FBI_03_TORTURE_Water' }), 4000),
-      waterTransition('waterboard_loop_to_ready', 2000),
-      stage('missfbi3_waterboard', 'waterboard_outro_player', 'waterboard_outro_victim', 'waterboard_outro_chair', nil, 4000),
-    } },
-    water_kick = { tool = 'waterboard', label = 'Đạp ghế', result = { mode = 'damage', amount = 15 }, stages = {
-      stage('missfbi3_waterboard', 'waterboard_kick_player', 'waterboard_kick_victim', 'waterboard_kick_chair', nil, 4000),
+      waterFinish(),
       stage('missfbi3_waterboard', 'waterboard_outro_player', 'waterboard_outro_victim', 'waterboard_outro_chair', nil, 4000),
     } },
     syringe_inject = { tool = 'syringe', label = 'Tiêm thuốc', result = { mode = 'damage', amount = 20 }, stages = {

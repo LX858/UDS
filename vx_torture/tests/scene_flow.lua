@@ -21,6 +21,7 @@ local loseActorAgainAt, failActorRecovery = nil, false
 local frozenActorPhase, localHandleDelay = nil, 0
 local numericAnimResult=false
 local realClipLengths=false
+local shortWaterTransitions=false
 local retainStoppedSceneState=false
 local autoAck = true
 local function noop() end
@@ -98,6 +99,11 @@ function HasAnimDictLoaded() return true end
 RequestAnimDict = noop
 function GetAnimDuration(dict,clip)
   if FBI3_CLIPS[dict] and not FBI3_CLIPS[dict][clip] then return 0 end
+  if shortWaterTransitions and dict=='missfbi3_waterboard' then
+    if clip=='waterboard_loop_rag' then return 13.333 end
+    if clip=='waterboard_ready_to_loop_player' or clip=='waterboard_ready_to_loop_rag'
+      or clip=='waterboard_loop_to_ready_player' then return 0.8 end
+  end
   if realClipLengths and dict=='missfbi3_weapon_select' then
     if clip=='waterboard_idle_chair' or clip=='waterboard_idle_victim' then return 13.333 end
     if clip:find('^weapon_select_wrench_') then return 7.433 end
@@ -275,6 +281,7 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   local menu=menus[openMenu]; local expected=1
   for _,action in pairs(Config.Torture.actions) do if action.tool==tool then expected=expected+1 end end
   assert(#menu.options==expected and menu.canClose==false)
+  if tool=='waterboard' then assert(#menu.options==2 and Config.Torture.actions.water_kick==nil) end
   drain() -- optional bench restoration runs after idle and menu are available
   local before=stops
   for _=1,4 do Wait(7300); client:ShowToolMenu(setup) end
@@ -517,6 +524,23 @@ assert(client.scene==nil and client.camera==nil and advancedCount==beforeLost)
 client.activeAction=nil; client.toolSession=nil
 print(('PASS: delayed handles, %d action stages and failure cleanup'):format(stageCount))
 
+shortWaterTransitions=true
+session('waterboard')
+for _,index in ipairs({2,4}) do
+  client.activeAction={setupId=7,token='short-water',key='water_pour',actor=true,stage=index}
+  local start=now
+  assert(client:RunActorStage(setup,'short-water','water_pour',index))
+  assert(now-start<1000, 'short actor transition must not wait for a background rag loop')
+  if index==4 then
+    assert(scenes[client.scene].tracks[setup.props.rag]==nil)
+    assert(scenes[client.chairScene].tracks[setup.props.rag].clip=='waterboard_loop_rag')
+    assert(scenes[client.chairScene].looped)
+  end
+end
+client:StopStage(); client.activeAction=nil; client.toolSession=nil
+shortWaterTransitions=false
+print('PASS: short water transitions and independent finishing rag/victim clock')
+
 -- Reproduce the reported ~13.33s clock: finite actor/tool clips finish at
 -- 7.43/8.33/12.50s, whereas the seated chair loop lasts 13.33s. They must not
 -- share a scene clock. No local actor recovery is permitted to hide a failure.
@@ -650,7 +674,8 @@ for key,action in pairs(Config.Torture.actions) do
       if stage.victimLoop then assert(join.args[9]==1001) end
       send(2,'victimSceneReady',7,t,'action',index,999,true)
       assert(setup.peerScene.ready)
-      Wait(math.max(stage.loopMs or 0,5000))
+      -- The old server rejected the short open/close-can clips before 1000ms.
+      Wait(stage.minimumMs==0 and 800 or math.max(stage.loopMs or 0,5000))
       send(1,'stageDone',7,t,index,true)
       assert(setup.toolState==(index==#action.stages and 'idle' or 'action'))
     end
@@ -659,6 +684,10 @@ for key,action in pairs(Config.Torture.actions) do
     assert(damageCount()==damageBefore+1)
   end
 end
+setup.tool='waterboard'; setup.toolState='idle'; setup.toolReady=true; setup.toolToken='removed-option'
+local damageBeforeRemoved=damageCount()
+server:StartAction(1,7,2,'water_kick')
+assert(setup.busy==nil and damageCount()==damageBeforeRemoved, 'removed kick event must not authorize an action')
 setup.tool='electric'; setup.toolState='idle'; setup.toolReady=true; setup.toolToken='early-loop'
 server:StartAction(1,7,2,'electric_left'); local early=setup.busy.token
 send(1,'readyAction',7,early,true); send(2,'readyAction',7,early,true)

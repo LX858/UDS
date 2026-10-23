@@ -1183,15 +1183,19 @@ function Impl:RunActorStage(setup, token, key, index)
       end
       NetworkAddEntityToSynchronisedScene(chair, chairScene, stageData.dict, stageData.chair,
         8.0, -8.0, (looped or stageData.victimLoop) and 64 or 0)
-      if chairScene ~= scene then NetworkStartSynchronisedScene(chairScene) end
+      -- Start the secondary clock after its background prop tracks are added.
     end
     for propKey, clip in pairs(sceneProps) do
       local entity = propEntities[propKey]
       DetachEntity(entity, true, true)
       FreezeEntityPosition(entity, false)
-      NetworkAddEntityToSynchronisedScene(entity, scene, stageData.dict, clip,
-        8.0, -8.0, looped and 64 or 0)
+      local followsVictim = stageData.victimProps and stageData.victimProps[propKey]
+      local propScene = followsVictim and self.chairScene or scene
+      if not propScene then self:StopStage() return false end
+      NetworkAddEntityToSynchronisedScene(entity, propScene, stageData.dict, clip,
+        8.0, -8.0, (looped or followsVictim) and 64 or 0)
     end
+    if self.chairScene then NetworkStartSynchronisedScene(self.chairScene) end
     NetworkStartSynchronisedScene(scene)
     local localScene = self:WaitForActorTrack(scene, ped, stageData.dict, stageData.actor, looped,
       function() return self.scene == scene and self.activeAction and self.activeAction.token == token end)
@@ -1427,7 +1431,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] FBI3 tool tracks v7 loaded (client)')
+  print('[vx_torture] water flow v8 loaded (client)')
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('victimSceneReady', function(token, kind, step, scene, success, reason)
     local pending = self.peerScene
@@ -1672,6 +1676,10 @@ function Impl:OnReady()
     if active.actor then
       CreateThread(function()
         local success = self:RunActorStage(setup, token, key, index)
+        if not success then
+          print(('[vx_torture] action_stage_failed action=%s stage=%d dict=%s clip=%s token=%s')
+            :format(key, index, stageData.dict, stageData.actor, token))
+        end
         self:EmitNet(self, 'stageDone', setup.id, token, index, success == true)
       end)
     end

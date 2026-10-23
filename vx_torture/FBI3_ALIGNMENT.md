@@ -46,9 +46,15 @@ Track prop phải phân biệt không gian scene và không gian bone. Cờ lê 
 
 - Kìm: `Pull_Tooth_Idle → Pull_Tooth_Intro → Pull_Tooth_Loop_Weak/Loop → Pull_Tooth_Outro_B/Outro → Idle`. `Ready_Intro` là bước từ tư thế đang nhổ về tư thế chờ khác, không dùng để bắt đầu từ `Idle`.
 - Điện: menu trái/phải dùng `Clamp_Left/Right_Loop`, hai bên dùng `Electrocute_Both_Loop` rồi `Electrocute_Both_Outro`. Ghế tĩnh ở các loop, chỉ chạy track ghế khi outro có khai báo. Không tự suy ra tên camera từ tên actor ở các loop này.
-- Nước: `Idle → Kick → Ready_To_Loop → Loop → Loop_To_Ready → Outro → Idle`. Hai bước chuyển 28/30 dùng `Waterboard_Ready_Loop_Victim/Chair` ở scene riêng (cờ `f_22`), actor và khăn dùng clip chuyển. Can vẫn gắn tay. Option đạp dùng `Kick → Outro` để quay về ghế thẳng trước menu. Không tạo nhân vật Steve của nhiệm vụ gốc.
+- Nước: `Idle → Kick → Ready_To_Loop → Loop → Finish_Pour → Outro → Idle`. Can vẫn gắn tay. Bản v8 chỉ có option **Dội nước** và **Thoát**; `Kick` là bước nghiêng ghế tự động trong chuỗi dội, không còn action `water_kick`. Không tạo nhân vật Steve của nhiệm vụ gốc.
 
 Resource chuyển nhánh minigame blend theo input của GTA thành các option menu đã thống nhất: loop được chạy trọn `loopMs` trong config, cả actor và victim dùng loop; server tính thời gian từ xác nhận nạn nhân và từ chối báo hoàn tất sớm. Đây không phải bản sao phần điều khiển analog/scaleform của nhiệm vụ. Cờ lê, ống tiêm và mức sát thương của từng option không đổi.
+
+### Dội nước — v8
+
+Người dùng báo dừng sau khi nghiêng ghế và mở can. Kiểm tra tìm thấy ngưỡng server `durationMs / 2` có thể từ chối clip chuyển đã hoàn tất dưới 1 giây; chưa có log runtime xác nhận đây là nguyên nhân duy nhất. Hai bước chuyển nước đặt `minimumMs = 0` để chỉ dựa vào actor hoàn tất và peer readiness; loop gây sát thương vẫn bắt buộc 4000 ms từ xác nhận nạn nhân và cả chuỗi vẫn phải hoàn tất trước khi tính 20 HP. Các đòn khác giữ nguyên ngưỡng cũ. Harness với clip chuyển 800 ms tái hiện việc server v7 hủy và server v8 chuyển bước thành công; 800 ms là dữ liệu thử, không phải độ dài asset đã đo trong game.
+
+Nhánh kết thúc dùng scene **31 → 32** của `func_429`, đúng lệnh `func_428(31, ...)` ở case 4 của luồng nước; scene 30 là quay lại chờ để dội tiếp. Scene 31 dùng actor `Waterboard_Loop_To_Ready_Player`, victim/chair/rag `Waterboard_Loop_*` và camera `Waterboard_Loop_Cam`. Trong bản network, `victimProps.rag` đưa khăn loop cùng clock ghế/nạn nhân để loop nền không kéo dài clip actor ngắn. Hai frame dừng/chuyển scene và cơ chế ped của các dụng cụ khác không đổi.
 
 `tests/fbi3_clip_reference.json` lưu danh sách clip trích từ các nhánh nguồn, URL và SHA-256 của snapshot. Harness không còn coi mọi tên clip đều tồn tại ở ba dictionary này: kiểm tra tên camera, ghế, ped, prop; kiểm tra prop gắn tay không bị thêm vào world scene, loop có đủ thời gian, chuyển clock nước và sát thương một lần. `ValidateSceneAssets` còn kiểm tra `GetAnimDuration` trên client thật, in `missing_scene_clip`/`missing_prop_clip` khi thiếu asset. Snapshot nguồn và harness không chứng minh geometry hay replication trên game build của máy chủ.
 
