@@ -84,16 +84,31 @@ local function sceneOrigin(setup)
   return alignedSceneOrigin(setup.positions.chair, setup.heading)
 end
 
-local function waitForScene(scene, ped, dict, clip, looped, current)
+function Impl:StartActorTrack(scene, ped, dict, clip, looped, current)
+  if not loadDict(dict, 3000) or not current() then return nil end
   local expires = GetGameTimer() + 2500
   local localScene = -1
+  local assigned = false
   repeat
     if not current() then return nil end
     localScene = NetworkGetLocalSceneFromNetworkId(scene)
     if localScene and localScene >= 0 then
       SetSynchronizedSceneLooped(localScene, looped)
       SetSynchronizedSceneHoldLastFrame(localScene, not looped)
+      if not assigned then
+        -- FBI3 func_428 assigns the owning actor's task directly. The network
+        -- scene carries props; its LOCAL handle is the single clock for this
+        -- ped and camera too. Never enqueue a second network ped task.
+        -- Argument 7 is synchronized-scene flags, NOT a duration (-1).
+        -- Omit DONT_INTERRUPT / ON_ABORT_STOP_SCENE: successors must replace it.
+        local flags = 1024 | 2048 | (looped and 64 or 0)
+        TaskSynchronizedScene(ped, localScene, dict, clip, 8.0, -8.0,
+          flags, 0, 1000.0, 0)
+        self.actorTrack = { scene = scene, dict = dict, clip = clip, looped = looped }
+        assigned = true
+      end
       if IsSynchronizedSceneRunning(localScene) and IsEntityPlayingAnim(ped, dict, clip, 3) then
+        self:StopRetiredScenes()
         return localScene
       end
     end
@@ -102,6 +117,19 @@ local function waitForScene(scene, ped, dict, clip, looped, current)
   print(('[vx_torture] Scene did not start: %s / %s (network=%s, local=%s)')
     :format(dict, clip, scene, localScene))
   return nil
+end
+
+function Impl:ActorTrackRunning(scene)
+  local track = self.actorTrack
+  if not track or track.scene ~= scene or self.scene ~= scene then return false end
+  local playing = not IsEntityDead(PlayerPedId())
+    and self.localScene and IsSynchronizedSceneRunning(self.localScene)
+    and IsEntityPlayingAnim(PlayerPedId(), track.dict, track.clip, 3)
+  if not playing then
+    print(('[vx_torture] Actor track lost: %s / %s (network=%s, local=%s)')
+      :format(track.dict, track.clip, scene, self.localScene))
+  end
+  return playing == true
 end
 
 local function loadModel(model, timeoutMs)
@@ -515,21 +543,28 @@ function Impl:UpdateSetup(setup)
   end
 end
 
+function Impl:StopRetiredScenes()
+  local retired = self.retiredScenes
+  self.retiredScenes = nil
+  for _, scene in ipairs(retired or {}) do NetworkStopSynchronisedScene(scene) end
+end
+
 function Impl:StopStage(keepVictimTask, transitioning)
   self.peerScene = nil
   if not keepVictimTask then self:StopVictimScene() end
-  if self.benchScene then
-    NetworkStopSynchronisedScene(self.benchScene)
-    self.benchScene = nil
-  end
-  if self.scene then
-    NetworkStopSynchronisedScene(self.scene)
-    self.scene = nil
+  self.retiredScenes = self.retiredScenes or {}
+  for _, key in ipairs({ 'benchScene', 'scene' }) do
+    if self[key] then
+      self.retiredScenes[#self.retiredScenes + 1] = self[key]
+      self[key] = nil
+    end
   end
   self.localScene = nil
-  -- A prepared successor will replace the task and camera immediately. Keep
-  -- the previous camera and chair pose until then; full cleanup is for exit/error.
+  self.actorTrack = nil
+  -- Keep the old task's clock/camera alive while the successor obtains its
+  -- local handle. Retire it only after the new ped task is actually playing.
   if transitioning then return end
+  self:StopRetiredScenes()
   local camera = self.camera
   self.camera = nil
   if camera and DoesCamExist(camera) then
@@ -640,6 +675,7 @@ function Impl:WaitForVictimScene(setup, token, kind, step, scene, localScene)
   local expires = GetGameTimer() + cfg.scenePeerTimeoutMs
   while self.peerScene == pending and self.scene == scene and pending.ready == nil
     and GetGameTimer() < expires do
+    if not self:ActorTrackRunning(scene) then return false end
     if kind ~= 'idle' and GetSynchronizedScenePhase(localScene) >= 0.95 then break end
     Wait(0)
   end
@@ -648,7 +684,7 @@ function Impl:WaitForVictimScene(setup, token, kind, step, scene, localScene)
     print(('[vx_torture] Victim scene handshake failed: %s / %s / %s'):format(kind, step, scene))
     return false
   end
-  return true
+  return self:ActorTrackRunning(scene)
 end
 
 function Impl:JoinVictimScene(setup, stageData, scene, looped, current)
@@ -685,6 +721,11 @@ function Impl:PrintSceneDiagnostics()
     phase = session and session.phase, idleReady = session and session.idleReady,
     menu = lib.getOpenContextMenu(), masterScene = self.victimMasterScene or self.scene,
     localScene = localScene, running = running,
+    actorTrack = self.actorTrack,
+    actorPlaying = self.actorTrack and IsEntityPlayingAnim(PlayerPedId(),
+      self.actorTrack.dict, self.actorTrack.clip, 3) or false,
+    actorPhase = self.actorTrack and GetEntityAnimCurrentTime(PlayerPedId(),
+      self.actorTrack.dict, self.actorTrack.clip) or nil,
     victimTrack = track, victimTrackStart = trackPosition,
     victimTrackRotation = trackRotation,
     scenePhase = running and (localScene and GetSynchronizedScenePhase(localScene)
@@ -832,8 +873,6 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   if not scene or scene == -1 then self:StopStage() return false end
   self.scene = scene
   self.actorStageActive = true
-  NetworkAddPedToSynchronisedScene(ped, scene, stageData.dict, stageData.actor,
-    8.0, -8.0, 1036 | 2048 | (looped and 64 or 0), 0, 1000.0, 0)
   if chair then
     FreezeEntityPosition(chair, false)
     self.stageChair = chair
@@ -869,7 +908,7 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
     end
   end
   NetworkStartSynchronisedScene(scene)
-  local localScene = waitForScene(scene, ped, stageData.dict, stageData.actor, looped,
+  local localScene = self:StartActorTrack(scene, ped, stageData.dict, stageData.actor, looped,
     function() return self.toolSession == session and self.scene == scene end)
   if not localScene then
     if self.scene == scene then self:StopStage() end
@@ -902,12 +941,13 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   local attached = false
   while self.toolSession == session and session.token == token and self.scene == scene
     and GetGameTimer() < untilTime do
+    if not self:ActorTrackRunning(scene) then self:StopStage() return false end
     local phase = GetSynchronizedScenePhase(localScene)
     if stageData.attachAt and not attached and phase >= stageData.attachAt then
       attached = self:HoldTool(setup, session.tool)
       if not attached then self:StopStage() return false end
     end
-    if phase >= 0.97 then
+    if phase >= 0.97 and GetEntityAnimCurrentTime(ped, stageData.dict, stageData.actor) >= 0.97 then
       -- Keep the last selection frame/camera through the server round trip.
       -- Idle already owns the selected tool track (or attaches it on entry).
       -- Restoring the other bench props must not block the idle/menu handoff.
@@ -992,8 +1032,6 @@ function Impl:RunActorStage(setup, token, key, index)
   if scene and scene ~= -1 then
     self.actorStageActive = true
     self.scene = scene
-    NetworkAddPedToSynchronisedScene(ped, scene, stageData.dict, stageData.actor,
-      8.0, -8.0, 1036 | 2048, 0, 1000.0, 0)
     if stageData.chair then
       FreezeEntityPosition(chair, false)
       self.stageChair = chair
@@ -1010,7 +1048,7 @@ function Impl:RunActorStage(setup, token, key, index)
         8.0, -8.0, 0)
     end
     NetworkStartSynchronisedScene(scene)
-    local localScene = waitForScene(scene, ped, stageData.dict, stageData.actor, false,
+    local localScene = self:StartActorTrack(scene, ped, stageData.dict, stageData.actor, false,
       function() return self.scene == scene and self.activeAction and self.activeAction.token == token end)
     if localScene then
       self.localScene = localScene
@@ -1031,7 +1069,12 @@ function Impl:RunActorStage(setup, token, key, index)
       local untilTime = GetGameTimer() + math.min(cfg.stageTimeoutMs, stageData.durationMs + 2500)
       while self.activeAction and self.activeAction.token == token
         and GetGameTimer() < untilTime do
-        if GetSynchronizedScenePhase(localScene) >= 0.97 then
+        if not self:ActorTrackRunning(scene) then
+          self:StopStage()
+          return false
+        end
+        if GetSynchronizedScenePhase(localScene) >= 0.97
+          and GetEntityAnimCurrentTime(ped, stageData.dict, stageData.actor) >= 0.97 then
           return true -- hold this frame until the next stage/idle is prepared
         end
         Wait(0)

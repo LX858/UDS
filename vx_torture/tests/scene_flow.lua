@@ -13,6 +13,8 @@ local pedTasks = {}
 local advancedTasks, advancedCount = {}, 0
 local events, threads, timers, menus, openMenu = {}, {}, {}, {}, nil
 local currentPlayer, failCamera, stops, shown, clears = 1, false, 0, 0, 0
+local failActorTask, loseActorAt, delayedStops = false, nil, {}
+local frozenActorPhase, localHandleDelay = nil, 0
 local autoAck = true
 local function noop() end
 function NewImpl()
@@ -66,7 +68,16 @@ function GetOffsetFromEntityInWorldCoords(id,x,y,z) return GetEntityCoords(id)+v
 SetEntityHeading, SetEntityRotation, SetEntityCollision, FreezeEntityPosition = noop,noop,noop,noop
 SetEntityNoCollisionEntity, DisableAllControlActions, EnableControlAction = noop,noop,noop
 function GetGameTimer() return now end
-function Wait(ms) now = now + math.max(ms,20) end
+function Wait(ms)
+  now = now + math.max(ms,20)
+  -- A network stop can be delivered after the successor has been submitted.
+  -- It must never own/delete the locally assigned actor task.
+  for _, stop in ipairs(delayedStops) do
+    if stop.ped then pedTasks[stop.ped]=nil; activePed[stop.ped]=nil end
+  end
+  delayedStops={}
+  if loseActorAt and now>=loseActorAt then pedTasks[1]=nil; loseActorAt=nil end
+end
 function CreateThread(fn) threads[#threads+1] = fn end
 function SetTimeout(ms,fn) timers[#timers+1] = fn end
 function RegisterCommand() end
@@ -102,10 +113,22 @@ function NetworkStartSynchronisedScene(scene)
 end
 function NetworkStopSynchronisedScene(scene)
   stops=stops+1; scenes[scene].running=false
-  if activePed[scenes[scene].ped] == scene then activePed[scenes[scene].ped]=nil end
+  delayedStops[#delayedStops+1]={ped=scenes[scene].ped}
 end
-function NetworkGetLocalSceneFromNetworkId(scene) return scene+1000 end
+function NetworkGetLocalSceneFromNetworkId(scene)
+  if scenes[scene] and now-scenes[scene].started<localHandleDelay then return -1 end
+  return scene+1000
+end
 local function sceneFor(id) return scenes[id-1000] end
+function TaskSynchronizedScene(ped,id,dict,clip,blendIn,blendOut,flags,ragdoll,mover,ik)
+  local s=assert(sceneFor(id), 'actor task requires a LOCAL scene handle')
+  assert(s.ped==nil, 'network scene must not also schedule this player task')
+  assert(flags>=0 and (flags & 12)==0, 'successor must replace the previous task')
+  assert(ragdoll==0 and mover==1000.0 and ik==0, 'native argument positions')
+  if failActorTask then return end
+  activePed[ped]=id-1000
+  pedTasks[ped]={dict=dict,clip=clip,flags=flags}
+end
 function SetSynchronizedSceneLooped(id,v) sceneFor(id).looped=v end
 function SetSynchronizedSceneHoldLastFrame(id,v) sceneFor(id).hold=v end
 function SetSynchronizedSceneRate(id,rate) sceneFor(id).rate=rate end
@@ -119,6 +142,12 @@ function IsEntityPlayingAnim(ped,dict,clip)
   local task=pedTasks[ped]
   return task and task.dict==dict and task.clip==clip
     and (task.advanced or s and s.running) or false
+end
+function GetEntityAnimCurrentTime(ped,dict,clip)
+  if not IsEntityPlayingAnim(ped,dict,clip) then return 0 end
+  if ped==1 and frozenActorPhase then return frozenActorPhase end
+  if activePed[ped] then return GetSynchronizedScenePhase(activePed[ped]+1000) end
+  return 0
 end
 function TaskPlayAnimAdvanced(ped,dict,clip,x,y,z,rx,ry,rz,blendIn,blendOut,duration,flags,phase,rotationOrder)
   assert(duration==-1 and rotationOrder==2)
@@ -189,7 +218,7 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   assert(clears==transitionClears, 'select-to-idle must not clear the actor task')
   assert(not cams[selectedCamera] and cams[client.camera], 'replace the old camera without leaking it')
   local scene=scenes[client.scene]
-  assert(scene.looped and (scene.flags & 64)~=0)
+  assert(scene.looped and (pedTasks[1].flags & 64)~=0 and scene.ped==nil)
   for _,track in pairs(scene.tracks) do assert((track.flags & 64)~=0) end
   local origin,heading=scene.pos,scene.heading
   assert(math.abs(heading-313)<.001, 'chair rotation must come from the animation track')
@@ -202,6 +231,8 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   local before=stops
   for _=1,4 do Wait(7300); client:ShowToolMenu(setup) end
   assert(stops==before and scene.running and scene.looped, 'menu must not stop idle playback')
+  assert(IsEntityPlayingAnim(1,Config.Torture.toolScenes[tool].idle.dict,
+    Config.Torture.toolScenes[tool].idle.actor), 'late old scene stops must not remove actor idle')
   lib.hideContext()
   local actorScene=client.scene; local count=nextScene
   client.seated=7; currentPlayer=2
@@ -246,6 +277,18 @@ drain()
 assert(restored>0 and now>selectDoneAt)
 client.PutPropBack=originalPutPropBack
 lib.hideContext()
+
+-- A queued bench job from a removed session cannot move the next session's props.
+client:StopStage()
+session('wrench')
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
+local staleSession=client.toolSession
+session('wrench')
+client.PutPropBack=function() error('stale bench coroutine moved a prop') end
+drain()
+client.PutPropBack=originalPutPropBack
+client.toolSession=staleSession
 
 -- Action completion uses the same held-frame handoff. A genuine stop still
 -- clears the scene/camera, so release/restart cannot leave the actor locked.
@@ -376,6 +419,14 @@ assertVictimFirst('playStage')
 bind(actionToken,'action',1)
 Wait(5000); send(1,'stageDone',7,actionToken,1,true)
 assert(setup.toolState=='idle' and setup.toolEpoch==2 and not setup.toolReady)
+local resumeMessages=0
+for _,event in ipairs(events) do
+  if event.name=='stopAction' and event.args[3]==actionToken then
+    assert(event.args[4]==true, 'completed damage action must preserve the pose until next idle')
+    resumeMessages=resumeMessages+1
+  end
+end
+assert(resumeMessages==2, 'both players receive the same transition contract')
 bind(token,'idle',2)
 local function damageCount()
   local n=0; for _,event in ipairs(events) do if event.name=='applyDamage' then n=n+1 end end; return n
