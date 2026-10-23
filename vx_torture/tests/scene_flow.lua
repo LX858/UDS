@@ -475,3 +475,37 @@ send(1,'readyAction',7,actionToken,true); send(2,'readyAction',7,actionToken,tru
 Wait(5000); send(1,'stageDone',7,actionToken,1,true)
 assert(damageCount()==1 and setup.toolState=='idle')
 print('PASS: missing victim scene acknowledgement prevents damage')
+
+-- The reported scene handle is larger than an entity net ID. It is an opaque
+-- scene handle, and the same handle may legitimately recur in a new token.
+setup.tool='wrench'; setup.toolState='selecting'; setup.toolPhase='playing'
+setup.toolToken='peer-test'; setup.peerScene=nil
+positions[1]=vector3(0,0,0)
+send(1,'bindVictimScene',7,'peer-test','select',0,374720)
+assert(setup.peerScene and setup.peerScene.netScene==374720)
+send(2,'victimSceneReady',7,'old-token','select',0,374720,true)
+assert(not setup.peerScene.ready, 'reused scene ID cannot accept an old token ack')
+send(2,'victimSceneReady',7,'peer-test','select',0,374720,false,'victim_wrong_seat')
+assert(events[#events].name=='victimSceneReady' and events[#events].args[7]=='victim_wrong_seat',
+  'victim rejection reason must reach the actor')
+setup.peerScene=nil
+positions[1]=vector3(20,0,0)
+send(1,'bindVictimScene',7,'peer-test','select',0,374720)
+assert(setup.peerScene==nil and events[#events].args[7]=='actor_distance',
+  'distance validation must reject explicitly without authorizing a scene')
+positions[1]=vector3(0,0,0)
+send(1,'bindVictimScene',7,'old-token','select',0,374720)
+assert(events[#events].args[7]=='server_stage_mismatch')
+
+-- Cleanup used to erase the pending handshake and hide the original failure.
+currentPlayer=1
+local pending={token='peer-test',ready=nil}
+client.peerScene=pending
+client:StopStage()
+assert(pending.reason=='session_stopped_before_ack')
+client.peerScene={token='peer-test',kind='select',step=0,scene=374720}
+client.handlers.victimSceneReady('peer-test','select',0,374720,false,'victim_track_failed')
+pending=client.peerScene
+client:StopStage()
+assert(pending.reason=='victim_track_failed', 'cleanup must preserve the actual rejection')
+print('PASS: peer rejection reasons, large/reused scene IDs, stale ack rejection and cleanup diagnostics')

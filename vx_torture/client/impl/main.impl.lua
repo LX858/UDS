@@ -547,6 +547,9 @@ function Impl:StopRetiredScenes()
 end
 
 function Impl:StopStage(keepVictimTask, transitioning)
+  if self.peerScene and self.peerScene.ready == nil then
+    self.peerScene.reason = self.peerScene.reason or 'session_stopped_before_ack'
+  end
   self.peerScene = nil
   if not keepVictimTask then self:StopVictimScene() end
   self.retiredScenes = self.retiredScenes or {}
@@ -672,26 +675,31 @@ function Impl:WaitForVictimScene(setup, token, kind, step, scene, localScene)
   local expires = GetGameTimer() + cfg.scenePeerTimeoutMs
   while self.peerScene == pending and self.scene == scene and pending.ready == nil
     and GetGameTimer() < expires do
-    if not self:ActorTrackRunning(scene) then return false end
-    if kind ~= 'idle' and GetSynchronizedScenePhase(localScene) >= 0.95 then break end
+    if not self:ActorTrackRunning(scene) then pending.reason = 'actor_track_lost' break end
+    if kind ~= 'idle' and GetSynchronizedScenePhase(localScene) >= 0.95 then
+      pending.reason = 'scene_ended_before_ack'
+      break
+    end
     Wait(0)
   end
-  if self.peerScene ~= pending or self.scene ~= scene then return false end
-  if pending.ready ~= true then
-    print(('[vx_torture] Victim scene handshake failed: %s / %s / %s'):format(kind, step, scene))
+  if self.peerScene ~= pending or self.scene ~= scene or pending.ready ~= true then
+    print(('[vx_torture] peer_failed reason=%s token=%s kind=%s step=%s scene=%s ready=%s')
+      :format(pending.reason or 'ack_timeout', token, kind, step, scene, pending.ready))
     return false
   end
   return self:ActorTrackRunning(scene)
 end
 
 function Impl:JoinVictimScene(setup, stageData, scene, looped, current)
-  if not current() then return false end
+  if not current() then return false, 'victim_state_changed' end
   local masterLocal = NetworkGetLocalSceneFromNetworkId(scene)
   local phase = masterLocal and masterLocal >= 0
     and IsSynchronizedSceneRunning(masterLocal) and GetSynchronizedScenePhase(masterLocal) or 0.0
-  if not looped and phase >= 0.90 then return false end
+  if not looped and phase >= 0.90 then return false, 'victim_scene_late' end
   local success = self:PlayVictimTrack(setup, stageData, looped, phase, scene)
-  return success and current() and self.victimMasterScene == scene
+  if not success then return false, 'victim_track_failed' end
+  if not current() or self.victimMasterScene ~= scene then return false, 'victim_state_changed' end
+  return true
 end
 
 function Impl:PrintSceneDiagnostics()
@@ -1278,14 +1286,23 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
+  print('[vx_torture] peer diagnostics v2 loaded (client)')
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
-  self:OnNet('victimSceneReady', function(token, kind, step, scene, success)
+  self:OnNet('victimSceneReady', function(token, kind, step, scene, success, reason)
     local pending = self.peerScene
     if pending and pending.token == token and pending.kind == kind
-      and pending.step == step and pending.scene == scene then pending.ready = success == true end
+      and pending.step == step and pending.scene == scene then
+      pending.ready = success == true
+      pending.reason = reason
+    end
   end)
   self:OnNet('joinVictimScene', function(setup, token, kind, step, scene, stageData, looped)
-    if setup.victim ~= playerSource() or self.seated ~= setup.id then return end
+    if setup.victim ~= playerSource() then return end
+    if self.seated ~= setup.id then
+      print(('[vx_torture] peer_join_failed reason=victim_wrong_seat token=%s seat=%s expected=%s')
+        :format(token, self.seated, setup.id))
+      return self:EmitNet(self, 'victimSceneReady', setup.id, token, kind, step, scene, false, 'victim_wrong_seat')
+    end
     local function current()
       if self.seated ~= setup.id then return false end
       if kind == 'action' then
@@ -1301,12 +1318,18 @@ function Impl:OnReady()
       local readyUntil = GetGameTimer() + 1500
       while not current() and self.seated == setup.id and GetGameTimer() < readyUntil do Wait(0) end
       if not current() then
-        self:EmitNet(self, 'victimSceneReady', setup.id, token, kind, step, scene, false)
+        print(('[vx_torture] peer_join_failed reason=victim_state_timeout token=%s kind=%s step=%s phase=%s')
+          :format(token, kind, step, self.toolSession and self.toolSession.phase))
+        self:EmitNet(self, 'victimSceneReady', setup.id, token, kind, step, scene, false, 'victim_state_timeout')
         return
       end
       local session = self.toolSession
-      local success = self:JoinVictimScene(setup, stageData, scene, looped, current)
-      self:EmitNet(self, 'victimSceneReady', setup.id, token, kind, step, scene, success == true)
+      local success, reason = self:JoinVictimScene(setup, stageData, scene, looped, current)
+      if not success then
+        print(('[vx_torture] peer_join_failed reason=%s token=%s kind=%s step=%s scene=%s')
+          :format(reason, token, kind, step, scene))
+      end
+      self:EmitNet(self, 'victimSceneReady', setup.id, token, kind, step, scene, success == true, reason)
       if not current() then return end
       if kind == 'idle' then
         session.idleReady = success == true
@@ -1445,9 +1468,12 @@ function Impl:OnReady()
       if setup then self:PlayIdle(setup) end
     end
   end)
-  self:OnNet('stopTool', function(setupId, token)
+  self:OnNet('stopTool', function(setupId, token, reason)
     local session = self.toolSession
     if session and session.setupId == setupId and session.token == token then
+      if self.peerScene and self.peerScene.token == token then
+        self.peerScene.reason = self.peerScene.reason or reason
+      end
       local setup = self.setups[setupId]
       if setup then self:EndToolSession(setup) end
     end

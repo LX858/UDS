@@ -90,17 +90,17 @@ function Impl:GetOwned(src, setupId)
   return setup
 end
 
-function Impl:StopTool(setup, failed)
+function Impl:StopTool(setup, failed, reason)
   if not setup.tool or setup.toolState == 'empty' then return end
   local token = setup.toolToken
   if failed then
     local peer = setup.peerScene
-    print(('[vx_torture] tool_failed setup=%s owner=%s victim=%s tool=%s state=%s phase=%s token=%s peer=%s peerReady=%s')
+    print(('[vx_torture] tool_failed setup=%s owner=%s victim=%s tool=%s state=%s phase=%s token=%s peer=%s peerReady=%s reason=%s')
       :format(setup.id, setup.owner, setup.victim, setup.tool, setup.toolState,
-        setup.toolPhase, token, peer and peer.kind, peer and peer.ready))
+        setup.toolPhase, token, peer and peer.kind, peer and peer.ready, reason or 'tool_validation'))
   end
-  self:EmitNet(self, 'stopTool', setup.owner, setup.id, token)
-  if setup.victim then self:EmitNet(self, 'stopTool', setup.victim, setup.id, token) end
+  self:EmitNet(self, 'stopTool', setup.owner, setup.id, token, reason)
+  if setup.victim then self:EmitNet(self, 'stopTool', setup.victim, setup.id, token, reason) end
   setup.tool = nil
   setup.toolReady = false
   setup.toolState = 'empty'
@@ -499,6 +499,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
+  print('[vx_torture] peer diagnostics v2 loaded (server)')
   exports.qbx_core:CreateUseableItem(cfg.item, function(src)
     self:BeginPlacement(src)
   end)
@@ -541,16 +542,24 @@ function Impl:OnReady()
     local setup = self:GetOwned(source, setupId)
     if not setup or not setup.victim or not finite(netScene) or netScene < 0
       or netScene % 1 ~= 0 or netScene > 2147483647 then return end
+    local function reject(reason)
+      print(('[vx_torture] peer_bind_rejected reason=%s setup=%s token=%s kind=%s step=%s scene=%s')
+        :format(reason, setupId, token, kind, step, netScene))
+      self:EmitNet(self, 'victimSceneReady', setup.owner, token, kind, step, netScene, false, reason)
+    end
     local scene, looped = sceneStage(setup, token, kind, step)
-    if not scene or not isAlive(setup.victim)
-      or GetPlayerRoutingBucket(setup.victim) ~= setup.bucket
-      or not near(source, setup.entities.chair, cfg.actionDistance + 1.0) then return end
+    if not scene then return reject('server_stage_mismatch') end
+    if not isAlive(setup.victim) then return reject('victim_not_alive') end
+    if GetPlayerRoutingBucket(setup.victim) ~= setup.bucket then return reject('victim_bucket') end
+    if not near(source, setup.entities.chair, cfg.actionDistance + 1.0) then
+      return reject('actor_distance')
+    end
     local previous = setup.peerScene
     if previous and previous.token == token and previous.kind == kind and previous.step == step then return end
     setup.peerScene = { token = token, kind = kind, step = step, netScene = netScene, ready = false }
     self:EmitNet(self, 'joinVictimScene', setup.victim, self:Snapshot(setup), token, kind, step, netScene, scene, looped)
   end)
-  self:OnNet('victimSceneReady', function(setupId, token, kind, step, netScene, success)
+  self:OnNet('victimSceneReady', function(setupId, token, kind, step, netScene, success, reason)
     local setup
     for _, candidate in pairs(self.setups) do
       if candidate.id == setupId and candidate.victim == source then setup = candidate break end
@@ -559,7 +568,15 @@ function Impl:OnReady()
     if not peer or peer.ready or peer.token ~= token or peer.kind ~= kind
       or peer.step ~= step or peer.netScene ~= netScene or not sceneStage(setup, token, kind, step) then return end
     peer.ready = success == true and isAlive(source) and GetPlayerRoutingBucket(source) == setup.bucket
-    self:EmitNet(self, 'victimSceneReady', setup.owner, token, kind, step, netScene, peer.ready)
+    -- Diagnostic reasons are a fixed vocabulary, never client-provided log text.
+    local reasons = { victim_wrong_seat = true, victim_state_timeout = true,
+      victim_scene_late = true, victim_track_failed = true, victim_state_changed = true }
+    local failure = not peer.ready and (reasons[reason] and reason or 'victim_rejected') or nil
+    if failure then
+      print(('[vx_torture] peer_ack_failed reason=%s setup=%s token=%s kind=%s step=%s scene=%s')
+        :format(failure, setupId, token, kind, step, netScene))
+    end
+    self:EmitNet(self, 'victimSceneReady', setup.owner, token, kind, step, netScene, peer.ready, failure)
     if peer.ready and kind == 'action' then
       local stage = sceneStage(setup, token, kind, step)
       if stage.effect then
@@ -758,7 +775,7 @@ function Impl:OnReady()
         self:CancelAction(setup, true)
       elseif setup.toolState ~= 'empty' and not setup.busy
         and not near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.5) then
-        self:StopTool(setup, true)
+        self:StopTool(setup, true, 'actor_distance_health')
       end
     end
   end)

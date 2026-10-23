@@ -101,6 +101,7 @@ function Main:RegisterCommands()
     RegisterCommand("toggledev:" .. ResourceName, function(source, args, rawCommand)
       Config.Dev = not Config.Dev
       self:LogInfo("Dev %s", Config.Dev)
+      if not Config.Nui then return end
       SendNUIMessage({
         action = "updateServerState",
         data = {
@@ -313,12 +314,14 @@ function Main:InitImplAfterPlayerLoaded()
         impl:OnReady()
       end
     end
-    SendNUIMessage({
-      action = "updateServerState",
-      data = {
-        isDev = Config.Dev,
-      }
-    })
+    if Config.Nui then
+      SendNUIMessage({
+        action = "updateServerState",
+        data = {
+          isDev = Config.Dev,
+        }
+      })
+    end
   end
   self.ready = true
   for k, v in ipairs(self.onReadyCallbacks) do
