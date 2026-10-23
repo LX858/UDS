@@ -8,7 +8,7 @@ Config.Max_Cap_Gang = 5
 Config.Cap_Do = {
     [1] = {
         ["exp"] = 1000,
-        ["max_member"] = 20,
+        ["max_member"] = 50,
         ["phi_nangcap"] = 10000000,
         ["require_items"] = {
             { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 400 },
@@ -105,7 +105,7 @@ Config.Cap_Do = {
     },
     [2] = {
         ["exp"] = 10000,
-        ["max_member"] = 30,
+        ["max_member"] = 70,
         ["phi_nangcap"] = 12000000,
         ["require_items"] = {
             { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 800 },
@@ -202,7 +202,7 @@ Config.Cap_Do = {
     },
     [3] = {
         ["exp"] = 20000,
-        ["max_member"] = 40,
+        ["max_member"] = 90,
         ["phi_nangcap"] = 20000000,
         ["require_items"] = {
             { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 1600 },
@@ -299,7 +299,7 @@ Config.Cap_Do = {
     },
     [4] = {
         ["exp"] = 40000,
-        ["max_member"] = 50,
+        ["max_member"] = 120,
         ["phi_nangcap"] = 32000000,
         ["require_items"] = {
             { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 3200 },
@@ -396,7 +396,7 @@ Config.Cap_Do = {
     },
     [5] = {
         ["exp"] = 60000,
-        ["max_member"] = 60,
+        ["max_member"] = 150,
         ["phi_nangcap"] = 50000000,
         ["nhiemvu"] = {
             [1] = {

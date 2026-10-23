@@ -79,6 +79,16 @@ Config = {
             minDamage = 14
         },
 
+        [GetHashKey("weapon_bat")] = {
+            damage = 14,
+            headshot = 14,
+            recoil = 0,
+            spread = 0,
+            range = 2.0,
+            maxRange = 2.5,
+            minDamage = 14
+        },
+
         [GetHashKey('weapon_crowbar')] = {
             damage = 7,
             headshot = 7,

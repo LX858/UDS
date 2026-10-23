@@ -170,7 +170,6 @@ AddEventHandler("gameEventTriggered", function(name, data)
     local weaponHash = tonumber(data[7])
     local attackerPed = NetworkGetPlayerIndexFromPed(attacker)
     local attackerId = GetPlayerServerId(attackerPed)
-    if not IsPedAPlayer(attacker) or not attackerId then return end 
     if victim == ped then
         local HealthCache = pInfo
         local Health, Armour = HealthCache.health, HealthCache.armour
@@ -217,6 +216,7 @@ AddEventHandler("gameEventTriggered", function(name, data)
         end
         local deathState = LocalPlayer.state['qbx_medical:deathState']
         local victimDied = IsEntityDead(ped) or PedHealth <= 100 or deathState == 2 or deathState == 3
+        if not IsPedAPlayer(attacker) or not attackerId then return end 
         WS.TriggerServerEvent("neons_ddame:server:hit", attackerId, HitHealth, HitArmour, victimDied)
         
         local attackerFormattedName = DisplayText(1, attackerId, attackerPed)
