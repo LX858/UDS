@@ -16,6 +16,7 @@ local events, threads, timers, menus, openMenu = {}, {}, {}, {}, nil
 local currentPlayer, failCamera, stops, shown, clears = 1, false, 0, 0, 0
 local failActorTask, loseActorAt, delayedStops = false, nil, {}
 local frozenActorPhase, localHandleDelay = nil, 0
+local numericAnimResult=false
 local autoAck = true
 local function noop() end
 function NewImpl()
@@ -139,8 +140,10 @@ end
 function IsEntityPlayingAnim(ped,dict,clip)
   local s=scenes[activePed[ped]]
   local task=pedTasks[ped]
-  return task and task.dict==dict and task.clip==clip
+  local playing = task and task.dict==dict and task.clip==clip
     and (task.advanced or s and s.running) or false
+  if numericAnimResult then return playing and 1 or 0 end
+  return playing
 end
 function GetEntityAnimCurrentTime(ped,dict,clip)
   if not IsEntityPlayingAnim(ped,dict,clip) then return 0 end
@@ -372,6 +375,33 @@ assert(not client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wren
 assert(client.scene==nil and client.camera==nil, 'missing victim ack must clean up scene/camera')
 autoAck=true
 print('PASS: readiness ordering, stale epochs, action menu, rejection recovery, camera failure cleanup')
+
+-- Startup used truthiness while ActorTrackRunning used `== true`: the same
+-- native result of 1 passed startup but immediately failed the peer handshake.
+numericAnimResult=true
+session('wrench')
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false),
+  'native integer true must not falsely cancel the actor and victim sessions')
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
+client.activeAction={setupId=7,token='numeric-bool',key='wrench_left',actor=true,stage=1}
+assert(client:RunActorStage(setup,'numeric-bool','wrench_left',1))
+pedTasks[1]=nil
+assert(not client:ActorTrackRunning(client.scene), 'native integer zero must fail')
+client:StopStage(); client.activeAction=nil; numericAnimResult=false
+
+session('wrench'); client.toolSession.revision=20
+local currentSession=client.toolSession
+local oldSnapshot={}
+for key,value in pairs(setup) do oldSnapshot[key]=value end
+oldSnapshot.revision=19; oldSnapshot.toolState='empty'; oldSnapshot.toolToken=nil
+client:UpdateSetup(oldSnapshot)
+assert(client.toolSession==currentSession, 'old snapshot must not cancel prepared session')
+oldSnapshot.revision=21
+client:UpdateSetup(oldSnapshot)
+assert(client.toolSession==nil, 'new authoritative release must still cancel session')
+drain()
+client.setups[7]=setup
+print('PASS: integer native animation results and command/broadcast revision ordering')
 
 -- The network scene is the completion clock. A separate entity-time query
 -- returning zero must not time out an otherwise playing synchronized track.

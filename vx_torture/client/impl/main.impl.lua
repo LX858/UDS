@@ -84,6 +84,10 @@ local function sceneOrigin(setup)
   return alignedSceneOrigin(setup.positions.chair, setup.heading)
 end
 
+local function nativeTrue(value)
+  return value == true or (type(value) == 'number' and value ~= 0)
+end
+
 function Impl:WaitForActorTrack(scene, ped, dict, clip, looped, current)
   if not loadDict(dict, 3000) or not current() then return nil end
   local expires = GetGameTimer() + 2500
@@ -94,7 +98,8 @@ function Impl:WaitForActorTrack(scene, ped, dict, clip, looped, current)
     if localScene and localScene >= 0 then
       SetSynchronizedSceneLooped(localScene, looped)
       SetSynchronizedSceneHoldLastFrame(localScene, not looped)
-      if IsSynchronizedSceneRunning(localScene) and IsEntityPlayingAnim(ped, dict, clip, 3) then
+      if nativeTrue(IsSynchronizedSceneRunning(localScene))
+        and nativeTrue(IsEntityPlayingAnim(ped, dict, clip, 3)) then
         self:StopRetiredScenes()
         return localScene
       end
@@ -118,13 +123,18 @@ end
 
 function Impl:ActorTrackRunning(scene)
   local track = self.actorTrack
-  if not track or track.scene ~= scene or self.scene ~= scene then return false end
-  local playing = not IsEntityDead(PlayerPedId())
-    and self.localScene and IsSynchronizedSceneRunning(self.localScene)
-    and IsEntityPlayingAnim(PlayerPedId(), track.dict, track.clip, 3)
+  if not track or track.scene ~= scene or self.scene ~= scene then
+    print(('[vx_torture] actor_track_state_lost expected=%s actual=%s track=%s')
+      :format(scene, self.scene, track and track.scene))
+    return false
+  end
+  local running = self.localScene and IsSynchronizedSceneRunning(self.localScene)
+  local anim = IsEntityPlayingAnim(PlayerPedId(), track.dict, track.clip, 3)
+  local playing = not nativeTrue(IsEntityDead(PlayerPedId()))
+    and nativeTrue(running) and nativeTrue(anim)
   if not playing then
-    print(('[vx_torture] Actor track lost: %s / %s (network=%s, local=%s)')
-      :format(track.dict, track.clip, scene, self.localScene))
+    print(('[vx_torture] Actor track lost: %s / %s (network=%s, local=%s, running=%s/%s, anim=%s/%s)')
+      :format(track.dict, track.clip, scene, self.localScene, running, type(running), anim, type(anim)))
   end
   return playing == true
 end
@@ -525,10 +535,14 @@ function Impl:UpdateSetup(setup)
   if self.removed[setup.id] then return end
   local old = self.setups[setup.id]
   if old and old.revision and setup.revision and old.revision > setup.revision then return end
+  local session = self.toolSession
+  -- prepare/select/idle carry authoritative snapshots too. A broadcast from
+  -- before that command must not clear the newly prepared session.
+  if session and session.setupId == setup.id and session.revision
+    and setup.revision and setup.revision < session.revision then return end
   self.setups[setup.id] = setup
   self:ApplyPropCollision(setup)
   self:AddTargets(setup)
-  local session = self.toolSession
   if session and session.setupId == setup.id
     and (setup.toolToken ~= session.token or setup.toolState == 'empty') then
     self:EndToolSession(old or setup)
@@ -1286,7 +1300,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] peer diagnostics v2 loaded (client)')
+  print('[vx_torture] peer fix v3 loaded (client)')
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('victimSceneReady', function(token, kind, step, scene, success, reason)
     local pending = self.peerScene
@@ -1380,7 +1394,7 @@ function Impl:OnReady()
       return self:EmitNet(self, 'readyTool', setup.id, token, false)
     end
     local session = { setupId = setup.id, token = token, tool = setup.tool,
-      actor = actor, phase = 'prepare', menuPending = false }
+      actor = actor, phase = 'prepare', menuPending = false, revision = setup.revision }
     self.toolSession = session
     CreateThread(function()
       local ready = fromNet(setup.props.chair, 2000) ~= nil
@@ -1418,6 +1432,7 @@ function Impl:OnReady()
   self:OnNet('playToolSelect', function(setup, token)
     local session = self.toolSession
     if not session or session.token ~= token then return end
+    session.revision = math.max(session.revision or 0, setup.revision or 0)
     session.phase = 'select'
     local selectScene = cfg.toolScenes[session.tool].select
     if not session.actor then return end -- joined through the actor's scene id
@@ -1430,6 +1445,7 @@ function Impl:OnReady()
     local session = self.toolSession
     if not session or session.token ~= token then return end
     if session.idleEpoch and epoch <= session.idleEpoch then return end
+    session.revision = math.max(session.revision or 0, setup.revision or 0)
     session.idleEpoch = epoch
     session.phase = 'startingIdle'
     session.idleReady = false
