@@ -108,6 +108,7 @@ function Impl:StopTool(setup, failed)
 end
 
 function Impl:StartToolIdle(setup)
+  print(setup.tool, setup.victim, setup.seatReady, isAlive(setup.victim), GetPlayerRoutingBucket(setup.victim), setup.bucket, near(setup.victim, setup.entities.chair, cfg.candidateDistance), near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0))
   if not setup.tool or not setup.victim or not setup.seatReady
     or not isAlive(setup.victim) or GetPlayerRoutingBucket(setup.victim) ~= setup.bucket
     or not near(setup.victim, setup.entities.chair, cfg.candidateDistance)
