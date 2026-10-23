@@ -7,11 +7,12 @@ vecmt.__add = function(a, b) return vector3(a.x+b.x, a.y+b.y, a.z+b.z) end
 vecmt.__len = function(a) return math.sqrt(a.x*a.x+a.y*a.y+a.z*a.z) end
 Locales = { default = {} }
 function L(key) return key end
-local now, nextScene, nextLocalScene, nextCam = 0, 100, 50000, 5000
+local now, nextScene, nextCam = 0, 100, 5000
 local scenes, cams, attached, positions, activePed = {}, {}, {}, {}, {}
 local pedTasks = {}
+local advancedTasks, advancedCount = {}, 0
 local events, threads, timers, menus, openMenu = {}, {}, {}, {}, nil
-local currentPlayer, failCamera, stops, shown = 1, false, 0, 0
+local currentPlayer, failCamera, stops, shown, clears = 1, false, 0, 0, 0
 local autoAck = true
 local function noop() end
 function NewImpl()
@@ -103,39 +104,35 @@ function NetworkStopSynchronisedScene(scene)
   if activePed[scenes[scene].ped] == scene then activePed[scenes[scene].ped]=nil end
 end
 function NetworkGetLocalSceneFromNetworkId(scene) return scene+1000 end
-function CreateSynchronizedScene(x,y,z,rx,ry,rz)
-  nextLocalScene=nextLocalScene+1
-  scenes[nextLocalScene]={pos=vector3(x,y,z),heading=rz,tracks={},localScene=true}
-  return nextLocalScene
-end
-local function sceneFor(id) return scenes[id>=50000 and id or id-1000] end
+local function sceneFor(id) return scenes[id-1000] end
 function SetSynchronizedSceneLooped(id,v) sceneFor(id).looped=v end
 function SetSynchronizedSceneHoldLastFrame(id,v) sceneFor(id).hold=v end
 function SetSynchronizedSceneRate(id,rate) sceneFor(id).rate=rate end
-function SetSynchronizedScenePhase(id,phase) sceneFor(id).phase=phase end
 function IsSynchronizedSceneRunning(id) return sceneFor(id) and sceneFor(id).running end
 function GetSynchronizedScenePhase(id)
-  local s=sceneFor(id); local phase=(s.phase or 0)+(now-s.started)/1000
+  local s=sceneFor(id); local phase=(now-s.started)/1000
   return s.looped and phase%1 or math.min(1,phase)
 end
 function IsEntityPlayingAnim(ped,dict,clip)
   local s=scenes[activePed[ped]]
   local task=pedTasks[ped]
-  return s and s.running and task and task.dict==dict and task.clip==clip or false
+  return task and task.dict==dict and task.clip==clip
+    and (task.advanced or s and s.running) or false
 end
-function TaskSynchronizedScene(ped,localScene,dict,clip,a,b,flags,ragdoll,mover,ik)
-  assert(scenes[localScene] and scenes[localScene].localScene,
-    'victim must task its own local scene')
-  assert((flags & 4)~=0 and (flags & 1024)~=0 and (flags & 2048)~=0)
-  assert((flags & 8)==0, 'victim task must not abort the actor scene')
-  assert(ragdoll==0 and mover==1000.0 and ik==0)
-  scenes[localScene].running=true; scenes[localScene].started=now
-  activePed[ped]=localScene; pedTasks[ped]={dict=dict,clip=clip}
+function TaskPlayAnimAdvanced(ped,dict,clip,x,y,z,rx,ry,rz,blendIn,blendOut,duration,flags,phase)
+  assert(duration==-1 and (flags==0 or flags==1))
+  assert(phase>=0 and phase<1)
+  advancedCount=advancedCount+1
+  local pos=vector3(x,y,z)
+  advancedTasks[ped]={dict=dict,clip=clip,pos=pos,rot=vector3(rx,ry,rz),phase=phase,flags=flags}
+  positions[ped]=pos
+  activePed[ped]=nil
+  pedTasks[ped]={dict=dict,clip=clip,advanced=true}
 end
 function ClearPedTasks(ped)
-  local id=activePed[ped]
-  if id and scenes[id] and scenes[id].localScene then scenes[id].running=false end
+  clears=clears+1
   activePed[ped]=nil
+  pedTasks[ped]=nil
 end
 ClearPedTasksImmediately=ClearPedTasks
 function CreateCam() nextCam=nextCam+1; cams[nextCam]=true; return nextCam end
@@ -193,16 +190,19 @@ for _,tool in ipairs(Config.Torture.toolOrder) do
   for _=1,4 do Wait(7300); client:ShowToolMenu(setup) end
   assert(stops==before and scene.running and scene.looped, 'menu must not stop idle playback')
   lib.hideContext()
-  local actorScene=client.scene; local count=nextScene; local localCount=nextLocalScene
+  local actorScene=client.scene; local count=nextScene
   client.seated=7; currentPlayer=2
   assert(client:JoinVictimScene(setup,Config.Torture.toolScenes[tool].idle,actorScene,true,function() return true end))
-  assert(client.victimMasterScene==actorScene and client.victimLocalScene==nextLocalScene)
-  assert(nextScene==count and nextLocalScene==localCount+1,
-    'victim must create only a local ped scene')
-  assert(scenes[client.victimLocalScene].pos.x==origin.x
-    and scenes[client.victimLocalScene].pos.y==origin.y
-    and scenes[client.victimLocalScene].heading==heading,
-    'victim and actor must use the same scene origin')
+  assert(client.victimMasterScene==actorScene and client.victimScene)
+  assert(nextScene==count,
+    'victim must not create a competing synchronized scene')
+  local expectedPos=GetAnimInitialOffsetPosition(Config.Torture.toolScenes[tool].idle.dict,
+    Config.Torture.toolScenes[tool].idle.victim,origin.x,origin.y,origin.z,0,0,heading)
+  assert(math.abs(advancedTasks[2].pos.x-expectedPos.x)<.001
+    and math.abs(advancedTasks[2].pos.y-expectedPos.y)<.001
+    and math.abs(advancedTasks[2].pos.z-expectedPos.z)<.001,
+    'victim task must start at its clip transform, not the scene root')
+  assert(advancedTasks[2].flags==1, 'victim idle must loop')
   assert(scene.rate~=0, 'actor scene must not pause while waiting for the victim')
   client:StopVictimScene(); assert(scene.running, 'victim cleanup must not stop the actor scene')
   client.seated=nil; currentPlayer=1
@@ -213,21 +213,42 @@ end
 print(('PASS: select -> looping idle/menu, camera cleanup, matching peer origins (%d tools)'):format(cases))
 client.seated=7; currentPlayer=2
 assert(client:PlayIdle(setup))
-assert(scenes[client.victimScene].dict=='missfbi3_weapon_select')
-assert(scenes[client.victimScene].tracks[setup.props.chair]==nil,
-  'victim base idle must not compete for control of the chair')
+assert(client.victimScene.dict=='missfbi3_weapon_select')
+assert(advancedTasks[2].clip=='waterboard_idle_victim')
+local beforeTransition=clears
+assert(client:PlayVictimTrack(setup,Config.Torture.toolScenes.wrench.idle,true,0.0,123))
+assert(clears==beforeTransition, 'victim clip change must not clear ped tasks')
+client:StopStage(true)
+assert(clears==beforeTransition and client.victimScene,
+  'return-to-seat transition must retain the seated task')
+assert(client:PlayIdle(setup))
+assert(clears==beforeTransition, 'return to base seat must not flash a standing frame')
 ClearPedTasks(2)
-local beforeRecovery=nextLocalScene
+local beforeRecovery=advancedCount
 client.victimSceneStarting=true
 client.intervals.seatControl()
-assert(nextLocalScene==beforeRecovery, 'seat watchdog must not restart a scene still starting')
+assert(advancedCount==beforeRecovery, 'seat watchdog must not restart a scene still starting')
 client.victimSceneStarting=false
 client.nextSeatRecoveryAt=0
 client.intervals.seatControl()
-assert(nextLocalScene==beforeRecovery+1, 'seat watchdog must recover a lost task once')
+assert(advancedCount==beforeRecovery+1, 'seat watchdog must recover a lost task once')
 client.intervals.seatControl()
-assert(nextLocalScene==beforeRecovery+1, 'seat watchdog must be rate limited')
+assert(advancedCount==beforeRecovery+1, 'seat watchdog must be rate limited')
 client:StopVictimScene(); client.seated=nil; currentPlayer=1
+
+-- The bind packet may arrive before the victim's phase packet. It must wait
+-- for the current token instead of silently dropping that scene.
+client.seated=7; currentPlayer=2
+client.toolSession={setupId=7,token='token',tool='wrench',actor=false,phase='prepare'}
+local delayedEvents=#events
+client.handlers.joinVictimScene(setup,'token','select',0,444,
+  Config.Torture.toolScenes.wrench.select,true)
+assert(#threads==1 and #events==delayedEvents)
+client.toolSession.phase='select'
+drain()
+assert(events[#events].name=='victimSceneReady' and events[#events].args[6]==true,
+  'victim must acknowledge a bind delivered before its select phase')
+client:StopVictimScene(); client.toolSession=nil; client.seated=nil; currentPlayer=1
 
 session('wrench'); client.toolSession.phase='select'; setup.toolReady=false
 client.handlers.startToolIdle(setup,'token',2)
@@ -264,6 +285,14 @@ server.setups[1]=setup; server.seated[2]=7
 local function send(src,event,...)
   source=src; server.handlers[event](...)
 end
+local function assertVictimFirst(name)
+  local recipients={}
+  for _,event in ipairs(events) do
+    if event.name==name then recipients[#recipients+1]=event.args[1] end
+  end
+  assert(recipients[#recipients-1]==2 and recipients[#recipients]==1,
+    name..' must arm the victim before starting the actor scene')
+end
 local function bind(token,kind,step)
   send(1,'bindVictimScene',7,token,kind,step,999)
   assert(setup.peerScene and not setup.peerScene.ready)
@@ -275,9 +304,11 @@ end
 server:TakeTool(1,7,'wrench'); local token=setup.toolToken
 assert(setup.toolState=='selecting')
 send(1,'readyTool',7,token,true); send(2,'readyTool',7,token,true)
+assertVictimFirst('playToolSelect')
 bind(token,'select',0)
 Wait(600); send(1,'toolSelected',7,token,true)
 assert(setup.toolState=='idle' and not setup.toolReady)
+assertVictimFirst('startToolIdle')
 bind(token,'idle',1)
 send(1,'toolIdleReady',7,token,0,true); send(2,'toolIdleReady',7,token,0,true)
 assert(not setup.toolReady)
@@ -287,6 +318,7 @@ server:StartAction(3,7,2,'wrench_left'); assert(setup.toolState=='idle')
 server:StartAction(1,7,2,'wrench_left'); local actionToken=setup.busy.token
 assert(setup.toolState=='action')
 send(1,'readyAction',7,actionToken,true); send(2,'readyAction',7,actionToken,true)
+assertVictimFirst('playStage')
 bind(actionToken,'action',1)
 Wait(5000); send(1,'stageDone',7,actionToken,1,true)
 assert(setup.toolState=='idle' and setup.toolEpoch==2 and not setup.toolReady)

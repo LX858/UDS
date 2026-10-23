@@ -123,8 +123,8 @@ function Impl:StartToolIdle(setup)
   setup.peerScene = nil
   self:Sync(setup)
   local snapshot = self:Snapshot(setup)
-  self:EmitNet(self, 'startToolIdle', setup.owner, snapshot, setup.toolToken, setup.toolEpoch)
   self:EmitNet(self, 'startToolIdle', setup.victim, snapshot, setup.toolToken, setup.toolEpoch)
+  self:EmitNet(self, 'startToolIdle', setup.owner, snapshot, setup.toolToken, setup.toolEpoch)
   local token, phaseAt = setup.toolToken, setup.toolPhaseAt
   SetTimeout(cfg.toolIdleTimeoutMs, function()
     if self.setups[setup.owner] == setup and setup.toolToken == token
@@ -416,8 +416,8 @@ function Impl:StartStage(setup, index)
   busy.stageAt = GetGameTimer()
   setup.peerScene = nil
   local snapshot = self:Snapshot(setup)
-  self:EmitNet(self, 'playStage', setup.owner, snapshot, busy.token, busy.key, index)
   self:EmitNet(self, 'playStage', setup.victim, snapshot, busy.token, busy.key, index)
+  self:EmitNet(self, 'playStage', setup.owner, snapshot, busy.token, busy.key, index)
   SetTimeout(cfg.stageTimeoutMs, function()
     if self.setups[setup.owner] == setup and setup.busy == busy and busy.stage == index then
       self:CancelAction(setup, true)
@@ -618,8 +618,8 @@ function Impl:OnReady()
       setup.toolPhase = 'playing'
       setup.toolPhaseAt = GetGameTimer()
       local snapshot = self:Snapshot(setup)
-      self:EmitNet(self, 'playToolSelect', setup.owner, snapshot, token)
       self:EmitNet(self, 'playToolSelect', setup.victim, snapshot, token)
+      self:EmitNet(self, 'playToolSelect', setup.owner, snapshot, token)
       local phaseAt = setup.toolPhaseAt
       SetTimeout(cfg.toolSelectTimeoutMs + 4000, function()
         if self.setups[setup.owner] == setup and setup.toolToken == token

@@ -473,7 +473,8 @@ function Impl:EndToolSession(setup)
   if self.toolMenuId and lib.getOpenContextMenu() == self.toolMenuId then
     lib.hideContext(false)
   end
-  self:StopStage()
+  local returnToSeat = self.seated == setup.id and not self.activeAction
+  self:StopStage(returnToSeat)
   if setup.owner == playerSource() and session.tool then
     CreateThread(function()
       for _ = 1, 3 do
@@ -482,7 +483,7 @@ function Impl:EndToolSession(setup)
       end
       self:RestoreBench(setup, session.tool, true)
     end)
-  elseif self.seated == setup.id and not self.activeAction then
+  elseif returnToSeat then
     self:PlayIdle(setup)
   end
 end
@@ -506,9 +507,9 @@ function Impl:UpdateSetup(setup)
   end
 end
 
-function Impl:StopStage()
+function Impl:StopStage(keepVictimTask)
   self.peerScene = nil
-  self:StopVictimScene()
+  if not keepVictimTask then self:StopVictimScene() end
   if self.benchScene then
     NetworkStopSynchronisedScene(self.benchScene)
     self.benchScene = nil
@@ -546,38 +547,55 @@ end
 function Impl:StopVictimScene()
   local scene = self.victimScene
   self.victimScene = nil
-  self.victimLocalScene = nil
-  -- Local scenes end when the ped task is cleared. Never stop the actor's
-  -- network scene from the victim client.
+  -- The seated player only controls its own ped task. Never stop the actor's
+  -- network scene or request control of the chair from this client.
   if scene or self.victimMasterScene then ClearPedTasks(PlayerPedId()) end
   self.victimMasterScene = nil
 end
 
-function Impl:StartVictimScene(setup, stageData, looped)
-  if self.seated ~= setup.id or IsEntityDead(PlayerPedId()) then return false end
-  local coords, heading = sceneOrigin(setup)
-  if not coords or not loadDict(stageData.dict, 3000) then return false end
-  self:StopVictimScene()
+local function victimTrackTransform(setup, stageData)
+  local root, heading = sceneOrigin(setup)
+  if not root then return nil end
+  local position = GetAnimInitialOffsetPosition(stageData.dict, stageData.victim,
+    root.x, root.y, root.z, 0.0, 0.0, heading, 0.0, 2)
+  local rotation = GetAnimInitialOffsetRotation(stageData.dict, stageData.victim,
+    root.x, root.y, root.z, 0.0, 0.0, heading, 0.0, 2)
+  return position, rotation
+end
+
+function Impl:PlayVictimTrack(setup, stageData, looped, phase, masterScene)
+  if self.seated ~= setup.id or IsEntityDead(PlayerPedId())
+    or not loadDict(stageData.dict, 3000) then return false end
+  local position, rotation = victimTrackTransform(setup, stageData)
+  if not position or not rotation then return false end
   local ped = PlayerPedId()
-  -- The victim owns its ped and plays the seated loop locally. The chair is
-  -- left at its placed transform until an actor scene animates it.
-  local scene = CreateSynchronizedScene(coords.x, coords.y, coords.z,
-    0.0, 0.0, heading, 2)
-  if not scene or scene == -1 then return false end
-  self.victimScene = scene
-  self.victimLocalScene = scene
-  SetSynchronizedSceneLooped(scene, looped)
-  SetSynchronizedSceneHoldLastFrame(scene, not looped)
-  TaskSynchronizedScene(ped, scene, stageData.dict, stageData.victim,
-    8.0, -8.0, 4 | 1024 | 2048 | (looped and 64 or 0), 0, 1000.0, 0)
+  local track = { dict = stageData.dict, clip = stageData.victim }
+  -- Paired-player resources task each player on its owner client. The native
+  -- needs the victim clip's initial world transform, not the scene root.
+  -- TaskPlayAnimAdvanced replaces the previous primary task. Clearing it first
+  -- creates a standing frame between the seat, selection, idle and attack clips.
+  TaskPlayAnimAdvanced(ped, track.dict, track.clip,
+    position.x, position.y, position.z, rotation.x, rotation.y, rotation.z,
+    8.0, -8.0, -1, looped and 1 or 0, phase or 0.0, 0, 0)
+  self.victimScene = track
+  self.victimMasterScene = masterScene
+  local chairPosition = setup.positions and setup.positions.chair
   local expires = GetGameTimer() + 2500
-  while self.victimScene == scene and self.seated == setup.id and GetGameTimer() < expires do
-    if IsSynchronizedSceneRunning(scene)
-      and IsEntityPlayingAnim(ped, stageData.dict, stageData.victim, 3) then return true end
+  while self.victimScene == track and self.seated == setup.id and GetGameTimer() < expires do
+    if IsEntityPlayingAnim(ped, track.dict, track.clip, 3)
+      and chairPosition and #(GetEntityCoords(ped) - chairPosition)
+        <= cfg.seatAlignment.maxDistance + 0.8 then return true end
     Wait(0)
   end
-  if self.victimScene == scene then self:StopVictimScene() end
+  print(('[vx_torture] Victim track missing/off chair (%s / %s, distance=%.2f)')
+    :format(track.dict, track.clip,
+      chairPosition and #(GetEntityCoords(ped) - chairPosition) or -1.0))
+  if self.victimScene == track then self:StopVictimScene() end
   return false
+end
+
+function Impl:StartVictimScene(setup, stageData, looped)
+  return self:PlayVictimTrack(setup, stageData, looped, 0.0, nil)
 end
 
 function Impl:PlayIdle(setup)
@@ -612,40 +630,13 @@ function Impl:WaitForVictimScene(setup, token, kind, step, scene, localScene)
 end
 
 function Impl:JoinVictimScene(setup, stageData, scene, looped, current)
-  if not current() or self.seated ~= setup.id or not loadDict(stageData.dict, 3000) then return false end
-  local coords, heading = sceneOrigin(setup)
-  if not coords then return false end
+  if not current() then return false end
   local masterLocal = NetworkGetLocalSceneFromNetworkId(scene)
   local phase = masterLocal and masterLocal >= 0
     and IsSynchronizedSceneRunning(masterLocal) and GetSynchronizedScenePhase(masterLocal) or 0.0
   if not looped and phase >= 0.90 then return false end
-  self:StopVictimScene()
-  local localScene = CreateSynchronizedScene(coords.x, coords.y, coords.z,
-    0.0, 0.0, heading, 2)
-  if not localScene or localScene == -1 then return false end
-  self.victimScene = localScene
-  self.victimMasterScene = scene
-  self.victimLocalScene = localScene
-  SetSynchronizedSceneLooped(localScene, looped)
-  SetSynchronizedSceneHoldLastFrame(localScene, not looped)
-  -- Game code takes flags, ragdoll flags, mover blend delta, IK flags here.
-  -- This local task follows the same FBI3 origin and sampled actor phase.
-  TaskSynchronizedScene(PlayerPedId(), localScene, stageData.dict, stageData.victim,
-    1000.0, -8.0, 4 | 1024 | 2048 | (looped and 64 or 0), 0, 1000.0, 0)
-  if phase > 0.0 then SetSynchronizedScenePhase(localScene, phase) end
-  local expires = GetGameTimer() + cfg.scenePeerTimeoutMs - 500
-  local chairPosition = setup.positions and setup.positions.chair
-  repeat
-    if not current() or self.victimMasterScene ~= scene then return false end
-    if IsEntityPlayingAnim(PlayerPedId(), stageData.dict, stageData.victim, 3)
-      and chairPosition and #(GetEntityCoords(PlayerPedId()) - chairPosition)
-        <= cfg.seatAlignment.maxDistance + 0.8 then return true end
-    Wait(0)
-  until GetGameTimer() >= expires
-  print(('[vx_torture] Victim scene missing/off chair %s (%s / %s, distance=%.2f)')
-    :format(scene, stageData.dict, stageData.victim,
-      chairPosition and #(GetEntityCoords(PlayerPedId()) - chairPosition) or -1.0))
-  return false
+  local success = self:PlayVictimTrack(setup, stageData, looped, phase, scene)
+  return success and current() and self.victimMasterScene == scene
 end
 
 function Impl:PrintSceneDiagnostics()
@@ -653,8 +644,16 @@ function Impl:PrintSceneDiagnostics()
   if not setup then print('[vx_torture] No local setup/seat session') return end
   local root, heading = sceneOrigin(setup)
   local session = self.toolSession
-  local localScene = self.seated and self.victimLocalScene or self.localScene
-  local running = localScene and IsSynchronizedSceneRunning(localScene) or false
+  local localScene = not self.seated and self.localScene or nil
+  local track = self.seated and self.victimScene or nil
+  local trackPosition, trackRotation
+  if track then
+    trackPosition, trackRotation = victimTrackTransform(setup,
+      { dict = track.dict, victim = track.clip })
+  end
+  local running = self.seated and track
+    and IsEntityPlayingAnim(PlayerPedId(), track.dict, track.clip, 3)
+    or (localScene and IsSynchronizedSceneRunning(localScene)) or false
   local victimPlayer = setup.victim and GetPlayerFromServerId(setup.victim) or -1
   local victimPed = victimPlayer ~= -1 and GetPlayerPed(victimPlayer) or 0
   print('[vx_torture] diagnostics ' .. json.encode({
@@ -664,8 +663,11 @@ function Impl:PrintSceneDiagnostics()
     phase = session and session.phase, idleReady = session and session.idleReady,
     menu = lib.getOpenContextMenu(), masterScene = self.victimMasterScene or self.scene,
     localScene = localScene, running = running,
-    scenePhase = running and GetSynchronizedScenePhase(localScene) or nil,
-    sceneRate = running and GetSynchronizedSceneRate(localScene) or nil,
+    victimTrack = track, victimTrackStart = trackPosition,
+    victimTrackRotation = trackRotation,
+    scenePhase = running and (localScene and GetSynchronizedScenePhase(localScene)
+      or GetEntityAnimCurrentTime(PlayerPedId(), track.dict, track.clip)) or nil,
+    sceneRate = localScene and running and GetSynchronizedSceneRate(localScene) or nil,
     sceneRoot = root, sceneHeading = heading, chairRest = setup.positions.chair,
     chairNow = targetReady(setup.props.chair) and GetEntityCoords(NetworkGetEntityFromNetworkId(setup.props.chair)) or nil,
     victimPosition = victimPed ~= 0 and GetEntityCoords(victimPed) or nil,
@@ -1177,7 +1179,6 @@ function Impl:Init()
   self.scene = nil
   self.localScene = nil
   self.victimScene = nil
-  self.victimLocalScene = nil
   self.victimMasterScene = nil
   self.victimSceneStarting = false
   self.nextSeatRecoveryAt = 0
@@ -1202,18 +1203,25 @@ function Impl:OnReady()
   end)
   self:OnNet('joinVictimScene', function(setup, token, kind, step, scene, stageData, looped)
     if setup.victim ~= playerSource() or self.seated ~= setup.id then return end
-    local session, active = self.toolSession, self.activeAction
     local function current()
       if self.seated ~= setup.id then return false end
       if kind == 'action' then
-        return active and self.activeAction == active and active.token == token and active.stage == step
+        local active = self.activeAction
+        return active and active.token == token and active.stage == step
       end
-      return session and self.toolSession == session and session.token == token
+      local session = self.toolSession
+      return session and session.token == token
         and (kind == 'select' and session.phase == 'select'
           or kind == 'idle' and session.idleEpoch == step)
     end
-    if not current() then return end
     CreateThread(function()
+      local readyUntil = GetGameTimer() + 1500
+      while not current() and self.seated == setup.id and GetGameTimer() < readyUntil do Wait(0) end
+      if not current() then
+        self:EmitNet(self, 'victimSceneReady', setup.id, token, kind, step, scene, false)
+        return
+      end
+      local session = self.toolSession
       local success = self:JoinVictimScene(setup, stageData, scene, looped, current)
       self:EmitNet(self, 'victimSceneReady', setup.id, token, kind, step, scene, success == true)
       if not current() then return end
@@ -1445,7 +1453,7 @@ function Impl:OnReady()
     if not self.activeAction or self.activeAction.token ~= token then return end
     local actionKey = self.activeAction.key
     self.activeAction = nil
-    self:StopStage()
+    self:StopStage(self.seated == setupId)
     local setup = self.setups[setupId]
     if setup and setup.owner == playerSource() and not self.toolSession
       and cfg.actions[actionKey] and cfg.actions[actionKey].tool == 'waterboard' then
@@ -1517,8 +1525,13 @@ function Impl:OnReady()
         local healthy = targetReady(setup.props.chair)
           and targetReady(setup.props[session.tool])
           and IsEntityPlayingAnim(PlayerPedId(), idle.dict, clip, 3)
-        local localScene = session.actor and self.localScene or self.victimLocalScene
-        healthy = healthy and localScene and IsSynchronizedSceneRunning(localScene)
+        if session.actor then
+          healthy = healthy and self.localScene and IsSynchronizedSceneRunning(self.localScene)
+        else
+          healthy = healthy and self.victimScene and self.victimMasterScene
+            and #(GetEntityCoords(PlayerPedId()) - setup.positions.chair)
+              <= cfg.seatAlignment.maxDistance + 0.8
+        end
         if session.actor then
           healthy = healthy and self.camera and DoesCamExist(self.camera)
         elseif self.seated ~= setup.id then
