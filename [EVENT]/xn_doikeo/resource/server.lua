@@ -5,16 +5,25 @@ local config = require('config')
 local stevo_lib = exports['stevo_lib']:import()
 local activeCooldowns = {}
 
-lib.callback.register('stevo_trickortreat:canKnock', function(source, houseId)
-    if activeCooldowns[source] then 
-        if activeCooldowns[source][houseId] then 
-            if activeCooldowns[source][houseId] > os.time() then 
-                return false
-            end 
-        end
-    end
+local function validHouse(houseId)
+    return type(houseId) == 'number' and houseId % 1 == 0 and config.houses[houseId] ~= nil
+end
 
-    return true
+local function nearHouse(source, houseId)
+    if not validHouse(houseId) then return false end
+    local ped = GetPlayerPed(source)
+    if not ped or ped == 0 then return false end
+    local coords = GetEntityCoords(ped)
+    -- Allow for client/server position delay and small pushes during the knock animation.
+    return #(coords - config.houses[houseId]) <= config.interactDistance + 2.0
+end
+
+local function onCooldown(source, houseId)
+    return activeCooldowns[source] and (activeCooldowns[source][houseId] or 0) > os.time()
+end
+
+lib.callback.register('stevo_trickortreat:canKnock', function(source, houseId)
+    return nearHouse(source, houseId) and not onCooldown(source, houseId)
 end)
 
 
@@ -68,23 +77,9 @@ local function getRandomTreat()
 end
 
 lib.callback.register('stevo_trickortreat:knockedOnDoor', function(source, houseId)
-
-    local location = config.houses[houseId]
-    local playerPed = GetPlayerPed(source)
-    local playerCoords = GetEntityCoords(playerPed)
-    math.randomseed(os.time())
-
-    if #(playerCoords - location) > config.interactDistance then 
-        local name = GetPlayerName(source)
-        local identifier = stevo_lib.GetIdentifier(source)
-
-        lib.print.info(('User: %s (%s) tried to exploit stevo_trickortreat'):format(name, identifier))
-        if config.dropCheaters then 
-            DropPlayer(source, 'Trying to exploit stevo_trickortreat')
-        end
-
-        return false
-    end
+    -- The callback can be called directly or twice while a progress bar is finishing.
+    -- A position mismatch is not proof of cheating: latency or another ped can move a player.
+    if not nearHouse(source, houseId) or onCooldown(source, houseId) then return nil end
 
     local cooldown = os.time() + config.knockCooldown * 60
 
@@ -113,6 +108,10 @@ lib.callback.register('stevo_trickortreat:knockedOnDoor', function(source, house
     end
 
     return false
+end)
+
+AddEventHandler('playerDropped', function()
+    activeCooldowns[source] = nil
 end)
 
 lib.callback.register('stevo_trickortreat:sellCandy', function(source)

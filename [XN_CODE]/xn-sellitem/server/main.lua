@@ -570,12 +570,13 @@ local function AddCashWithFallback(xPlayer, amount, reason)
 end
 
 local function IsPlayerNearSellCategory(playerId, category, maxDistance)
+    if not category or not Config.Items[category] then return false end
     local playerPed = GetPlayerPed(playerId)
     if not playerPed or playerPed == 0 then return false end
 
     local playerCoords = GetEntityCoords(playerPed)
     for _, location in pairs(Config.Locations) do
-        if location.Items == Config.Items[category] then
+        if location.Items == Config.Items[category] or location.ExtraItems == Config.Items[category] then
             local locationCoords = vector3(location.Coords.x, location.Coords.y, location.Coords.z)
             if #(playerCoords - locationCoords) <= (maxDistance or 5.0) then
                 return true
@@ -893,6 +894,11 @@ exports['monitors']:RegisterProtectedEvent('xn-sellitem:cfx:action', function(pl
         return
     end
 
+    if not IsPlayerNearSellCategory(playerId, itemEco.Category, 5.0) then
+        TriggerClientEvent("QBCore:Notify", playerId, "Bạn phải đứng gần đúng người thu mua để bán vật phẩm này", "error")
+        return
+    end
+
     -- Kiểm tra điều kiện Cảnh sát cho Chợ Đen (choden)
     if itemEco.Category == 'choden' then
         local policeCount = GetPoliceCount()
@@ -1016,6 +1022,11 @@ exports['monitors']:RegisterProtectedEvent('xn-sellitem:cfx:action-all', functio
     -- Kiểm tra item có trong config không
     if not itemEco then
         TriggerClientEvent("QBCore:Notify", playerId, "Item này không thể bán tại đây", "error")
+        return
+    end
+
+    if not IsPlayerNearSellCategory(playerId, itemEco.Category, 5.0) then
+        TriggerClientEvent("QBCore:Notify", playerId, "Bạn phải đứng gần đúng người thu mua để bán vật phẩm này", "error")
         return
     end
 

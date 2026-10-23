@@ -181,18 +181,18 @@ Config.Items = {
         -- },
     },
     ['nuoithu'] = {
-        -- ['conbo'] = {
-        --     Label = 'Con Bò',
-        --     Min = 700,
-        --     Max = 1000,
-        --     RandomWhenStart = true
-        -- },
-        -- ['conheo'] = {
-        --     Label = 'Con Heo',
-        --     Min = 250,
-        --     Max = 300,
-        --     RandomWhenStart = true
-        -- },
+        ['conbo'] = {
+            Label = 'Con Bò',
+            Min = 700,
+            Max = 1000,
+            RandomWhenStart = true
+        },
+        ['conheo'] = {
+            Label = 'Con Heo',
+            Min = 250,
+            Max = 300,
+            RandomWhenStart = true
+        },
         -- ['aplaca'] = {
         --     Label = 'Lạc đà Alpaca',
         --     Min = 10000,
@@ -221,6 +221,19 @@ Config.Items = {
         },
     },
 }
+
+function Config.GetLocationItems(location)
+    local items = location and location.Items or {}
+    local extraItems = location and location.ExtraItems
+    if not extraItems then return items end
+
+    local combined = {}
+    for itemName, itemData in pairs(items) do combined[itemName] = itemData end
+    for itemName, itemData in pairs(extraItems) do
+        if combined[itemName] == nil then combined[itemName] = itemData end
+    end
+    return combined
+end
 
 Config.Locations = {
     {
@@ -274,8 +287,9 @@ Config.Locations = {
             ShortRange = false,
         },
         Coords = vec4(213.4228, -945.4520, 31.8079, 335.0612),
-        NPCText = 'THƯƠNG LÁI MUA NÔNG SẢN',
+        NPCText = 'THƯƠNG LÁI MUA NÔNG SẢN & NUÔI THÚ',
         Items = Config.Items['traicay'],
+        ExtraItems = Config.Items['nuoithu'],
         TargetName = "fram_dolly"
     },
     {

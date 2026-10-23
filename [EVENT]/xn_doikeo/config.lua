@@ -21,6 +21,8 @@ return {
     },
 
     trickChance = 30, -- Chance out of 100 that player will be tricked (30 = 30%)
+    trickPedHealth = 150,
+    trickDamage = 10, -- Damage fallback for a zombie melee hit that did not reduce health/armour
     trickPeds = {
         `u_m_y_zombie_01`
     },

@@ -12,7 +12,8 @@ local candyBuyerBlip = nil
 local clownPed = nil
 local vanVehicle = nil
 local candyBuyerPoint = nil
-local textUI, knocking, trickPed = false, false, 0
+local textUI, knocking = false, false
+local activeTrickPeds = {}
 
 local function isEventTime()
     if not config.timeRestriction or not config.timeRestriction.enabled then
@@ -31,45 +32,81 @@ local function isEventTime()
 end
 
 local function trickPlayer(houseId, data)
+    if not isEventActive or type(data) ~= 'table' or not config.houses[houseId] then return end
     local ped = data.ped
     local weapon = data.weapon
     local location = config.houses[houseId]
 
     lib.requestModel(ped)
+    if not isEventActive then
+        SetModelAsNoLongerNeeded(ped)
+        return
+    end
 
-    trickPed = CreatePed(28, ped, location.x, location.y, location.z, 0.0, false, true)
-    
-    SetRelationshipBetweenGroups(5, GetPedRelationshipGroupHash(cache.ped), GetPedRelationshipGroupHash(trickPed))
-    SetRelationshipBetweenGroups(5, GetPedRelationshipGroupHash(trickPed), GetPedRelationshipGroupHash(cache.ped))
+    local zombie = CreatePed(4, ped, location.x, location.y, location.z, 0.0, false, true)
+    SetModelAsNoLongerNeeded(ped)
+    if not DoesEntityExist(zombie) then return end
+    local token = {}
+    activeTrickPeds[zombie] = token
 
-    GiveWeaponToPed(trickPed, weapon, 250, false, true)
-    TaskCombatPed(trickPed, cache.ped, 0, 16)
+    AddRelationshipGroup('XN_TRICK_ZOMBIE')
+    SetPedRelationshipGroupHash(zombie, `XN_TRICK_ZOMBIE`)
+    local playerGroup = GetPedRelationshipGroupHash(cache.ped)
+    SetRelationshipBetweenGroups(5, `XN_TRICK_ZOMBIE`, playerGroup)
+    SetRelationshipBetweenGroups(5, playerGroup, `XN_TRICK_ZOMBIE`)
+
+    SetPedMaxHealth(zombie, config.trickPedHealth)
+    SetEntityMaxHealth(zombie, config.trickPedHealth)
+    SetEntityHealth(zombie, config.trickPedHealth)
+    SetPedFleeAttributes(zombie, 0, false)
+    SetPedCombatAttributes(zombie, 5, true)
+    SetPedCombatAttributes(zombie, 46, true)
+    SetPedCombatAbility(zombie, 2)
+    SetPedCombatMovement(zombie, 3)
+    SetPedCombatRange(zombie, 0)
+    SetPedKeepTask(zombie, true)
+
+    GiveWeaponToPed(zombie, weapon, 1, false, true)
+    TaskCombatPed(zombie, cache.ped, 0, 16)
 
     stevo_lib.Notify(locale("notify.gotTricked"), 'error', 3000)   
 
     CreateThread(function()
-        local pedAlive = 0
-        while DoesEntityExist(trickPed) do 
+        local expiresAt = GetGameTimer() + 15000
+        local lastSwing = false
+        local lastHitAt = 0
+        while isEventActive and activeTrickPeds[zombie] == token
+            and DoesEntityExist(zombie) and not IsPedFatallyInjured(zombie) do
+            local player = cache.ped
+            if not DoesEntityExist(player) or IsEntityDead(player) then break end
+            local distance = #(GetEntityCoords(zombie) - GetEntityCoords(player))
+            if distance > 15.0 or GetGameTimer() >= expiresAt then break end
 
-            if IsPedFatallyInjured(trickPed) then 
-                DeleteEntity(trickPed)
+            local swinging = IsPedPerformingMeleeAction(zombie)
+            if swinging and not lastSwing and distance <= 1.8 and GetGameTimer() - lastHitAt >= 900 then
+                lastHitAt = GetGameTimer()
+                local health, armour = GetEntityHealth(player), GetPedArmour(player)
+                Wait(250)
+                -- GTA/FiveM normally applies melee damage. Only fill in a missed damage event.
+                if isEventActive and activeTrickPeds[zombie] == token
+                    and DoesEntityExist(zombie) and not IsPedFatallyInjured(zombie)
+                    and DoesEntityExist(player) and not IsEntityDead(player)
+                    and #(GetEntityCoords(zombie) - GetEntityCoords(player)) <= 2.0
+                    and GetEntityHealth(player) == health and GetPedArmour(player) == armour then
+                    ApplyDamageToPed(player, config.trickDamage, false)
+                end
             end
-            if #(GetEntityCoords(trickPed) - GetEntityCoords(cache.ped)) > 15 then 
-                DeleteEntity(trickPed)
-            end
-
-            if pedAlive > 15000 then 
-                DeleteEntity(trickPed)
-            end
-
-            pedAlive = pedAlive + 500
-
-            Wait(500)
+            lastSwing = swinging
+            Wait(50)
+        end
+        if activeTrickPeds[zombie] == token then
+            if DoesEntityExist(zombie) then DeleteEntity(zombie) end
+            activeTrickPeds[zombie] = nil
         end
     end)
 end
 
-local function trickOrTreat(houseId)
+local function doTrickOrTreat(houseId)
     if not isEventTime() then
         stevo_lib.Notify(locale("notify.notEventTime"), 'error', 3000)
         return
@@ -77,7 +114,6 @@ local function trickOrTreat(houseId)
 
     local canKnock = lib.callback.await('stevo_trickortreat:canKnock', false, houseId)
     if not canKnock then 
-        knocking = false
         stevo_lib.Notify(locale("notify.knockedRecently"), 'error', 3000)
         return 
     end
@@ -93,19 +129,30 @@ local function trickOrTreat(houseId)
         canCancel = true,
         disable = { move = true, car = true, mouse = false, combat = true, },
     }) then    
+        if not isEventActive or not isEventTime() then return end
         local wasTricked = lib.callback.await('stevo_trickortreat:knockedOnDoor', false, houseId)
 
-        knocking = false
-
-        if not wasTricked then
+        if wasTricked == nil then
+            stevo_lib.Notify(locale('notify.stoppedKnocking'), 'error', 3000)
+        elseif wasTricked == false then
             stevo_lib.Notify(locale("notify.receivedTreat"), 'success', 3000)   
         else 
             trickPlayer(houseId, wasTricked)    
         end    
 
     else
-        knocking = false
         stevo_lib.Notify(locale("notify.stoppedKnocking"), 'error', 3000)
+    end
+end
+
+local function trickOrTreat(houseId)
+    if knocking then return end
+    knocking = true
+    local ok, err = pcall(doTrickOrTreat, houseId)
+    knocking = false
+    if not ok then
+        print(('[xn_doikeo] Knock failed at house %s: %s'):format(tostring(houseId), tostring(err)))
+        stevo_lib.Notify(locale('notify.stoppedKnocking'), 'error', 3000)
     end
 end
 
@@ -120,10 +167,9 @@ local function nearby(self)
         lib.hideTextUI()
         textUI = false 
     end
-    if self.currentDistance < config.interactDistance and IsControlJustPressed(0, 38) then
+    if not knocking and self.currentDistance < config.interactDistance and IsControlJustPressed(0, 38) then
         lib.hideTextUI()
         textUI = false 
-        knocking = true
         trickOrTreat(self.houseId)               
     end
 end
@@ -288,6 +334,11 @@ end
 local function stopEvent()
     if not isEventActive then return end
     isEventActive = false
+
+    for ped in pairs(activeTrickPeds) do
+        if DoesEntityExist(ped) then DeleteEntity(ped) end
+        activeTrickPeds[ped] = nil
+    end
 
     if textUI then 
         textUI = false

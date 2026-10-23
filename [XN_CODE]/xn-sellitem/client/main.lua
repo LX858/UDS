@@ -68,6 +68,7 @@ function InitLoop()
         table.insert(LOC, {
             Coords = v.Coords,
             Items = v.Items,
+            ExtraItems = v.ExtraItems,
             NPCText = v.NPCText
         })
     end
@@ -213,7 +214,7 @@ function OpenOrRefreshUI(locIdx)
         end
 
         local currentLoc = LOC[LOCCLOSETO] or LOC[1]
-        local locItems = (currentLoc and currentLoc.Items) or {}
+        local locItems = Config.GetLocationItems(currentLoc)
         local locText = (currentLoc and currentLoc.NPCText) or 'Thu mua'
 
         for itemName, amount in pairs(PlyInv) do
@@ -776,9 +777,10 @@ RegisterNetEvent('xn-sellitem:syncNewItem', function(category, itemName, itemDat
     -- Cập nhật LOC (locations) để item mới xuất hiện trong shop
     for k, location in pairs(Config.Locations) do
         -- Nếu location này bán items của category này
-        if location.Items == Config.Items[category] then
-            -- Items đã tự động update vì là reference
-            LOC[k].Items = Config.Items[category]
+        if LOC[k] and (location.Items == Config.Items[category] or location.ExtraItems == Config.Items[category]) then
+            -- Giữ cả hai bảng gốc; danh sách hiển thị được gộp khi mở menu.
+            LOC[k].Items = location.Items
+            LOC[k].ExtraItems = location.ExtraItems
             -- print('^2[SELLITEM]^7 Updated location: ' .. location.NPCText)
         end
     end
