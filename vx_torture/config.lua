@@ -97,6 +97,9 @@ Config.Torture = {
   toolIdleTimeoutMs = 10000,
   scenePeerTimeoutMs = 4000,
   sceneReplicationTimeoutMs = 2000,
+  sceneDiagnostics = false, -- bounded 5-second trace; enable for multiplayer reproduction
+  stageConfirmTimeoutMs = 4000,
+  remoteTrackGraceMs = 500,
   toolExitTimeoutMs = 15000,
   toolReturnAnimMs = 1000,
   toolReturnOffset = vector3(0.0, -0.85, 0.0),
@@ -251,6 +254,23 @@ Config.Torture = {
     } },
   },
 }
+
+-- Wire reasons are a fixed vocabulary. Client diagnostics never authorize damage.
+Config.Torture.failureReasons = {}
+for reason in ([=[cancelled asset_dict asset_clip asset_prop asset_pending
+  tool_validation idle_timeout exit_timeout actor_distance_health
+  chair_control selected_tool_control static_chair attach_tool attach_at_phase
+  create_scene create_chair_scene create_bench_scene previous_scene_stop selection_timeout_or_cancelled
+  action_busy scene_origin entity_missing entity_control scene_create actor_start
+  actor_track_lost camera_start hand_prop_start hand_prop_lost peer_ready
+  stage_timeout prepare_timeout stage_too_early completion_timeout completion_early
+  completion_mismatch victim_track_failed victim_wrong_seat victim_state_timeout
+  victim_state_changed victim_scene_late remote_scene_timeout remote_actor_timeout
+  remote_track_lost victim_rejected server_stage_mismatch invalid_victim_clock
+  invalid_scene_origin victim_not_alive victim_bucket actor_distance action_validation
+  session_stopped_before_ack ack_timeout scene_ended_before_ack]=]):gmatch('%S+') do
+  Config.Torture.failureReasons[reason] = true
+end
 
 -- FBI3 func_250/251 and torture branches. Full FBI_03_* names use audioRef=0;
 -- only short Electrical_Clamp_* / Teeth_Initial_Pain names use the soundset.

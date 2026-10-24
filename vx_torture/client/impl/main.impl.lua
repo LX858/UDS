@@ -1,6 +1,8 @@
 ---@class MainImpl : Impl
 local Impl = NewImpl('Main')
 local cfg = Config.Torture
+local SCENE_DONT_INTERRUPT, SCENE_HIDE_WEAPON = 4, 1024
+local SCENE_ABORT_ON_DEATH, SCENE_LOOP_WITHIN_SCENE = 2048, 64
 -- Scripted animation flags (TASK_PLAY_ANIM), not synchronized-scene flags.
 local AF_OVERRIDE_PHYSICS = 1024
 local AF_EXTRACT_INITIAL_OFFSET = 4096
@@ -88,6 +90,85 @@ local function nativeTrue(value)
   return value == true or (type(value) == 'number' and value ~= 0)
 end
 
+-- One identity for preparation, playback and completion. Engine scene IDs may
+-- be reused; a coroutine must own this object before changing tasks or props.
+function Impl:BeginSceneRun(setup, token, kind, step, data)
+  self.runGeneration = (self.runGeneration or 0) + 1
+  local previous = self.sceneRun
+  if previous then previous.previous = nil end
+  local run = { previous = previous, setup = setup, token = token, kind = kind, step = step,
+    data = data, generation = self.runGeneration, startedAt = GetGameTimer() }
+  self.sceneRun = run
+  self:TraceScene('prepare', run)
+  return run
+end
+
+function Impl:SceneCurrent(run)
+  return run ~= nil and self.sceneRun == run
+end
+
+function Impl:ExpectScene(token, kind, step)
+  local run = self.sceneRun
+  -- A join event may precede its phase command. Preserve that pending join;
+  -- retire only the previous scene's monitor while the successor is prepared.
+  if run and run.token == token and run.kind == kind and run.step == step then return end
+  self.sceneRun = nil
+  self.victimJoin = nil
+end
+
+function Impl:TraceScene(event, run, reason)
+  if not cfg.sceneDiagnostics or not run then return end
+  print(('[vx_torture] scene_v12 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
+    :format(event, run.setup.id, run.token, run.kind, run.step, run.generation,
+      run.scene, GetGameTimer() - run.startedAt, reason or '-'))
+end
+
+function Impl:SampleScene(run)
+  if not cfg.sceneDiagnostics or not run then return end
+  local now = GetGameTimer()
+  if now < (run.nextSample or 0) then return end
+  run.nextSample = now + 100
+  local player = GetPlayerFromServerId(run.setup.owner)
+  local actor = player ~= -1 and GetPlayerPed(player) or 0
+  local handle = run.scene and NetworkGetLocalSceneFromNetworkId(run.scene)
+  local root, heading = run.origin, run.heading
+  self.sceneSamples = self.sceneSamples or {}
+  local samples = self.sceneSamples
+  samples[#samples + 1] = { time = now, token = run.token, kind = run.kind,
+    step = run.step, generation = run.generation, networkScene = run.scene,
+    localScene = handle, root = root, heading = heading,
+    elapsed = now - run.startedAt, dict = run.data.dict, clip = run.data.actor,
+    phase = handle and handle >= 0 and GetSynchronizedScenePhase(handle) or nil,
+    running = handle and handle >= 0 and nativeTrue(IsSynchronizedSceneRunning(handle)) or false,
+    actor = actor ~= 0 and DoesEntityExist(actor) and {
+      position = GetEntityCoords(actor), visible = IsEntityVisible(actor),
+      alpha = GetEntityAlpha(actor), owner = NetworkGetEntityOwner(actor),
+      playing = nativeTrue(IsEntityPlayingAnim(actor, run.data.dict, run.data.actor, 3)),
+    } or nil, localPosition = GetEntityCoords(PlayerPedId()) }
+  while #samples > 50 or (#samples > 0 and now - samples[1].time > 5000) do table.remove(samples, 1) end
+end
+
+function Impl:DumpSceneTrace(reason)
+  if not cfg.sceneDiagnostics then return end
+  print('[vx_torture] scene_trace ' .. json.encode({ version = 12,
+    gameBuild = GetGameBuildNumber(), role = self.seated and 'victim' or 'actor', reason = reason }))
+  for _, sample in ipairs(self.sceneSamples or {}) do
+    if GetGameTimer() - sample.time <= 5000 then
+      print('[vx_torture] scene_sample ' .. json.encode(sample))
+    end
+  end
+end
+
+-- Return live separately from tolerated: a transient failure must never count
+-- as a completed animation, even while the grace period prevents cancellation.
+function Impl:TrackHealth(track, healthy, fatal)
+  local now = GetGameTimer()
+  if fatal then return false, false end
+  if healthy then track.lostAt = nil; return true, true end
+  track.lostAt = track.lostAt or now
+  return now - track.lostAt < cfg.remoteTrackGraceMs, false
+end
+
 function Impl:WaitForActorTrack(scene, ped, dict, clip, looped, current)
   if not loadDict(dict, 3000) or not current() then return nil end
   local expires = GetGameTimer() + 2500
@@ -116,7 +197,8 @@ function Impl:AddActorTrack(scene, ped, dict, clip, looped, origin, heading)
   -- into the network scene after it starts.
   -- DONT_INTERRUPT blocks ambient events, not scripted successor tasks.
   -- Stop/replace tasks explicitly at the stage boundary.
-  local flags = 4 | 1024 | 2048 | (looped and 64 or 0)
+  local flags = SCENE_DONT_INTERRUPT | SCENE_HIDE_WEAPON | SCENE_ABORT_ON_DEATH
+    | (looped and SCENE_LOOP_WITHIN_SCENE or 0)
   NetworkAddPedToSynchronisedScene(ped, scene, dict, clip,
     8.0, -8.0, flags, 0, 1000.0, 0)
   self.actorTrack = { scene = scene, dict = dict, clip = clip, looped = looped,
@@ -125,22 +207,23 @@ end
 
 function Impl:ActorTrackRunning(scene)
   local track = self.actorTrack
-  if not track or track.scene ~= scene or self.scene ~= scene then
-    print(('[vx_torture] actor_track_state_lost expected=%s actual=%s track=%s')
-      :format(scene, self.scene, track and track.scene))
-    return false
+  if not track or track.scene ~= scene or self.scene ~= scene then return false, false end
+  local now = GetGameTimer()
+  if nativeTrue(IsEntityDead(PlayerPedId())) then return false, false end
+  if now < (track.nextHealthAt or 0) then return track.healthy, track.live end
+  track.nextHealthAt = now + 100
+  local run = self.sceneRun
+  if run and (not targetReady(run.setup.props.chair)
+    or not targetReady(run.setup.props[run.setup.tool])) then return false, false end
+  local live = self.localScene and nativeTrue(IsSynchronizedSceneRunning(self.localScene))
+    and nativeTrue(IsEntityPlayingAnim(PlayerPedId(), track.dict, track.clip, 3))
+  track.healthy, track.live = self:TrackHealth(track, live)
+  if not track.healthy and not track.reported then
+    track.reported = true
+    self:TraceScene('failed', self.sceneRun, 'actor_track_lost')
+    self:DumpSceneTrace('actor_track_lost')
   end
-  local running = self.localScene and IsSynchronizedSceneRunning(self.localScene)
-  local anim = IsEntityPlayingAnim(PlayerPedId(), track.dict, track.clip, 3)
-  local playing = not nativeTrue(IsEntityDead(PlayerPedId()))
-    and nativeTrue(running) and nativeTrue(anim)
-  if not playing then
-    print(('[vx_torture] Actor track lost: %s / %s (network=%s, local=%s, running=%s/%s, anim=%s/%s, phase=%.3f, elapsed=%s, actorDuration=%.3f)')
-      :format(track.dict, track.clip, scene, self.localScene, running, type(running), anim, type(anim),
-        self.localScene and GetSynchronizedScenePhase(self.localScene) or -1.0,
-        GetGameTimer() - (track.startedAt or GetGameTimer()), GetAnimDuration(track.dict, track.clip)))
-  end
-  return playing == true
+  return track.healthy, track.live
 end
 
 local function loadModel(model, timeoutMs)
@@ -474,21 +557,22 @@ function Impl:PutPropBack(setup, key, current)
   return true
 end
 
-function Impl:PutToolBack(setup, tool)
-  local returned = self:PutPropBack(setup, tool)
+function Impl:PutToolBack(setup, tool, current)
+  local returned = self:PutPropBack(setup, tool, current)
   local hand = cfg.toolHand[tool]
   if hand and hand.companion then
-    returned = self:PutPropBack(setup, hand.companion.key) and returned
+    returned = self:PutPropBack(setup, hand.companion.key, current) and returned
   end
   return returned
 end
 
-function Impl:HoldTool(setup, tool)
+function Impl:HoldTool(setup, tool, current)
   local entity = fromNet(setup.props[tool], 2500)
   local hand = cfg.toolHand[tool]
   if not entity or not hand or not requestControl(entity, 1500) then return false end
   local companion = hand.companion and fromNet(setup.props[hand.companion.key], 2500)
   if hand.companion and (not companion or not requestControl(companion, 1500)) then return false end
+  if current and not current() then return false end
   FreezeEntityPosition(entity, false)
   local ped = PlayerPedId()
   local bone = GetPedBoneIndex(ped, hand.bone)
@@ -523,23 +607,31 @@ function Impl:EndToolSession(setup)
   local returnToSeat = self.seated == setup.id and not self.activeAction
   self:StopStage(returnToSeat)
   if setup.owner == playerSource() and session.tool then
+    local generation = self.runGeneration
     CreateThread(function()
+      local function current() return not self.toolSession and self.runGeneration == generation end
       for _ = 1, 3 do
-        if self:PutToolBack(setup, session.tool) then break end
+        if not current() then return end
+        if self:PutToolBack(setup, session.tool, current) then break end
         Wait(250)
       end
-      self:RestoreBench(setup, session.tool, true)
+      self:RestoreBench(setup, session.tool, true, current)
     end)
   elseif returnToSeat then
-    self:PlayIdle(setup)
+    local restored = self:PlayIdle(setup)
+    if not restored and self.seated == setup.id and not self.toolSession then
+      self:EmitNet(self, 'seatRecoveryFailed', setup.id, session.token)
+      self:ReleaseSeat(setup.id)
+    end
   end
 end
 
 -- FBI3 f_23 tracks are local to the hand bone, unlike weapon-select tracks.
-function Impl:StartHandProps(setup, stageData, looped, localScene)
+function Impl:StartHandProps(setup, stageData, looped, localScene, current)
   self.handPropTracks = {}
   for key, clip in pairs(stageData.handProps or {}) do
     local entity = fromNet(setup.props[key], 500)
+    if current and not current() then return false end
     if not entity or not IsEntityAttachedToEntity(entity, PlayerPedId()) then return false end
     local phase = GetSynchronizedScenePhase(localScene)
     if not nativeTrue(PlayEntityAnim(entity, clip, stageData.dict, 8.0,
@@ -559,9 +651,10 @@ function Impl:SyncHandProps()
   return true
 end
 
-function Impl:StaticChair(setup)
+function Impl:StaticChair(setup, current)
   local chair = fromNet(setup.props.chair, 500)
   if not chair or not requestControl(chair, 1000) then return false end
+  if current and not current() then return false end
   local pos = setup.positions.chair
   SetEntityCoordsNoOffset(chair, pos.x, pos.y, pos.z, false, false, false)
   setDisplayRotation(chair, setup.heading, cfg.props.chair, setup.rotations and setup.rotations.chair)
@@ -571,8 +664,9 @@ function Impl:StaticChair(setup)
   return true
 end
 
-function Impl:ValidateSceneAssets(setup, stageData)
+function Impl:ValidateSceneAssets(setup, stageData, current)
   if not loadDict(stageData.dict, 3000) then return false end
+  if current and not current() then return false end
   local clips = { actor = stageData.actor, victim = stageData.victim,
     chair = stageData.chair, tool = stageData.tool,
     camera = stageData.camera or stageData.actor:gsub('_player$', '_cam') }
@@ -584,6 +678,7 @@ function Impl:ValidateSceneAssets(setup, stageData)
   end
   for _, tracks in ipairs({ stageData.props or {}, stageData.handProps or {} }) do
     for key, clip in pairs(tracks) do
+      if current and not current() then return false end
       if not setup.props[key] or not fromNet(setup.props[key], 300)
         or GetAnimDuration(stageData.dict, clip) <= 0.0 then
         print(('[vx_torture] missing_prop_clip prop=%s dict=%s clip=%s'):format(key, stageData.dict, clip))
@@ -637,6 +732,9 @@ function Impl:StopRetiredScenes()
 end
 
 function Impl:StopStage(keepVictimTask, transitioning)
+  self:TraceScene('stop', transitioning and self.sceneRun and self.sceneRun.previous or self.sceneRun)
+  if self.sceneRun then self.sceneRun.previous = nil end
+  if not transitioning then self.sceneRun = nil end
   self.stageGeneration = (self.stageGeneration or 0) + 1
   local generation = self.stageGeneration
   for _, track in ipairs(self.handPropTracks or {}) do
@@ -688,12 +786,14 @@ function Impl:StopStage(keepVictimTask, transitioning)
   end
   if self.stageChair and DoesEntityExist(self.stageChair) then
     if self.stageChairRestore and requestControl(self.stageChair, 700) then
+      if self.stageGeneration ~= generation then return false end
       local position = self.stageChairRestore.coords
       SetEntityCoordsNoOffset(self.stageChair, position.x, position.y, position.z,
         false, false, false)
       setDisplayRotation(self.stageChair, self.stageChairRestore.heading,
         cfg.props.chair, self.stageChairRestore.rotation)
     end
+    if self.stageGeneration ~= generation then return false end
     FreezeEntityPosition(self.stageChair, true)
     self.stageChair = nil
   end
@@ -738,9 +838,11 @@ end
 function Impl:PlayVictimTrack(setup, stageData, looped, phase, masterScene, current)
   if self.seated ~= setup.id or IsEntityDead(PlayerPedId())
     or not loadDict(stageData.dict, 3000) then return false end
-  if current and not current() then return false end
+  if self.seated ~= setup.id or nativeTrue(IsEntityDead(PlayerPedId()))
+    or (current and not current()) then return false end
   local root, heading = sceneOrigin(setup)
   if not root then return false end
+  if self.sceneRun then self.sceneRun.origin, self.sceneRun.heading = root, heading end
   local ped = PlayerPedId()
   local flags = VICTIM_TRACK_FLAGS | (looped and 1 or 2) -- loop / hold last frame
   local track = { dict = stageData.dict, clip = stageData.victim, flags = flags }
@@ -774,11 +876,13 @@ function Impl:StartVictimScene(setup, stageData, looped)
 end
 
 function Impl:PlayIdle(setup)
+  local generation = self.runGeneration
   if self.victimSceneStarting then return false end
   self.victimSceneStarting = true
   -- The chair is a networked prop. Only the actor may animate it during a
   -- tool scene; the seated player's base loop animates its own ped alone.
-  local ready = self:StartVictimScene(setup, cfg.seatAlignment, true)
+  local ready = self:PlayVictimTrack(setup, cfg.seatAlignment, true, 0.0, nil,
+    function() return self.runGeneration == generation end)
   self.victimSceneStarting = false
   self.nextSeatRecoveryAt = GetGameTimer() + 1500
   return ready
@@ -850,7 +954,60 @@ function Impl:JoinVictimScene(setup, stageData, scene, looped, current, victimCl
   return true
 end
 
+function Impl:MonitorVictimRun(run)
+  if not self:SceneCurrent(run) or not run.joined or run.failed then return end
+  local setup, data = run.setup, run.data
+  if self.seated ~= setup.id then return end
+  local remote = self.remoteActorTrack
+  local actorPlayer = GetPlayerFromServerId(setup.owner)
+  local actor = actorPlayer ~= -1 and GetPlayerPed(actorPlayer) or 0
+  local handle = run.scene and NetworkGetLocalSceneFromNetworkId(run.scene)
+  local fatal = nativeTrue(IsEntityDead(PlayerPedId())) or actor == 0
+    or not DoesEntityExist(actor) or nativeTrue(IsEntityDead(actor))
+    or not targetReady(setup.props.chair)
+    or not targetReady(setup.props[setup.tool])
+  for _, tracks in ipairs({ data.props or {}, data.handProps or {} }) do
+    for key in pairs(tracks) do if not targetReady(setup.props[key]) then fatal = true end end
+  end
+  local ownLive = self.victimScene and self.victimMasterScene == run.scene
+    and nativeTrue(IsEntityPlayingAnim(PlayerPedId(), data.dict, data.victim, 3))
+  local actorLive = remote and handle and handle >= 0
+    and nativeTrue(IsSynchronizedSceneRunning(handle))
+    and nativeTrue(IsEntityPlayingAnim(actor, data.dict, data.actor, 3))
+  local healthy, live = self:TrackHealth(run, ownLive and actorLive, fatal)
+  if not healthy then
+    run.failed = true
+    local reason = fatal and 'entity_missing' or (not ownLive and 'victim_track_failed' or 'remote_track_lost')
+    self:TraceScene('failed', run, reason)
+    self:DumpSceneTrace(reason)
+    if run.kind == 'action' then
+      self:EmitNet(self, 'stageFailed', setup.id, run.token, run.step, reason)
+    else
+      self:EmitNet(self, 'toolSceneFailed', setup.id, run.token, run.kind, run.step, reason)
+    end
+    return
+  end
+  if not live or run.completed or run.kind == 'idle' or not run.peersReadyAt then return end
+  local finished
+  if data.loopMs then
+    finished = GetGameTimer() - run.peersReadyAt >= data.loopMs
+  else
+    finished = GetSynchronizedScenePhase(handle) >= 0.97
+    -- An independent seated loop has no finite endpoint. Other victim tracks
+    -- must reach their own endpoint too; the actor clock alone is insufficient.
+    if not data.victimLoop then
+      finished = finished and GetEntityAnimCurrentTime(PlayerPedId(), data.dict, data.victim) >= 0.95
+    end
+  end
+  if finished then
+    run.completed = true
+    self:TraceScene('complete', run)
+    self:EmitNet(self, 'sceneComplete', setup.id, run.token, run.kind, run.step, run.scene, true)
+  end
+end
+
 function Impl:PrintSceneDiagnostics()
+  self:DumpSceneTrace("manual")
   local setup = self.seated and self.setups[self.seated] or self:MySetup()
   if not setup then print('[vx_torture] No local setup/seat session') return end
   local root, heading = sceneOrigin(setup)
@@ -978,14 +1135,21 @@ end
 function Impl:RunActorToolScene(setup, token, stageData, looped)
   local session = self.toolSession
   if not session or session.token ~= token then return false end
+  local run = self:BeginSceneRun(setup, token, looped and 'idle' or 'select',
+    looped and session.idleEpoch or 0, stageData)
+  local function current() return self:SceneCurrent(run) and self.toolSession == session end
   local function fail(reason)
+    if not current() then return false, 'cancelled' end
+    self:TraceScene('failed', run, reason)
+    self:DumpSceneTrace(reason)
     print(('[vx_torture] tool_scene_failed reason=%s tool=%s phase=%s dict=%s clip=%s token=%s network=%s local=%s')
       :format(reason, session.tool, looped and 'idle' or 'select', stageData.dict,
         stageData.actor, token, self.scene, self.localScene))
     if self.toolSession == session then self:StopStage() end
-    return false
+    return false, reason
   end
   local coords, heading = sceneOrigin(setup)
+  run.origin, run.heading = coords, heading
   if not coords then return fail('scene_origin') end
   local ped = PlayerPedId()
   local chair = stageData.chair and fromNet(setup.props.chair, 700) or nil
@@ -1015,7 +1179,7 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
       sceneProps[key] = nil
     end
   end
-  if self.toolSession ~= session then return false end
+  if not current() then return false end
   local benchEntities = {}
   for key in pairs(benchTracks) do
     local entity = fromNet(setup.props[key], 100)
@@ -1027,23 +1191,25 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
     and not (stageData.props and stageData.props[session.tool])
   if not looped and not stageData.tool and not (stageData.props and stageData.props[session.tool]) then
     -- Syringe has no separate entity track in the original selection scene.
-    self:PutToolBack(setup, session.tool)
+    self:PutToolBack(setup, session.tool, current)
   elseif attachSelected then
     local selected = fromNet(setup.props[session.tool], 700)
     if not selected or not requestControl(selected, 1000) then return fail('selected_tool_control') end
   end
-  if self.toolSession ~= session then return false end
+  if not current() then return false end
   if not self:StopStage(false, true) then return fail('previous_scene_stop') end
-  if self.toolSession ~= session then return false end
-  if not stageData.chair and not self:StaticChair(setup) then return fail('static_chair') end
-  if attachSelected and not self:HoldTool(setup, session.tool) then
+  if not current() then return false end
+  if not stageData.chair and not self:StaticChair(setup, current) then return fail('static_chair') end
+  if attachSelected and not self:HoldTool(setup, session.tool, current) then
     return fail('attach_tool')
   end
+  if not current() then return false end
   local scene = NetworkCreateSynchronisedScene(
     coords.x, coords.y, coords.z, 0.0, 0.0, heading,
     2, not looped, looped, 1.0, 0.0, 1.0
   )
   if not scene or scene == -1 then return fail('create_scene') end
+  run.scene = scene
   self.scene = scene
   self.actorStageActive = true
   self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, looped, coords, heading)
@@ -1102,14 +1268,16 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
     end
     for _, bench in ipairs(self.benchScenes) do NetworkStartSynchronisedScene(bench) end
   end
+  self:TraceScene('start', run)
   NetworkStartSynchronisedScene(scene)
   local localScene = self:WaitForActorTrack(scene, ped, stageData.dict, stageData.actor, looped,
-    function() return self.toolSession == session and self.scene == scene end)
+    function() return current() and self.scene == scene end)
   if not localScene then
     return fail('actor_start')
   end
   self.localScene = localScene
-  if not self:StartHandProps(setup, stageData, looped, localScene) then return fail('hand_prop_start') end
+  if not self:StartHandProps(setup, stageData, looped, localScene, current) then return fail('hand_prop_start') end
+  if not current() then return false end
   local cam = CreateCam('DEFAULT_ANIMATED_CAMERA', true)
   if not PlaySynchronizedCamAnim(cam, localScene, stageData.camera, stageData.dict) then
     DestroyCam(cam, false)
@@ -1118,33 +1286,36 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   self:ReplaceSceneCamera(cam)
   if not self:WaitForVictimScene(setup, token, looped and 'idle' or 'select',
     looped and session.idleEpoch or 0, scene, localScene) then
-    return fail('peer_ready')
+    return fail(self.peerScene and self.peerScene.reason or 'peer_ready')
   end
+  self:TraceScene('ready', run)
   if looped then
     if session.restoreBench then
       session.restoreBench = nil
       CreateThread(function()
         self:RestoreBench(setup, session.tool, false,
-          function() return self.toolSession == session end)
+          current)
       end)
     end
     return true
   end
   local untilTime = GetGameTimer() + cfg.toolSelectTimeoutMs
   local attached = false
-  while self.toolSession == session and session.token == token and self.scene == scene
+  while current() and self.scene == scene
     and GetGameTimer() < untilTime do
-    if not self:ActorTrackRunning(scene) then return fail('actor_track_lost') end
+    local healthy, live = self:ActorTrackRunning(scene)
+    if not healthy then return fail('actor_track_lost') end
     local phase = GetSynchronizedScenePhase(localScene)
     if stageData.attachAt and not attached and phase >= stageData.attachAt then
-      attached = self:HoldTool(setup, session.tool)
+      attached = self:HoldTool(setup, session.tool, current)
       if not attached then return fail('attach_at_phase') end
     end
-    if phase >= 0.97 then
+    if live and phase >= 0.97 then
       -- Keep the last selection frame/camera through the server round trip.
       -- Idle already owns the selected tool track (or attaches it on entry).
       -- Restoring the other bench props must not block the idle/menu handoff.
       session.restoreBench = true
+      self:TraceScene("complete", run)
       return true
     end
     Wait(0)
@@ -1156,9 +1327,10 @@ function Impl:RunToolExit(setup, token)
   local session = self.toolSession
   if not session or session.token ~= token then return false end
   self:StopStage()
-  if not self:HoldTool(setup, session.tool) then return false end
+  local function current() return self.toolSession == session end
+  if not self:HoldTool(setup, session.tool, current) then return false end
   local trolley = fromNet(setup.props.trolley, 700)
-  if not trolley then return false end
+  if not trolley or not current() then return false end
   local cameraPos = GetOffsetFromEntityInWorldCoords(trolley,
     cfg.toolExitCameraOffset.x, cfg.toolExitCameraOffset.y, cfg.toolExitCameraOffset.z)
   local cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
@@ -1177,19 +1349,22 @@ function Impl:RunToolExit(setup, token)
   if self.toolSession ~= session then return false end
   local reached = self.toolSession == session and #(GetEntityCoords(ped) - point) <= 0.75
   local returned
-  if reached and loadDict('pickup_object', 1500) then
+  local loaded = reached and loadDict('pickup_object', 1500)
+  if not current() then return false end
+  if loaded then
     TaskPlayAnim(ped, 'pickup_object', 'putdown_low', 8.0, -8.0,
       cfg.toolReturnAnimMs, 0, 0.0, false, false, false)
     Wait(math.floor(cfg.toolReturnAnimMs * 0.5))
     if self.toolSession ~= session then return false end
-    returned = self:PutToolBack(setup, session.tool)
+    returned = self:PutToolBack(setup, session.tool, current)
     Wait(math.ceil(cfg.toolReturnAnimMs * 0.5))
     if self.toolSession ~= session then return false end
   else
-    returned = self:PutToolBack(setup, session.tool)
+    returned = self:PutToolBack(setup, session.tool, current)
     reached = false
   end
-  self:RestoreBench(setup, session.tool, true)
+  self:RestoreBench(setup, session.tool, true, current)
+  if not current() then return false end
   self:StopStage()
   ClearPedTasks(ped)
   return reached and returned and self.toolSession == session
@@ -1200,12 +1375,24 @@ function Impl:RunActorStage(setup, token, key, index)
   local action = cfg.actions[key]
   local stageData = action.stages[index]
   local looped = stageData.loopMs ~= nil
+  local active = self.activeAction
+  if not active or active.token ~= token then return false, 'cancelled' end
+  local run = self:BeginSceneRun(setup, token, 'action', index, stageData)
+  local function current() return self:SceneCurrent(run) and self.activeAction == active end
+  local function fail(reason)
+    if not current() then return false, 'cancelled' end
+    self:TraceScene('failed', run, reason)
+    self:DumpSceneTrace(reason)
+    self:StopStage()
+    return false, reason
+  end
   local coords, heading = sceneOrigin(setup)
-  if not coords or not self.activeAction or self.activeAction.token ~= token then return false end
+  run.origin, run.heading = coords, heading
+  if not coords or not current() then return fail("scene_origin") end
   local ped = PlayerPedId()
   local chair = fromNet(setup.props.chair, 500)
   local tool = fromNet(setup.props[action.tool], 500)
-  if not chair or not tool then return false end
+  if not chair or not tool then return fail("entity_missing") end
   local controlledChair = not stageData.chair or requestControl(chair, 1000)
   local sceneProps = {}
   if stageData.tool then sceneProps[action.tool] = stageData.tool end
@@ -1213,25 +1400,23 @@ function Impl:RunActorStage(setup, token, key, index)
   local propEntities = {}
   for propKey in pairs(sceneProps) do
     local entity = fromNet(setup.props[propKey], 500)
-    if not entity or not requestControl(entity, 1000) then return false end
+    if not entity or not requestControl(entity, 1000) then return fail("entity_control") end
     propEntities[propKey] = entity
   end
-  if not controlledChair then return false end
-  if not self.activeAction or self.activeAction.token ~= token then return false end
-  if not self:StopStage(false, true) then
-    if self.activeAction and self.activeAction.token == token then self:StopStage() end
-    return false
-  end
-  if not self.activeAction or self.activeAction.token ~= token then return false end
-  if not stageData.chair and not self:StaticChair(setup) then return false end
-  if stageData.attachTool and not self:HoldTool(setup, action.tool) then return false end
-  if not self.activeAction or self.activeAction.token ~= token then return false end
+  if not controlledChair then return fail("entity_control") end
+  if not current() then return fail("action_validation") end
+  if not self:StopStage(false, true) then return fail('cancelled') end
+  if not current() then return fail("action_validation") end
+  if not stageData.chair and not self:StaticChair(setup, current) then return fail("action_validation") end
+  if stageData.attachTool and not self:HoldTool(setup, action.tool, current) then return fail("action_validation") end
+  if not current() then return fail("action_validation") end
   local scene = NetworkCreateSynchronisedScene(
     coords.x, coords.y, coords.z, 0.0, 0.0, heading,
     2, not looped, looped, 1.0, 0.0, 1.0
   )
   if scene and scene ~= -1 then
     self.actorStageActive = true
+    run.scene = scene
     self.scene = scene
     self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, looped, coords, heading)
     if stageData.chair then
@@ -1243,7 +1428,7 @@ function Impl:RunActorStage(setup, token, key, index)
       if stageData.victimLoop and not looped then
         chairScene = NetworkCreateSynchronisedScene(coords.x, coords.y, coords.z,
           0.0, 0.0, heading, 2, false, true, 1.0, 0.0, 1.0)
-        if not chairScene or chairScene == -1 then self:StopStage() return false end
+        if not chairScene or chairScene == -1 then return fail("scene_create") end
         self.chairScene = chairScene
       end
       NetworkAddEntityToSynchronisedScene(chair, chairScene, stageData.dict, stageData.chair,
@@ -1256,58 +1441,54 @@ function Impl:RunActorStage(setup, token, key, index)
       FreezeEntityPosition(entity, false)
       local followsVictim = stageData.victimProps and stageData.victimProps[propKey]
       local propScene = followsVictim and self.chairScene or scene
-      if not propScene then self:StopStage() return false end
+      if not propScene then return fail("scene_create") end
       NetworkAddEntityToSynchronisedScene(entity, propScene, stageData.dict, clip,
         8.0, -8.0, (looped or followsVictim) and 64 or 0)
     end
     if self.chairScene then NetworkStartSynchronisedScene(self.chairScene) end
+    self:TraceScene('start', run)
     NetworkStartSynchronisedScene(scene)
     local localScene = self:WaitForActorTrack(scene, ped, stageData.dict, stageData.actor, looped,
-      function() return self.scene == scene and self.activeAction and self.activeAction.token == token end)
+      function() return current() and self.scene == scene end)
     if localScene then
       self.localScene = localScene
-      if not self:StartHandProps(setup, stageData, looped, localScene) then self:StopStage() return false end
+      if not self:StartHandProps(setup, stageData, looped, localScene, current) then return fail("hand_prop_start") end
+      if not current() then return false, "cancelled" end
       local camName = stageData.camera or stageData.actor:gsub('_player$', '_cam')
       local cam = CreateCam('DEFAULT_ANIMATED_CAMERA', true)
       if PlaySynchronizedCamAnim(cam, localScene, camName, stageData.dict) then
         self:ReplaceSceneCamera(cam)
       else
         DestroyCam(cam, false)
-        self:StopStage()
-        self:HoldTool(setup, action.tool)
-        return false
+        return fail("camera_start")
       end
       if not self:WaitForVictimScene(setup, token, 'action', index, scene, localScene) then
-        if self.scene == scene then self:StopStage() end
-        return false
+        return fail("peer_ready")
       end
       -- durationMs is an effect/gameplay estimate, not the loaded clip length.
       -- Advance by the real scene phase, with the same hard deadline as server.
+      self:TraceScene("ready", run)
       local untilTime = startedAt + cfg.stageTimeoutMs
       local loopStartedAt = GetGameTimer() -- count only after both peers are ready
-      while self.activeAction and self.activeAction.token == token
+      while current()
         and GetGameTimer() < untilTime do
-        if not self:ActorTrackRunning(scene) or not self:SyncHandProps() then
-          if self.scene == scene then self:StopStage() end
-          return false
-        end
-        if (looped and GetGameTimer() - loopStartedAt >= stageData.loopMs)
-          or (not looped and GetSynchronizedScenePhase(localScene) >= 0.97) then
+        local healthy, live = self:ActorTrackRunning(scene)
+        if not healthy then return fail('actor_track_lost') end
+        if not self:SyncHandProps() then return fail('hand_prop_lost') end
+        if live and ((looped and GetGameTimer() - loopStartedAt >= stageData.loopMs)
+          or (not looped and GetSynchronizedScenePhase(localScene) >= 0.97)) then
+          self:TraceScene("complete", run)
           return true -- hold this frame until the next stage/idle is prepared
         end
         Wait(0)
       end
-      if not self.activeAction or self.activeAction.token ~= token then return false end
-      self:StopStage()
-      self:HoldTool(setup, action.tool)
-      return false
+      if not current() then return fail("action_validation") end
+      return fail("stage_timeout")
     end
-    if not self.activeAction or self.activeAction.token ~= token then return false end
-    self:StopStage()
-    self:HoldTool(setup, action.tool)
+    if not current() then return fail("action_validation") end
+    return fail("actor_start")
   end
-  if self.activeAction and self.activeAction.token == token then self:StopStage() end
-  return false
+  return fail("scene_create")
 end
 
 function Impl:StopEffectSounds(token)
@@ -1687,8 +1868,14 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] scene replication v11 loaded (client)')
+  print(('[vx_torture] scene lifecycle v12 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
+  self:OnNet('scenePeersReady', function(token, kind, step, scene)
+    local run = self.sceneRun
+    if run and run.token == token and run.kind == kind and run.step == step and run.scene == scene then
+      run.peersReadyAt = run.peersReadyAt or GetGameTimer()
+    end
+  end)
   self:OnNet('victimSceneReady', function(token, kind, step, scene, success, reason)
     local pending = self.peerScene
     if pending and pending.token == token and pending.kind == kind
@@ -1716,8 +1903,10 @@ function Impl:OnReady()
       and previous.step == step and previous.scene == scene then return end
     local join = { token = token, kind = kind, step = step, scene = scene }
     self.victimJoin = join
+    local run = self:BeginSceneRun(setup, token, kind, step, stageData)
+    run.scene = scene
     local function current()
-      if self.victimJoin ~= join then return false end
+      if self.victimJoin ~= join or not self:SceneCurrent(run) then return false end
       if self.seated ~= setup.id then return false end
       if kind == 'action' then
         local active = self.activeAction
@@ -1746,15 +1935,18 @@ function Impl:OnReady()
         print(('[vx_torture] peer_join_failed reason=%s token=%s kind=%s step=%s scene=%s')
           :format(reason, token, kind, step, scene))
       end
+      run.joined = success == true
+      self:TraceScene(success and 'ready' or 'failed', run, reason)
+      if not success then self:DumpSceneTrace(reason) end
       self:EmitNet(self, 'victimSceneReady', setup.id, token, kind, step, scene, success == true, reason)
       if not current() then return end
       if kind == 'idle' then
         session.idleReady = success == true
         if success then session.phase = 'idle' end
-        self:EmitNet(self, 'toolIdleReady', setup.id, token, step, success == true)
+        self:EmitNet(self, 'toolIdleReady', setup.id, token, step, success == true, reason)
       elseif not success then
-        if kind == 'action' then self:EmitNet(self, 'stageFailed', setup.id, token, step)
-        else self:EmitNet(self, 'toolSceneFailed', setup.id, token) end
+        if kind == 'action' then self:EmitNet(self, 'stageFailed', setup.id, token, step, reason)
+        else self:EmitNet(self, 'toolSceneFailed', setup.id, token, kind, step, reason) end
       end
     end)
   end)
@@ -1790,6 +1982,7 @@ function Impl:OnReady()
     self.setups[setupId] = nil
   end)
   self:OnNet('prepareTool', function(setup, token)
+    if self.toolSession and self.toolSession.token == token then return end
     if self.toolSession then
       return self:EmitNet(self, 'readyTool', setup.id, token, false)
     end
@@ -1815,13 +2008,13 @@ function Impl:OnReady()
       end
       if ready then
         for _, scene in pairs(toolScenes) do
-          ready = self:ValidateSceneAssets(setup, scene)
+          ready = self:ValidateSceneAssets(setup, scene, function() return self.toolSession == session end)
           if not ready then break end
         end
       end
       if self.toolSession ~= session then return end
       if ready and not actor and not self.victimScene then ready = self:PlayIdle(setup) end
-      self:EmitNet(self, 'readyTool', setup.id, token, ready)
+      self:EmitNet(self, 'readyTool', setup.id, token, ready, not ready and 'asset_clip' or nil)
       if not ready then self:EndToolSession(setup) end
     end)
   end)
@@ -1829,12 +2022,21 @@ function Impl:OnReady()
     local session = self.toolSession
     if not session or session.token ~= token then return end
     session.revision = math.max(session.revision or 0, setup.revision or 0)
+    if session.selectStarted then return end
+    session.selectStarted = true
     session.phase = 'select'
     local selectScene = cfg.toolScenes[session.tool].select
     if not session.actor then return end -- joined through the actor's scene id
     CreateThread(function()
-      local success = self:RunActorToolScene(setup, token, selectScene, false)
-      self:EmitNet(self, 'toolSelected', setup.id, token, success == true)
+      if self.toolSession ~= session or session.phase ~= 'select' then return end
+      local success, reason = self:RunActorToolScene(setup, token, selectScene, false)
+      if self.toolSession ~= session or session.phase ~= 'select' then return end
+      local run = self.sceneRun
+      if success then
+        self:EmitNet(self, 'toolSelected', setup.id, token, true, run and run.scene)
+      else
+        self:EmitNet(self, 'toolSceneFailed', setup.id, token, 'select', 0, reason)
+      end
     end)
   end)
   self:OnNet('startToolIdle', function(setup, token, epoch)
@@ -1843,17 +2045,19 @@ function Impl:OnReady()
     if session.idleEpoch and epoch <= session.idleEpoch then return end
     session.revision = math.max(session.revision or 0, setup.revision or 0)
     session.idleEpoch = epoch
+    self:ExpectScene(token, 'idle', epoch)
     session.phase = 'startingIdle'
     session.idleReady = false
     session.menuPending = false
     local idleScene = cfg.toolScenes[session.tool].idle
     if not session.actor then return end -- readiness is sent after joining
     CreateThread(function()
-      local success = self:RunActorToolScene(setup, token, idleScene, true)
-      if self.toolSession == session then
+      if self.toolSession ~= session or session.idleEpoch ~= epoch then return end
+      local success, reason = self:RunActorToolScene(setup, token, idleScene, true)
+      if self.toolSession == session and session.idleEpoch == epoch then
         session.idleReady = success == true
         if success then session.phase = 'idle' end
-        self:EmitNet(self, 'toolIdleReady', setup.id, token, epoch, success == true)
+        self:EmitNet(self, 'toolIdleReady', setup.id, token, epoch, success == true, reason)
         local current = self.setups[setup.id]
         if success and current then self:ShowToolMenu(current) end
       end
@@ -1875,6 +2079,8 @@ function Impl:OnReady()
     local session = self.toolSession
     if session and session.setupId == setupId and session.token == token
       and self.seated == setupId then
+      self.sceneRun = nil
+      self.victimJoin = nil
       session.phase = 'exit'
       local setup = self.setups[setupId]
       if setup then self:PlayIdle(setup) end
@@ -1883,6 +2089,7 @@ function Impl:OnReady()
   self:OnNet('stopTool', function(setupId, token, reason)
     local session = self.toolSession
     if session and session.setupId == setupId and session.token == token then
+      if reason then self:TraceScene('cancel', self.sceneRun, reason); self:DumpSceneTrace(reason) end
       if self.peerScene and self.peerScene.token == token then
         self.peerScene.reason = self.peerScene.reason or reason
       end
@@ -1918,14 +2125,22 @@ function Impl:OnReady()
   self:OnNet('releaseSeat', function(setupId) self:ReleaseSeat(setupId) end)
   self:OnNet('prepareAction', function(setup, token, key)
     local action = cfg.actions[key]
+    if self.activeAction and self.activeAction.token == token then return end
     if not action or self.activeAction then
       return self:EmitNet(self, 'readyAction', setup.id, token, false)
     end
+    local active = {
+      setupId = setup.id, token = token, key = key, stage = 0,
+      actor = setup.owner == playerSource(), preparing = true,
+      expiresAt = GetGameTimer() + (#action.stages * cfg.stageTimeoutMs) + cfg.prepareTimeoutMs,
+    }
+    self.activeAction = active
     CreateThread(function()
+      if self.activeAction ~= active then return end
       local ready = fromNet(setup.props.chair, 2000) ~= nil
       if ready then
         for index, stageData in ipairs(action.stages) do
-          if not self:ValidateSceneAssets(setup, stageData) then
+          if not self:ValidateSceneAssets(setup, stageData, function() return self.activeAction == active end) then
             print(('[vx_torture] action_asset_failed action=%s stage=%s dict=%s actor=%s victim=%s chair=%s tool=%s')
               :format(key, index, stageData.dict, stageData.actor, stageData.victim, stageData.chair, stageData.tool))
             ready = false
@@ -1933,14 +2148,9 @@ function Impl:OnReady()
           end
         end
       end
-      if ready then
-        self.activeAction = {
-          setupId = setup.id, token = token, key = key,
-          actor = setup.owner == playerSource(),
-          expiresAt = GetGameTimer() + (#action.stages * cfg.stageTimeoutMs) + cfg.prepareTimeoutMs,
-        }
-      end
-      self:EmitNet(self, 'readyAction', setup.id, token, ready)
+      if self.activeAction ~= active then return end
+      active.preparing = false
+      self:EmitNet(self, 'readyAction', setup.id, token, ready, not ready and 'asset_clip' or nil)
     end)
   end)
   self:OnNet('playStage', function(setup, token, key, index)
@@ -1948,15 +2158,23 @@ function Impl:OnReady()
     if not active or active.token ~= token or active.setupId ~= setup.id then return end
     local stageData = cfg.actions[key] and cfg.actions[key].stages[index]
     if not stageData then return end
+    if active.stage and index <= active.stage then return end
+    self:ExpectScene(token, 'action', index)
     active.stage = index
     if active.actor then
       CreateThread(function()
-        local success = self:RunActorStage(setup, token, key, index)
+        if self.activeAction ~= active or active.stage ~= index then return end
+        local success, reason = self:RunActorStage(setup, token, key, index)
+        if self.activeAction ~= active or active.stage ~= index then return end
         if not success then
           print(('[vx_torture] action_stage_failed action=%s stage=%d dict=%s clip=%s token=%s')
             :format(key, index, stageData.dict, stageData.actor, token))
         end
-        self:EmitNet(self, 'stageDone', setup.id, token, index, success == true)
+        if success then
+          self:EmitNet(self, 'stageDone', setup.id, token, index, true, self.sceneRun and self.sceneRun.scene)
+        else
+          self:EmitNet(self, 'stageFailed', setup.id, token, index, reason)
+        end
       end)
     end
   end)
@@ -1968,12 +2186,15 @@ function Impl:OnReady()
     if data then self:QueueSceneEffects(setup, token, kind .. ':' .. epoch, data, netScene, kind) end
   end)
   self:OnNet('stopEffects', function(token) self:StopEffectSounds(token) end)
-  self:OnNet('stopAction', function(setupId, token, resumeIdle)
+  self:OnNet('stopAction', function(setupId, token, resumeIdle, reason)
     self:StopEffectSounds(token)
     if not self.activeAction or self.activeAction.token ~= token then return end
+    if reason then self:TraceScene('cancel', self.sceneRun, reason); self:DumpSceneTrace(reason) end
     local actionKey = self.activeAction.key
     self.activeAction = nil
     if resumeIdle and self.toolSession and self.toolSession.setupId == setupId then
+      self.sceneRun = nil
+      self.victimJoin = nil
       self.toolSession.phase = 'startingIdle'
       self.toolSession.idleReady = false
       return -- next idle replaces the held action directly on both clients
@@ -2038,43 +2259,43 @@ function Impl:OnReady()
   self:Interval('effectsSync', 50, function()
     for token, run in pairs(self.activeEffects) do self:TickEffect(token, run) end
   end)
+  self:Interval('sceneHealth', 100, function()
+    local run = self.sceneRun
+    if not run then return end
+    self:SampleScene(run)
+    if self.seated then self:MonitorVictimRun(run) end
+  end)
   self:Interval('seatControl', 0, function()
     self:SyncHandProps()
-    if self.activeAction and GetGameTimer() > self.activeAction.expiresAt then
-      self.activeAction = nil
+    if self.activeAction and self.activeAction.expiresAt
+      and GetGameTimer() > self.activeAction.expiresAt and not self.activeAction.expiryReported then
+      local active = self.activeAction
+      active.expiryReported = true
+      self:DumpSceneTrace('stage_timeout')
+      self:EmitNet(self, 'stageFailed', active.setupId, active.token, active.stage, 'stage_timeout')
       self:StopStage()
     end
     local session = self.toolSession
-    if session and session.phase == 'idle' and not self.activeAction
+    if session and session.actor and session.phase == 'idle' and not self.activeAction
       and GetGameTimer() >= self.nextToolHealthAt then
-      self.nextToolHealthAt = GetGameTimer() + 500
+      self.nextToolHealthAt = GetGameTimer() + 100
       local setup = self.setups[session.setupId]
       if setup and setup.toolState == 'idle' and setup.toolReady then
         local idle = cfg.toolScenes[session.tool].idle
-        local clip = session.actor and idle.actor or idle.victim
-        local healthy = targetReady(setup.props.chair)
-          and targetReady(setup.props[session.tool])
-        if session.actor then
-          healthy = healthy and self:ActorTrackRunning(self.scene) and self:SyncHandProps()
-          -- Only the current idle session may request cleanup.
-          if self.toolSession ~= session or session.phase ~= 'idle' or self.activeAction then return end
-        else
-          healthy = healthy and self.victimScene and self.victimMasterScene
-            and nativeTrue(IsEntityPlayingAnim(PlayerPedId(), idle.dict, clip, 3))
-            and #(GetEntityCoords(PlayerPedId()) - setup.positions.chair)
-              <= cfg.seatAlignment.maxDistance + 0.8
-        end
-        if session.actor then
-          healthy = healthy and self.camera and DoesCamExist(self.camera)
-        elseif self.seated ~= setup.id then
-          healthy = false
-        end
+        local reason
+        if not targetReady(setup.props.chair) or not targetReady(setup.props[session.tool]) then
+          reason = 'entity_missing'
+        elseif not self:ActorTrackRunning(self.scene) then reason = 'actor_track_lost'
+        elseif not self:SyncHandProps() then reason = 'hand_prop_lost'
+        elseif not self.camera or not DoesCamExist(self.camera) then reason = 'camera_start' end
         for key in pairs(idle.props or {}) do
-          healthy = healthy and targetReady(setup.props[key])
+          if not targetReady(setup.props[key]) then reason = 'entity_missing' end
         end
+        if self.toolSession ~= session or session.phase ~= 'idle' or self.activeAction then return end
+        local healthy = reason == nil
         if not healthy then
-          self:EmitNet(self, 'toolSceneFailed', setup.id, session.token)
-          self:EndToolSession(setup)
+          self:EmitNet(self, 'toolSceneFailed', setup.id, session.token, 'idle', session.idleEpoch, reason)
+          session.phase = 'failed' -- server owns recovery; report once
         elseif session.actor then
           -- Also handles a ready snapshot arriving before the local startup
           -- coroutine has returned. The menu never stops the looping scene.

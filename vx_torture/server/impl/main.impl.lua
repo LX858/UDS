@@ -43,6 +43,93 @@ function Impl:Notify(src, key)
   self:EmitNet(self, 'notify', src, key)
 end
 
+local function failureReason(reason, fallback)
+  return type(reason) == 'string' and cfg.failureReasons[reason] and reason or fallback
+end
+
+function Impl:SceneLog(event, setup, peer, reason)
+  if not cfg.sceneDiagnostics and not reason then return end
+  peer = peer or setup.peerScene or {}
+  print(('[vx_torture] scene_v12 event=%s setup=%s owner=%s victim=%s token=%s kind=%s step=%s scene=%s reason=%s')
+    :format(event, setup.id, setup.owner, setup.victim, peer.token or setup.toolToken,
+      peer.kind, peer.step, peer.netScene, reason or '-'))
+end
+
+function Impl:NotifySceneFailure(setup)
+  if setup.failureNotified then return end
+  setup.failureNotified = true
+  self:Notify(setup.owner, 'action_failed')
+end
+
+-- Both participants report the same immutable scene identity. Reports are
+-- observations only: all gameplay checks and damage remain server-owned.
+function Impl:CompleteScene(src, setupId, token, kind, step, netScene, success, reason)
+  local setup
+  for _, candidate in pairs(self.setups) do
+    if candidate.id == setupId and (src == candidate.owner or src == candidate.victim) then
+      setup = candidate; break
+    end
+  end
+  if not setup then return end
+  local busy, peer = setup.busy, setup.peerScene
+  local selecting = kind == 'select' and setup.toolState == 'selecting'
+    and setup.toolPhase == 'playing' and setup.toolToken == token and step == 0
+  local acting = kind == 'action' and busy and busy.token == token and busy.stage == step
+  if not selecting and not acting then return end
+  local function fail(why)
+    self:SceneLog('failed', setup, peer, why)
+    if acting then self:CancelAction(setup, true, why) else self:StopTool(setup, true, why) end
+  end
+  if not peer or peer.token ~= token or peer.kind ~= kind or peer.step ~= step then
+    if src == setup.owner then fail('completion_mismatch') end
+    return
+  end
+  if peer.netScene ~= netScene then return end
+  if peer.finished or (peer.completed and peer.completed[src]) then return end
+  if success ~= true then return fail(failureReason(reason, 'action_validation')) end
+  if not peer.ready then return fail('peer_ready') end
+  if not isAlive(setup.owner) or not isAlive(setup.victim)
+    or GetPlayerRoutingBucket(setup.owner) ~= setup.bucket
+    or GetPlayerRoutingBucket(setup.victim) ~= setup.bucket
+    or self.seated[setup.victim] ~= setup.id or not setup.seatReady
+    or not near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0)
+    or not near(setup.victim, setup.entities.chair, cfg.candidateDistance) then
+    return fail('action_validation')
+  end
+  local now = GetGameTimer()
+  if selecting and now - setup.toolPhaseAt < 500 then return fail('completion_early') end
+  if acting then
+    local stage = cfg.actions[busy.key].stages[step]
+    local minimum = stage.minimumMs or math.min(stage.durationMs * 0.5, 1200)
+    if now - busy.stageAt < minimum or (stage.loopMs
+      and (not peer.readyAt or now - peer.readyAt < stage.loopMs)) then
+      return fail('stage_too_early')
+    end
+  end
+  if not peer.completed then
+    peer.completed = {}
+    SetTimeout(cfg.stageConfirmTimeoutMs, function()
+      if self.setups[setup.owner] == setup and setup.peerScene == peer and not peer.finished then
+        fail('completion_timeout')
+      end
+    end)
+  end
+  peer.completed[src] = true
+  self:SceneLog('complete_' .. (src == setup.owner and 'actor' or 'victim'), setup, peer)
+  if not peer.completed[setup.owner] or not peer.completed[setup.victim] then return end
+  peer.finished = true
+  if selecting then
+    setup.toolPhase = nil
+    self:StartToolIdle(setup)
+  elseif cfg.actions[busy.key].stages[step + 1] then
+    self:StartStage(setup, step + 1)
+  elseif now - busy.startedAt >= cfg.minimumActionMs then
+    self:FinishAction(setup)
+  else
+    fail('completion_early')
+  end
+end
+
 function Impl:SetPropSceneAccess(setup, allowed)
   for key, entity in pairs(setup.entities) do
     if DoesEntityExist(entity) then
@@ -145,9 +232,11 @@ end
 function Impl:StopTool(setup, failed, reason)
   if not setup.tool or setup.toolState == 'empty' then return end
   local token = setup.toolToken
+  setup.lastStoppedToolToken = token
   self:SetPropSceneAccess(setup, false)
   self:EmitNet(self, 'stopEffects', -1, token)
   if failed then
+    reason = failureReason(reason, 'tool_validation')
     local peer = setup.peerScene
     print(('[vx_torture] tool_failed setup=%s owner=%s victim=%s tool=%s state=%s phase=%s token=%s peer=%s peerReady=%s reason=%s')
       :format(setup.id, setup.owner, setup.victim, setup.tool, setup.toolState,
@@ -164,17 +253,15 @@ function Impl:StopTool(setup, failed, reason)
   setup.toolReadyPeers = nil
   setup.peerScene = nil
   self:Sync(setup)
-  print(failed, 'action_failed')
-  if failed then self:Notify(setup.owner, 'action_failed') end
+  if failed then self:NotifySceneFailure(setup) end
 end
 
 function Impl:StartToolIdle(setup)
-  print(setup.tool, setup.victim, setup.seatReady, isAlive(setup.victim), GetPlayerRoutingBucket(setup.victim), setup.bucket, near(setup.victim, setup.entities.chair, cfg.candidateDistance), near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0))
   if not setup.tool or not setup.victim or not setup.seatReady
     or not isAlive(setup.victim) or GetPlayerRoutingBucket(setup.victim) ~= setup.bucket
     or not near(setup.victim, setup.entities.chair, cfg.candidateDistance)
     or not near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0) then
-    return self:StopTool(setup, true)
+    return self:StopTool(setup, true, 'tool_validation')
   end
   self:EmitNet(self, 'stopEffects', -1, setup.toolToken)
   setup.toolState = 'idle'
@@ -192,22 +279,26 @@ function Impl:StartToolIdle(setup)
   SetTimeout(cfg.toolIdleTimeoutMs, function()
     if self.setups[setup.owner] == setup and setup.toolToken == token
       and setup.toolState == 'idle' and setup.toolPhaseAt == phaseAt
-      and not setup.toolReady then self:StopTool(setup, true) end
+      and not setup.toolReady then self:StopTool(setup, true, 'idle_timeout') end
   end)
 end
 
-function Impl:CancelAction(setup, notifyOwner)
+function Impl:CancelAction(setup, notifyOwner, reason)
   local busy = setup.busy
   if not busy then return end
+  if notifyOwner then self:SceneLog('cancel', setup, setup.peerScene,
+    failureReason(reason, 'action_validation')) end
   setup.busy = nil
   local resumeIdle = setup.toolState == 'action' and setup.victim and setup.seatReady
-    and isAlive(setup.victim) and GetPlayerRoutingBucket(setup.victim) == setup.bucket
+    and isAlive(setup.owner) and isAlive(setup.victim)
+    and GetPlayerRoutingBucket(setup.owner) == setup.bucket
+    and GetPlayerRoutingBucket(setup.victim) == setup.bucket
   self:EmitNet(self, 'stopEffects', -1, busy.token)
-  self:EmitNet(self, 'stopAction', setup.owner, setup.id, busy.token, resumeIdle == true)
+  self:EmitNet(self, 'stopAction', setup.owner, setup.id, busy.token, resumeIdle == true, notifyOwner and failureReason(reason, 'action_validation') or nil)
   if setup.victim then
-    self:EmitNet(self, 'stopAction', setup.victim, setup.id, busy.token, resumeIdle == true)
+    self:EmitNet(self, 'stopAction', setup.victim, setup.id, busy.token, resumeIdle == true, notifyOwner and failureReason(reason, 'action_validation') or nil)
   end
-  if notifyOwner then self:Notify(setup.owner, 'action_failed') end
+  if notifyOwner then self:NotifySceneFailure(setup) end
   if resumeIdle then
     self:StartToolIdle(setup)
   elseif setup.toolState == 'action' then
@@ -450,6 +541,7 @@ function Impl:TakeTool(src, setupId, tool)
     or not near(src, setup.entities.trolley, cfg.actionDistance) then
     return self:Notify(src, 'invalid_state')
   end
+  setup.failureNotified = false
   self.nextTool = self.nextTool + 1
   setup.tool = tool
   setup.toolReady = false
@@ -466,11 +558,10 @@ function Impl:TakeTool(src, setupId, tool)
   self:EmitNet(self, 'prepareTool', setup.victim, snapshot, setup.toolToken)
   local token, phaseAt = setup.toolToken, setup.toolPhaseAt
   SetTimeout(cfg.toolPrepareTimeoutMs, function()
-    print(json.encode(setup, {indent = true}))
     if self.setups[src] == setup and setup.toolToken == token
       and setup.toolState == 'selecting' and setup.toolPhase == nil
       and setup.toolPhaseAt == phaseAt then
-      self:StopTool(setup, true)
+      self:StopTool(setup, true, 'prepare_timeout')
     end
   end)
 end
@@ -480,8 +571,7 @@ function Impl:StartStage(setup, index)
   if not busy then return end
   local action = cfg.actions[busy.key]
   local stageData = action.stages[index]
-  print('not found stageData', json.encode(stageData, {indent = true}))
-  if not stageData then return self:CancelAction(setup, true) end
+  if not stageData then return self:CancelAction(setup, true, 'action_validation') end
   if busy.stage > 0 then self:EmitNet(self, 'stopEffects', -1, busy.token) end
   busy.stage = index
   busy.stageAt = GetGameTimer()
@@ -491,7 +581,7 @@ function Impl:StartStage(setup, index)
   self:EmitNet(self, 'playStage', setup.owner, snapshot, busy.token, busy.key, index)
   SetTimeout(cfg.stageTimeoutMs, function()
     if self.setups[setup.owner] == setup and setup.busy == busy and busy.stage == index then
-      self:CancelAction(setup, true)
+      self:CancelAction(setup, true, 'stage_timeout')
     end
   end)
 end
@@ -508,6 +598,7 @@ function Impl:StartAction(src, setupId, victim, actionKey)
     or not near(src, setup.entities.chair, cfg.actionDistance) then
     return self:Notify(src, 'invalid_state')
   end
+  setup.failureNotified = false
   self.nextAction = self.nextAction + 1
   local token = ('%d:%d'):format(setup.id, self.nextAction)
   local busy = { token = token, key = actionKey, ready = {}, stage = 0, startedAt = nil }
@@ -521,7 +612,7 @@ function Impl:StartAction(src, setupId, victim, actionKey)
   self:EmitNet(self, 'prepareAction', setup.victim, snapshot, token, actionKey)
   SetTimeout(cfg.prepareTimeoutMs, function()
     if self.setups[src] == setup and setup.busy == busy and busy.stage == 0 then
-      self:CancelAction(setup, true)
+      self:CancelAction(setup, true, 'prepare_timeout')
     end
   end)
 end
@@ -535,7 +626,7 @@ function Impl:FinishAction(setup)
     or GetPlayerRoutingBucket(victim) ~= setup.bucket
     or not near(victim, setup.entities.chair, cfg.candidateDistance)
     or not near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0) then
-    return self:CancelAction(setup, true)
+    return self:CancelAction(setup, true, 'action_validation')
   end
   local result = action.result
   if result.mode == 'kill' then
@@ -546,7 +637,7 @@ function Impl:FinishAction(setup)
     self:CancelAction(setup, false)
     self:EmitNet(self, 'applyDamage', victim, setup.id, math.floor(result.amount))
   else
-    self:CancelAction(setup, true)
+    self:CancelAction(setup, true, 'action_validation')
   end
 end
 
@@ -561,7 +652,9 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print('[vx_torture] scene replication v11 loaded (server)')
+  print(('[vx_torture] scene lifecycle v12 loaded (server) artifact=%s enforcedBuild=%s')
+    :format(GetConvar and GetConvar('version', 'unknown') or 'unknown',
+      GetConvar and GetConvar('sv_enforceGameBuild', 'unknown') or 'unknown'))
   self:AddEventHandler('startNetworkSyncedSceneEvent', function(sender, data)
     if not self:ValidatePropScene(sender, data) then
       CancelEvent()
@@ -635,6 +728,7 @@ function Impl:OnReady()
     if previous and previous.token == token and previous.kind == kind and previous.step == step then return end
     setup.peerScene = { token = token, kind = kind, step = step, netScene = netScene,
       victimClock = victimClock, ready = false }
+    self:SceneLog("bind", setup, setup.peerScene)
     self:EmitNet(self, 'joinVictimScene', setup.victim, self:Snapshot(setup), token, kind, step, netScene, scene, looped, victimClock)
   end)
   self:OnNet('victimSceneReady', function(setupId, token, kind, step, netScene, success, reason)
@@ -645,6 +739,7 @@ function Impl:OnReady()
     local peer = setup and setup.peerScene
     if not peer or peer.ready or peer.token ~= token or peer.kind ~= kind
       or peer.step ~= step or peer.netScene ~= netScene or not sceneStage(setup, token, kind, step) then return end
+    self:SceneLog('ready', setup, peer)
     peer.ready = success == true and isAlive(source) and GetPlayerRoutingBucket(source) == setup.bucket
     -- Diagnostic reasons are a fixed vocabulary, never client-provided log text.
     local reasons = { victim_wrong_seat = true, victim_state_timeout = true,
@@ -656,8 +751,11 @@ function Impl:OnReady()
         :format(failure, setupId, token, kind, step, netScene))
     end
     self:EmitNet(self, 'victimSceneReady', setup.owner, token, kind, step, netScene, peer.ready, failure)
-    if peer.ready and kind == 'action' then
+    if peer.ready then
       peer.readyAt = GetGameTimer()
+      self:EmitNet(self, 'scenePeersReady', setup.victim, token, kind, step, netScene)
+    end
+    if peer.ready and kind == 'action' then
       self:EmitNet(self, 'stageEffect', -1, self:Snapshot(setup), token, setup.busy.key, step, netScene)
     elseif peer.ready and (kind == 'select' or kind == 'idle') then
       self:EmitNet(self, 'toolEffect', -1, self:Snapshot(setup), token, kind, step, netScene)
@@ -675,6 +773,16 @@ function Impl:OnReady()
       self:Sync(setup)
     else
       self:Release(setup)
+    end
+  end)
+  self:OnNet('seatRecoveryFailed', function(setupId, token)
+    for _, setup in pairs(self.setups) do
+      if setup.id == setupId and setup.victim == source and setup.toolState == 'empty'
+        and setup.lastStoppedToolToken == token then
+        self:SceneLog('release', setup, nil, 'seat_recovery_failed')
+        self:Release(setup)
+        return
+      end
     end
   end)
   self:OnNet('release', function(setupId)
@@ -702,14 +810,14 @@ function Impl:OnReady()
       SetTimeout(cfg.toolExitTimeoutMs, function()
         if self.setups[setup.owner] == setup and setup.toolToken == token
           and setup.toolState == 'exiting' and setup.toolPhaseAt == phaseAt then
-          self:StopTool(setup, true)
+          self:StopTool(setup, true, 'exit_timeout')
         end
       end)
     else
       self:Notify(source, 'invalid_state')
     end
   end)
-  self:OnNet('readyTool', function(setupId, token, success)
+  self:OnNet('readyTool', function(setupId, token, success, reason)
     local setup = self.setups[source]
     if not setup or setup.id ~= setupId then
       for _, candidate in pairs(self.setups) do
@@ -719,7 +827,7 @@ function Impl:OnReady()
     if not setup or setup.id ~= setupId or setup.toolToken ~= token
       or setup.toolState ~= 'selecting' or setup.toolPhase ~= nil
       or (source ~= setup.owner and source ~= setup.victim) then return end
-    if not success then return self:StopTool(setup, true) end
+    if not success then return self:StopTool(setup, true, failureReason(reason, 'asset_clip')) end
     setup.toolReadyPeers[source] = true
     if setup.toolReadyPeers[setup.owner] and setup.toolReadyPeers[setup.victim] then
       setup.toolReadyPeers = {}
@@ -732,37 +840,29 @@ function Impl:OnReady()
       SetTimeout(cfg.toolSelectTimeoutMs + 4000, function()
         if self.setups[setup.owner] == setup and setup.toolToken == token
           and setup.toolState == 'selecting' and setup.toolPhaseAt == phaseAt then
-          self:StopTool(setup, true)
+          self:StopTool(setup, true, 'stage_timeout')
         end
       end)
     end
   end)
-  self:OnNet('toolSelected', function(setupId, token, success)
-    local setup = self:GetOwned(source, setupId)
-    if not setup or setup.toolToken ~= token or setup.toolState ~= 'selecting'
-      or setup.toolPhase ~= 'playing' then return end
-    local peer = setup.peerScene
-    if not success or not peer or not peer.ready or peer.kind ~= 'select' or peer.token ~= token
-      or GetGameTimer() - setup.toolPhaseAt < 500
-      or not near(source, setup.entities.chair, cfg.actionDistance + 1.0) then
-      return self:StopTool(setup, true)
-    end
-    setup.toolPhase = nil
-    self:StartToolIdle(setup)
+  self:OnNet('sceneComplete', function(setupId, token, kind, step, netScene, success, reason)
+    self:CompleteScene(source, setupId, token, kind, step, netScene, success, reason)
   end)
-  self:OnNet('toolSceneFailed', function(setupId, token)
-    local setup = self.setups[source]
-    if not setup or setup.id ~= setupId then
-      for _, candidate in pairs(self.setups) do
-        if candidate.id == setupId and candidate.victim == source then setup = candidate break end
+  self:OnNet('toolSelected', function(setupId, token, success, netScene, reason)
+    self:CompleteScene(source, setupId, token, 'select', 0, netScene, success, reason)
+  end)
+  self:OnNet('toolSceneFailed', function(setupId, token, kind, step, reason)
+    for _, setup in pairs(self.setups) do
+      if setup.id == setupId and (source == setup.owner or source == setup.victim)
+        and setup.toolToken == token
+        and ((kind == 'select' and step == 0 and setup.toolState == 'selecting')
+          or (kind == 'idle' and step == setup.toolEpoch and setup.toolState == 'idle')) then
+        self:StopTool(setup, true, failureReason(reason, 'tool_validation'))
+        return
       end
     end
-    if setup and setup.id == setupId and setup.toolToken == token
-      and (setup.toolState == 'selecting' or setup.toolState == 'idle') then
-      self:StopTool(setup, true)
-    end
   end)
-  self:OnNet('toolIdleReady', function(setupId, token, epoch, success)
+  self:OnNet('toolIdleReady', function(setupId, token, epoch, success, reason)
     local setup = self.setups[source]
     if not setup or setup.id ~= setupId then
       for _, candidate in pairs(self.setups) do
@@ -773,7 +873,7 @@ function Impl:OnReady()
       or setup.toolEpoch ~= epoch
       or setup.toolState ~= 'idle' or setup.toolReady
       or (source ~= setup.owner and source ~= setup.victim) then return end
-    if not success then return self:StopTool(setup, true) end
+    if not success then return self:StopTool(setup, true, failureReason(reason, 'asset_clip')) end
     local peer = setup.peerScene
     if not peer or not peer.ready or peer.kind ~= 'idle' or peer.token ~= token or peer.step ~= epoch then return end
     setup.toolReadyPeers[source] = true
@@ -790,12 +890,12 @@ function Impl:OnReady()
   self:OnNet('startAction', function(setupId, victim, actionKey)
     self:StartAction(source, setupId, victim, actionKey)
   end)
-  self:OnNet('readyAction', function(setupId, token, success)
+  self:OnNet('readyAction', function(setupId, token, success, reason)
     for _, setup in pairs(self.setups) do
       local busy = setup.busy
       if setup.id == setupId and busy and busy.token == token
         and (source == setup.owner or source == setup.victim) and busy.stage == 0 then
-        if not success then return self:CancelAction(setup, true) end
+        if not success then return self:CancelAction(setup, true, failureReason(reason, 'asset_clip')) end
         busy.ready[source] = true
         if busy.ready[setup.owner] and busy.ready[setup.victim] then
           busy.startedAt = GetGameTimer()
@@ -805,37 +905,15 @@ function Impl:OnReady()
       end
     end
   end)
-  self:OnNet('stageDone', function(setupId, token, index, success)
-    local setup = self.setups[source]
-    local busy = setup and setup.busy
-    if not busy or setup.id ~= setupId or busy.token ~= token or busy.stage ~= index then return end
-    local peer = setup.peerScene
-    if not success or not peer or not peer.ready or peer.kind ~= 'action'
-      or peer.token ~= token or peer.step ~= index then return self:CancelAction(setup, true) end
-    local stageData = cfg.actions[busy.key].stages[index]
-    if stageData.loopMs and (not peer.readyAt or GetGameTimer() - peer.readyAt < stageData.loopMs) then
-      return self:CancelAction(setup, true)
-    end
-    local minimumMs = stageData.minimumMs or math.min(stageData.durationMs * 0.5, 1200)
-    if GetGameTimer() - busy.stageAt < minimumMs then
-      print(('[vx_torture] stage_too_early action=%s stage=%d elapsed=%d minimum=%d')
-        :format(busy.key, index, GetGameTimer() - busy.stageAt, minimumMs))
-      return self:CancelAction(setup, true)
-    end
-    if cfg.actions[busy.key].stages[index + 1] then
-      self:StartStage(setup, index + 1)
-    elseif GetGameTimer() - busy.startedAt >= cfg.minimumActionMs then
-      self:FinishAction(setup)
-    else
-      self:CancelAction(setup, true)
-    end
+  self:OnNet('stageDone', function(setupId, token, index, success, netScene, reason)
+    self:CompleteScene(source, setupId, token, 'action', index, netScene, success, reason)
   end)
-  self:OnNet('stageFailed', function(setupId, token, index)
+  self:OnNet('stageFailed', function(setupId, token, index, reason)
     for _, setup in pairs(self.setups) do
       local busy = setup.busy
-      if setup.id == setupId and setup.victim == source and busy
+      if setup.id == setupId and (source == setup.victim or source == setup.owner) and busy
         and busy.token == token and busy.stage == index then
-        return self:CancelAction(setup, true)
+        return self:CancelAction(setup, true, failureReason(reason, 'victim_track_failed'))
       end
     end
   end)
@@ -858,7 +936,7 @@ function Impl:OnReady()
         or not near(setup.victim, setup.entities.chair, cfg.candidateDistance + 1.0)) then
         self:Release(setup)
       elseif setup.busy and not near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0) then
-        self:CancelAction(setup, true)
+        self:CancelAction(setup, true, 'action_validation')
       elseif setup.toolState ~= 'empty' and not setup.busy
         and not near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.5) then
         self:StopTool(setup, true, 'actor_distance_health')

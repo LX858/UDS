@@ -65,6 +65,10 @@ function GetPlayerPed(id) return id end
 function GetPlayerName(id) return 'player' .. id end
 function GetPlayerRoutingBucket() return 0 end
 function GetEntityHealth() return 200 end
+function GetGameBuildNumber() return 3258 end
+function IsEntityVisible() return true end
+function GetEntityAlpha() return 255 end
+function NetworkGetEntityOwner(id) return id end
 function IsEntityDead() return false end
 function DoesEntityExist(id) return id ~= 0 end
 function NetworkDoesNetworkIdExist() return true end
@@ -250,6 +254,11 @@ function GetEntityAnimCurrentTime(ped,dict,clip)
   if not IsEntityPlayingAnim(ped,dict,clip) then return 0 end
   if ped==1 and frozenActorPhase then return frozenActorPhase end
   if activePed[ped] then return GetSynchronizedScenePhase(activePed[ped]+1000) end
+  local task=advancedTasks[ped]
+  if task then
+    local phase=task.phase+(now-task.started)/(GetAnimDuration(dict,clip)*1000)
+    return (task.flags & 1)~=0 and phase%1 or math.min(1,phase)
+  end
   return 0
 end
 
@@ -273,7 +282,7 @@ function TaskPlayAnimAdvanced(ped,dict,clip,x,y,z,rx,ry,rz,blendIn,blendOut,dura
   assert(phase>=0 and phase<1)
   advancedCount=advancedCount+1
   local pos=vector3(x,y,z)
-  advancedTasks[ped]={dict=dict,clip=clip,pos=pos,rot=vector3(rx,ry,rz),phase=phase,flags=flags}
+  advancedTasks[ped]={dict=dict,clip=clip,pos=pos,rot=vector3(rx,ry,rz),phase=phase,flags=flags,started=now}
   -- Advanced task with mover extraction consumes the common scene origin.
   -- Model its extracted world transform, including the authored vertical offset.
   positions[ped]=GetAnimInitialOffsetPosition(dict,clip,x,y,z,rx,ry,rz)
@@ -582,7 +591,11 @@ assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.i
 client.activeAction={setupId=7,token='numeric-bool',key='wrench_left',actor=true,stage=1}
 assert(client:RunActorStage(setup,'numeric-bool','wrench_left',1))
 pedTasks[1]=nil
-assert(not client:ActorTrackRunning(client.scene), 'native integer zero must fail')
+Wait(100)
+local tolerated, live=client:ActorTrackRunning(client.scene)
+assert(tolerated and not live, 'one missing sample is tolerated but cannot complete')
+Wait(Config.Torture.remoteTrackGraceMs)
+assert(not client:ActorTrackRunning(client.scene), 'persistent native integer zero must fail')
 client:StopStage(); client.activeAction=nil; numericAnimResult=false
 
 session('wrench'); client.toolSession.revision=20
@@ -819,6 +832,100 @@ assert(not client.activeEffects.observer and not next(particleHandles) and not n
 positions[3]=vector3(0,0,0); DestroyCam(client.camera); client.camera=nil; currentPlayer=1
 print('PASS: all six particles, original impact phases/audio refs, cosmetic cleanup, shared banks, ECG, observer range and cancellation race')
 
+-- v12: independent receiver monitor, completion, bounded diagnostics, and
+-- cancellation during preparation. No actor task is assigned by this receiver.
+client:StopStage(); Wait(0); threads={}; currentPlayer=2
+local originalClient=client
+dofile(RESOURCE_ROOT .. '/client/impl/main.impl.lua')
+local watcher=TEST_IMPL; watcher.isClient=true; watcher:Init(); watcher:OnReady(); threads={}
+watcher.setups[7]=setup; watcher.seated=7
+local function eventCount(name)
+  local n=0; for _,event in ipairs(events) do if event.name==name then n=n+1 end end; return n
+end
+local function observed(data,kind,step)
+  local scene=NetworkCreateSynchronisedScene(0,0,0,0,0,0,2,not data.loopMs,data.loopMs~=nil)
+  NetworkAddPedToSynchronisedScene(1,scene,data.dict,data.actor,8,-8,4,0,1000,0)
+  NetworkStartSynchronisedScene(scene)
+  local run=watcher:BeginSceneRun(setup,'observed',kind,step,data); run.scene=scene
+  assert(watcher:JoinVictimScene(setup,data,scene,data.victimLoop or data.loopMs~=nil,
+    function() return watcher:SceneCurrent(run) end))
+  run.joined=true
+  watcher.handlers.scenePeersReady('observed',kind,step,scene)
+  return run,scene
+end
+setup.tool='wrench'
+local finite=Config.Torture.actions.wrench_left.stages[1]
+local run,observedScene=observed(finite,'action',1)
+local completeBefore=eventCount('sceneComplete')
+Wait(980); remoteActorMissing=true
+watcher:MonitorVictimRun(run)
+assert(eventCount('sceneComplete')==completeBefore and not run.failed,
+  'missing remote track at endpoint cannot complete within grace')
+Wait(200); remoteActorMissing=false
+watcher:MonitorVictimRun(run)
+assert(eventCount('sceneComplete')==completeBefore+1 and not run.failed,
+  'transient remote loss recovers without abort or replay')
+watcher:MonitorVictimRun(run)
+assert(eventCount('sceneComplete')==completeBefore+1,'completion is emitted once')
+local failedBefore=eventCount('stageFailed')
+remoteActorMissing=true; watcher:MonitorVictimRun(run); Wait(500); watcher:MonitorVictimRun(run)
+watcher:MonitorVictimRun(run)
+assert(eventCount('stageFailed')==failedBefore+1,'persistent loss reports once, even while waiting for peer completion')
+remoteActorMissing=false
+local loopData=Config.Torture.actions.electric_left.stages[1]
+setup.tool='electric'
+run,observedScene=observed(loopData,'action',1)
+local previousComplete=eventCount('sceneComplete')
+Wait(loopData.loopMs-100); watcher:MonitorVictimRun(run)
+assert(eventCount('sceneComplete')==previousComplete)
+Wait(100); watcher:MonitorVictimRun(run)
+assert(eventCount('sceneComplete')==previousComplete+1,'loop completion uses elapsed time despite wrapping phase')
+-- Same pending join survives the preceding command arriving late.
+watcher.victimJoin={token='observed'}
+watcher:ExpectScene('observed','action',1)
+assert(watcher.sceneRun==run and watcher.victimJoin)
+watcher:ExpectScene('new','idle',2)
+assert(not watcher.sceneRun and not watcher.victimJoin)
+-- Samples are bounded in count and time and preserve actual observed coordinates.
+setup.tool='wrench'; run=observed(finite,'action',1)
+Config.Torture.sceneDiagnostics=true
+for _=1,70 do watcher:SampleScene(run); Wait(100) end
+assert(#watcher.sceneSamples<=50 and now-watcher.sceneSamples[1].time<=5100)
+assert(watcher.sceneSamples[1].actor.position and watcher.sceneSamples[1].generation==run.generation)
+Config.Torture.sceneDiagnostics=false
+watcher.sceneRun=nil; watcher.victimJoin=nil; watcher.activeAction=nil
+watcher.handlers.prepareAction(setup,'cancel-prep','wrench_left')
+local queued=#threads
+watcher.handlers.prepareAction(setup,'cancel-prep','wrench_left')
+assert(#threads==queued and watcher.activeAction.preparing,'duplicate prepare reserves one worker')
+watcher.handlers.stopAction(7,'cancel-prep',false)
+local readyBefore=eventCount('readyAction'); drain()
+assert(not watcher.activeAction and eventCount('readyAction')==readyBefore,
+  'cancelled preparation must not recreate activeAction or acknowledge readiness')
+-- Cancellation *inside* asset preparation cannot acknowledge or revive the action.
+local originalValidate=watcher.ValidateSceneAssets
+watcher.ValidateSceneAssets=function(self)
+  self.handlers.stopAction(7,'cancel-loading',false)
+  Wait(100)
+  return true
+end
+watcher.handlers.prepareAction(setup,'cancel-loading','wrench_left')
+readyBefore=eventCount('readyAction'); drain()
+assert(not watcher.activeAction and eventCount('readyAction')==readyBefore)
+watcher.ValidateSceneAssets=originalValidate
+-- Duplicate phase commands cannot queue a second scene worker.
+watcher.activeAction={setupId=7,token='duplicate-stage',key='wrench_left',stage=0,actor=true}
+watcher.handlers.playStage(setup,'duplicate-stage','wrench_left',1)
+local stageThreads=#threads
+watcher.handlers.playStage(setup,'duplicate-stage','wrench_left',1)
+assert(#threads==stageThreads)
+watcher.handlers.stopAction(7,'duplicate-stage',false); drain()
+local oldRun=watcher:BeginSceneRun(setup,'old','action',1,finite)
+local newRun=watcher:BeginSceneRun(setup,'new','idle',2,Config.Torture.toolScenes.wrench.idle)
+assert(not watcher:SceneCurrent(oldRun) and watcher:SceneCurrent(newRun))
+watcher:StopStage(); watcher:StopStage(); currentPlayer=1; client=originalClient; threads={}; Wait(0)
+print('PASS: receiver completion, transient/persistent track loss, loop wrap, bounded trace, duplicate prepare and cancellation')
+
 dofile(RESOURCE_ROOT .. '/server/impl/main.impl.lua')
 local server=TEST_IMPL; server:Init(); server:OnReady()
 setup.entities=setup.props; setup.bucket=0; setup.toolState='empty'; setup.tool=nil
@@ -864,7 +971,9 @@ assert(server:ValidatePropScene(3,{nonPedEntities={{objectId=99999}}}), 'unrelat
 send(1,'readyTool',7,token,true); send(2,'readyTool',7,token,true)
 assertVictimFirst('playToolSelect')
 bind(token,'select',0)
-Wait(600); send(1,'toolSelected',7,token,true)
+Wait(600); send(1,'toolSelected',7,token,true,999)
+assert(setup.toolState=='selecting', 'actor alone cannot finish selection')
+send(2,'sceneComplete',7,token,'select',0,999,true)
 assert(setup.toolState=='idle' and not setup.toolReady)
 assertVictimFirst('startToolIdle')
 bind(token,'idle',1)
@@ -878,7 +987,9 @@ assert(setup.toolState=='action')
 send(1,'readyAction',7,actionToken,true); send(2,'readyAction',7,actionToken,true)
 assertVictimFirst('playStage')
 bind(actionToken,'action',1)
-Wait(5000); send(1,'stageDone',7,actionToken,1,true)
+Wait(5000); send(1,'stageDone',7,actionToken,1,true,999)
+assert(setup.busy, 'actor alone cannot apply damage')
+send(2,'sceneComplete',7,actionToken,'action',1,999,true)
 assert(setup.toolState=='idle' and setup.toolEpoch==2 and not setup.toolReady)
 local resumeMessages=0
 for _,event in ipairs(events) do
@@ -929,7 +1040,9 @@ for key,action in pairs(Config.Torture.actions) do
       assert(setup.peerScene.ready)
       -- The old server rejected the short open/close-can clips before 1000ms.
       Wait(stage.minimumMs==0 and 800 or math.max(stage.loopMs or 0,5000))
-      send(1,'stageDone',7,t,index,true)
+      send(1,'stageDone',7,t,index,true,999)
+      assert(setup.busy and setup.busy.stage==index)
+      send(2,'sceneComplete',7,t,'action',index,999,true)
       assert(setup.toolState==(index==#action.stages and 'idle' or 'action'))
     end
     assert(damageCount()==damageBefore+1, key..' must deal damage only once after the whole sequence')
@@ -946,7 +1059,7 @@ server:StartAction(1,7,2,'electric_left'); local early=setup.busy.token
 send(1,'readyAction',7,early,true); send(2,'readyAction',7,early,true)
 bind(early,'action',1)
 local damageBefore=damageCount()
-Wait(1500); send(1,'stageDone',7,early,1,true)
+Wait(1500); send(1,'stageDone',7,early,1,true,999)
 assert(setup.busy==nil and damageCount()==damageBefore, 'cannot skip configured loop duration')
 print('PASS: all repaired options, water clock relay, loop deadlines, damage once and early completion rejection')
 
@@ -985,3 +1098,41 @@ pending=client.peerScene
 client:StopStage()
 assert(pending.reason=='victim_track_failed', 'cleanup must preserve the actual rejection')
 print('PASS: peer rejection reasons, large/reused scene IDs, stale ack rejection and cleanup diagnostics')
+
+-- v12 completion protocol: stale reports, wrong roles/handles, timeout and
+-- notification deduplication must not apply damage or disturb a new idle.
+setup.tool='wrench'; setup.toolState='idle'; setup.toolReady=true; setup.toolToken='completion-test'
+server:StartAction(1,7,2,'wrench_left'); local completionToken=setup.busy.token
+send(1,'readyAction',7,completionToken,true); send(2,'readyAction',7,completionToken,true)
+bind(completionToken,'action',1); Wait(5000)
+local beforeCompletionDamage=damageCount()
+send(3,'sceneComplete',7,completionToken,'action',1,999,true)
+send(2,'sceneComplete',7,completionToken,'action',1,998,true)
+send(2,'sceneComplete',7,'stale','action',1,999,true)
+assert(not setup.peerScene.completed and damageCount()==beforeCompletionDamage)
+send(2,'sceneComplete',7,completionToken,'action',1,999,true)
+local completionTimeout=timers[#timers]
+send(2,'sceneComplete',7,completionToken,'action',1,999,true)
+assert(setup.busy and damageCount()==beforeCompletionDamage)
+local notifications=eventCount('notify')
+completionTimeout()
+assert(not setup.busy and setup.toolState=='idle' and damageCount()==beforeCompletionDamage)
+assert(eventCount('notify')==notifications+1)
+local recoveryEpoch=setup.toolEpoch
+send(1,'toolSceneFailed',7,setup.toolToken,'idle',recoveryEpoch-1,'actor_track_lost')
+assert(setup.toolState=='idle','stale idle failure cannot terminate its successor')
+send(1,'toolIdleReady',7,setup.toolToken,recoveryEpoch,false,'actor_start')
+assert(setup.toolState=='empty' and eventCount('notify')==notifications+1,
+  'failed recovery ends session without duplicate notification')
+completionTimeout(); send(1,'stageDone',7,completionToken,1,true,999)
+assert(damageCount()==beforeCompletionDamage,'timeout and late completion cannot apply damage')
+print('PASS: completion identity/role checks, missing peer timeout, stale idle failure and one failure notification')
+
+-- A base-seat recovery report is limited to the victim and the just-closed tool.
+local victimBefore=setup.victim
+send(1,'seatRecoveryFailed',7,setup.lastStoppedToolToken)
+send(2,'seatRecoveryFailed',7,'stale-token')
+assert(setup.victim==victimBefore)
+send(2,'seatRecoveryFailed',7,setup.lastStoppedToolToken)
+assert(setup.victim==nil and server.seated[2]==nil)
+print('PASS: failed base-seat restoration releases only the matching closed session')

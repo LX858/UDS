@@ -4,6 +4,36 @@ Nguồn chính là [`fbi3.c` đã decompile](https://github.com/YimMenu/GTA-V-De
 
 Tên clip trưng bày, hai kẹp điện và khăn dùng trong code đã được đối chiếu thêm với [`animDictsCompact.json`](https://github.com/DurtyFree/gta-v-data-dumps/blob/master/animDictsCompact.json). File dump xác nhận tên clip tồn tại; vị trí thực tế vẫn do game tính ở runtime.
 
+## Scene lifecycle v12 — kiểm chứng multiplayer còn chờ
+
+Bản này sửa vòng đời scene và xác nhận hai phía. Không đổi flag actor, blend, clip, scene root hay thêm task/teleport để chữa triệu chứng rơi xuống đất. Chưa có kết quả chạy hai/ba FiveM client thật; harness chỉ kiểm tra logic và native giả lập.
+
+### Luồng và giao thức
+
+- `BeginSceneRun`/`SceneCurrent`/`ExpectScene` dùng setup + token + loại cảnh + bước/epoch + generation local. Network scene ID có thể tái sử dụng, không phải định danh phiên. Callback tải asset và trả prop kiểm tra phiên trước khi tác động; prepare được đặt trạng thái trước khi tạo coroutine. Join đến trước lệnh chuyển bước được giữ lại nếu cùng định danh.
+- Actor giữ network scene; nạn nhân vẫn điều khiển ped của chính mình. Tải asset trước khi thay cảnh; dừng handle cũ một lần trước successor; giữ camera đến khi camera kế tiếp sẵn sàng. Hai frame nhường xử lý stop chỉ là xử lý local, không phải xác nhận engine phía remote.
+- Kiểm tra track mỗi 100 ms, `remoteTrackGraceMs = 500`. Mất track ngắn được dung sai nhưng không được coi là hoàn tất. Mất kéo dài báo lỗi một lần. Entity mất hoặc người chơi chết không có grace; server tiếp tục kiểm tra bucket/khoảng cách/sống.
+- `toolSelected(setupId, token, success, netScene, reason)` và `stageDone(setupId, token, index, success, netScene, reason)` báo phía actor; nạn nhân gửi `sceneComplete(setupId, token, kind, step, netScene, success, reason)`. Server chỉ chấp nhận hai người của phiên và đúng peer identity, không chấp nhận client tự chọn damage. Gửi xác nhận xong không tự chuyển cảnh local.
+- `scenePeersReady(token, kind, step, netScene)` báo cho nạn nhân mốc server đã chấp nhận readiness. Clip hữu hạn kết thúc theo phase actor >= 0.97 và phase track nạn nhân >= 0.95, trừ victim loop độc lập. Loop dùng thời gian `loopMs` kể từ readiness, không chờ phase 1.
+- Server chờ cả hai xác nhận cuối, tối đa `stageConfirmTimeoutMs = 4000` sau xác nhận đầu. Các hạn chuẩn bị/phát cảnh cũ vẫn có hiệu lực. Damage chỉ áp dụng một lần sau toàn bộ chuỗi. Event trùng, sai handle, token, stage hoặc idle epoch không được làm kết thúc successor.
+- `toolSceneFailed` mang kind/step/reason; `stageFailed` mang stage/reason. Server truyền lý do qua stopAction/stopTool. Đòn lỗi thử về idle một lần; idle lỗi thì đóng phiên và trả prop, không phát thông báo lỗi lần hai. Nếu không khôi phục được tư thế ngồi cơ bản, nạn nhân báo `seatRecoveryFailed` với token vừa đóng để server giải phóng ghế.
+
+### Thu bằng chứng lỗi rơi/đứng im
+
+1. Bật `Config.Torture.sceneDiagnostics = true` trong `config.lua`; chạy `restart vx_torture` và đặt ghế mới.
+2. Kiểm tra cả F8 và server có marker **scene lifecycle v12**. Client in game build; server in artifact/enforced build nếu convar cung cấp.
+3. Dùng hai người tham gia và một observer. Thử cờ lê trái/giữa/phải, mỗi đòn 10 lần, ghi hình cùng lượt từ actor và victim. Các dụng cụ còn lại mỗi option 5 lần; idle 60 giây; thử FPS/ping khác nhau.
+4. Khi actor rơi hoặc đứng im trên máy victim, chạy `vx_torture_diag` ngay trên **cả hai máy**. Lỗi được resource phát hiện cũng tự dump. Gửi các dòng `scene_v12`, `scene_trace`, `scene_sample` của cùng token và log server.
+5. Mẫu chỉ giữ tối đa 50 bản ghi / 5 giây, mỗi 100 ms, không gửi telemetry liên tục lên server. Ghi scene/local handle, root, clip, phase, tọa độ actor quan sát được, visibility/alpha/owner và tọa độ người chơi local. Xuất từng dòng để giảm nguy cơ console cắt một JSON quá dài. Tắt diagnostics sau khi thu xong.
+
+Đối chiếu timestamp **trong từng máy** và định danh chung; không trừ trực tiếp GetGameTimer của hai máy. Actor đúng local nhưng sai remote: ưu tiên packet/chuyển scene; cả hai sai: kiểm tra task/transform; server hủy trước: xem reason và điều kiện. Chỉ thử thay flag/transform sau khi đã có đối chứng. Nếu vẫn lỗi ở ca tái hiện tối giản, cần kiểm chứng artifact/engine trên máy chạy server, không kết luận đã sửa bằng harness.
+
+### Kiểm thử đã chạy
+
+`uv run --with lupa python tests/run_scene_flow.py`: 5 dụng cụ / 21 stage và hiệu ứng cũ; thêm xác nhận cuối hai phía, mất remote track ngắn/kéo dài, loop wrap, duplicate prepare, hủy trước khi coroutine chuẩn bị chạy, generation cũ, trace giới hạn, sai nguồn/handle/token, timeout xác nhận cuối, stale idle failure và chống thông báo/sát thương lặp. `git diff --check` kiểm tra whitespace. Những kiểm tra này không mô phỏng packet engine, hình học GTA hoặc rendering thật.
+
+Nghiệm thu trực tiếp còn phải kiểm tra chết/ngắt kết nối/đổi bucket/restart giữa select, idle, action và exit; không còn camera, khóa điều khiển hoặc prop bị treo. Thử freemode nam/nữ và các góc đặt ghế. Không đổi artifact/config OneSync của server trong bản sửa này.
+
 ## Vị trí trưng bày
 
 Trong `func_501` (khoảng dòng 55308–55363), game lấy vị trí và góc xoay ban đầu của từng object bằng [`GET_ANIM_INITIAL_OFFSET_POSITION`](https://github.com/citizenfx/natives/blob/master/PED/GetAnimInitialOffsetPosition.md) và [`GET_ANIM_INITIAL_OFFSET_ROTATION`](https://github.com/citizenfx/natives/blob/master/PED/GetAnimInitialOffsetRotation.md) từ dictionary `missfbi3_weapon_select`. Trong script gốc, gốc scene `Local_127` trùng với tọa độ ghế tĩnh `Local_121`, và góc scene là góc ghế cộng 180 độ. Tuy nhiên track `waterboard_idle_chair` có thể dịch chuyển gốc model khi animation bắt đầu. Khi đặt ghế mới, resource giải ngược vị trí ban đầu của track ghế bằng `GET_ANIM_INITIAL_OFFSET_POSITION`, rồi dùng gốc đã căn này cho ped, trolley và dụng cụ. Trolley và bộ điện vẫn lấy transform từ track của chúng, thay vì đặt theo kích thước hộp bao model.
