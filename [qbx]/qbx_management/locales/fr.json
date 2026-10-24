@@ -1,53 +1,48 @@
 {
+    "menu": {
+        "grade": "Grade: ",
+        "expel_gang": "Expulser un membre du gang",
+        "fire_employee": "Licencier un employé",
+        "manage_gang": "Gérer les membres du gang",
+        "manage_employees": "Gérer les employés",
+        "citizen_id": "ID du citoyen: ",
+        "id": "ID: ",
+        "hire_gang": "Recruter des civils à proximité",
+        "hire_members": "Recruter des membres du gang",
+        "hire_civilians": "Embaucher des civils à proximité",
+        "hire_employees": "Embaucher des employés",
+        "check_gang": "Vérifier votre liste de gang",
+        "check_employee": "Vérifier votre liste d'employés",
+        "gang_menu": "Menu du gang",
+        "boss_menu": "Menu du patron",
+        "gang_management": "[E] - Ouvrir la gestion du gang",
+        "boss_management": "[E] - Ouvrir la gestion du patron",
+        "hours_in_days": "Heures travaillées en 7 jours",
+        "last_checkin": "Dernière vérification",
+        "employee_status": "Statut de l'employé",
+        "on_duty": "En service",
+        "off_duty": "Hors service"
+    },
     "error": {
-        "bled_out": "Vous vous êtes vidé de votre sang..."
+        "cant_promote": "Vous ne pouvez pas changer le grade d'une personne dont le grade est supérieur ou égal au vôtre...",
+        "cant_promote_self": "Vous ne pouvez pas changer votre propre grade...",
+        "not_around": "Cette personne n'est pas en ville...",
+        "grade_not_exist": "Ce grade ne semble pas exister...",
+        "couldnt_hire": "Vous n'avez pas pu embaucher cette personne...",
+        "kick_yourself": "Vous ne pouvez pas vous expulser vous-même...",
+        "fire_yourself": "Vous ne pouvez pas vous licencier vous-même...",
+        "fire_boss": "Vous ne pouvez pas licencier quelqu'un avec un grade supérieur...",
+        "you_gang_fired": "Vous avez été expulsé de %s!",
+        "you_job_fired": "Vous avez été licencié de %s! Bonne chance!",
+        "unable_fire": "Vous ne pouvez pas licencier cette personne...",
+        "person_doesnt_exist": "Cette personne ne semble pas exister...",
+        "gang_fired": "Membre du gang expulsé!",
+        "job_fired": "Employé licencié!"
     },
     "success": {
-        "wounds_healed": "Vos blessures ont été soignées !"
-    },
-    "info": {
-        "self_death": "Eux-Même ou un PNJ",
-        "wep_unknown": "Inconnu",
-        "status": "Check Status",
-        "healthy": "Vous êtes maintenant en parfaite santé !",
-        "pain_message": "Votre %s est %s",
-        "many_places": "Vous avez mal à plusieurs endroits ...",
-        "bleed_alert": "Vous êtes %s",
-        "revive_player_a": "Réanimer quelqu'un ou vous même (Admin Only)",
-        "player_id": "ID joueur (Peut être vide)",
-        "pain_level": "Definir le niveau de douleur d'un joueur ou de vous même (Admin Only)",
-        "kill": "Tuer un joueur ou vous même (Admin Only)",
-        "heal_player_a": "Soigner un joueur ou vous même (Admin Only)"
-    },
-    "states": {
-        "irritated": "irrité",
-        "quite_painful": "assez douloureux",
-        "painful": "douloureux",
-        "really_painful": "Vraiment douloureux",
-        "little_bleed": "Saigne un peu...",
-        "bleed": "Saigne...",
-        "lot_bleed": "Saigne beaucoup...",
-        "big_bleed": "Saigne enormément..."
-    },
-    "body": {
-        "head": "Tête",
-        "neck": "Nuque",
-        "spine": "Colonne vertebrale",
-        "upper_body": "Haut du corp",
-        "lower_body": "Bas du corp",
-        "left_arm": "Bras gauche",
-        "left_hand": "Main gauche",
-        "left_fingers": "Doigts gauches",
-        "left_leg": "Jambe gauche",
-        "left_foot": "Pied gauche",
-        "right_arm": "Bras droit",
-        "right_hand": "Main droite",
-        "right_fingers": "Doigts Droite",
-        "right_leg": "Jambe droite",
-        "right_foot": "Pied Droit"
-    },
-    "logs": {
-        "death_log_title": "%s (%s) est mort",
-        "death_log_message": "%s a tué %s avec **%s** (%s)"
+        "promoted": "Promu avec succès!",
+        "promoted_to": "Vous avez été promu à ",
+        "hired_to": "Vous avez été embauché dans ",
+        "hired_into": "Vous avez embauché %s dans %s"
     }
 }

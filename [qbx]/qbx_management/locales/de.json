@@ -1,53 +1,48 @@
 {
+    "menu": {
+        "grade": "Rang: ",
+        "expel_gang": "Gangmitglied ausschließen",
+        "fire_employee": "Mitarbeiter entlassen",
+        "manage_gang": "Gangmitglieder verwalten",
+        "manage_employees": "Mitarbeiter verwalten",
+        "citizen_id": "Bürger ID: ",
+        "id": "ID: ",
+        "hire_gang": "In der Nähe befindliche Zivilisten rekrutieren",
+        "hire_members": "Gangmitglieder rekrutieren",
+        "hire_civilians": "In der Nähe befindliche Zivilisten einstellen",
+        "hire_employees": "Mitarbeiter einstellen",
+        "check_gang": "Gangliste überprüfen",
+        "check_employee": "Mitarbeiterliste überprüfen",
+        "gang_menu": "Gang-Menü",
+        "boss_menu": "Boss-Menü",
+        "gang_management": "[E] - Gangverwaltung öffnen",
+        "boss_management": "[E] - Boss-Verwaltung öffnen",
+        "hours_in_days": "Arbeitsstunden in 7 Tagen",
+        "last_checkin": "Letzter Check-in",
+        "employee_status": "Mitarbeiterstatus",
+        "on_duty": "Im Dienst",
+        "off_duty": "Außer Dienst"
+    },
     "error": {
-        "bled_out": "Du bist ausgeblutet..."
+        "cant_promote": "Du kannst den Rang einer Person nicht ändern, deren Rang gleich oder höher ist als deiner...",
+        "cant_promote_self": "Du kannst deinen eigenen Rang nicht ändern...",
+        "not_around": "Diese Person ist nicht in der Stadt...",
+        "grade_not_exist": "Dieser Rang scheint nicht zu existieren...",
+        "couldnt_hire": "Du konntest diese Person nicht einstellen...",
+        "kick_yourself": "Du kannst dich nicht selbst ausschließen...",
+        "fire_yourself": "Du kannst dich nicht selbst entlassen...",
+        "fire_boss": "Du kannst niemanden mit einem höheren Rang entlassen...",
+        "you_gang_fired": "Du wurdest aus %s ausgeschlossen!",
+        "you_job_fired": "Du wurdest aus %s entlassen! Viel Glück!",
+        "unable_fire": "Du kannst diese Person nicht entlassen...",
+        "person_doesnt_exist": "Diese Person scheint nicht zu existieren...",
+        "gang_fired": "Gangmitglied ausgeschlossen!",
+        "job_fired": "Mitarbeiter entlassen!"
     },
     "success": {
-        "wounds_healed": "Deine Wunden wurden geheilt!"
-    },
-    "info": {
-        "self_death": "Er selbst oder ein NPC",
-        "wep_unknown": "Unbekannt",
-        "status": "Status Prüfung",
-        "healthy": "Du bist wieder ganz gesund!",
-        "pain_message": "Dein %s fühlt sich %s an",
-        "many_places": "Du hast schmerzen an verschiedenen Stellen...",
-        "bleed_alert": "Du bist %s",
-        "revive_player_a": "Belebe einen Spieler oder dich selbst (Admin Only)",
-        "player_id": "Spieler ID (may be empty)",
-        "pain_level": "Setzt dein oder eines Spielers schmerzlevel (Admin Only)",
-        "kill": "Töte einen Spieler oder dich selbst (Admin Only)",
-        "heal_player_a": "Keile einen Spieler oder dich selbst (Admin Only)"
-    },
-    "states": {
-        "irritated": "irritiert",
-        "quite_painful": "leicht schmerzhaft",
-        "painful": "schmerzhaft",
-        "really_painful": "sehr schmerzhaft",
-        "little_bleed": "wenig blutend...",
-        "bleed": "blutend...",
-        "lot_bleed": "etwas mehr blutend...",
-        "big_bleed": "sehr stark blutend..."
-    },
-    "body": {
-        "head": "Kopf",
-        "neck": "Nacken",
-        "spine": "Wirbelsäule",
-        "upper_body": "Oberer Körper",
-        "lower_body": "Unterer Körper",
-        "left_arm": "Linker Arm",
-        "left_hand": "Linke Hand",
-        "left_fingers": "Linke Finger",
-        "left_leg": "Linkes Bein",
-        "left_foot": "Linker Fuß",
-        "right_arm": "Rechter Arm",
-        "right_hand": "Rechte Hand",
-        "right_fingers": "Rechte Finger",
-        "right_leg": "Rechtes Bein",
-        "right_foot": "Rechter Fuß"
-    },
-    "logs": {
-        "death_log_title": "%s (%s) is gestorben",
-        "death_log_message": "%s tötete %s mit einer/einem **%s** (%s)"
+        "promoted": "Erfolgreich befördert!",
+        "promoted_to": "Du wurdest befördert zum ",
+        "hired_to": "Du wurdest eingestellt bei ",
+        "hired_into": "Du hast %s in %s eingestellt"
     }
 }

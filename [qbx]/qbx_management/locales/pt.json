@@ -1,53 +1,48 @@
 {
+    "menu": {
+        "grade": "Grau: ",
+        "expel_gang": "Expulsar Membro da Gangue",
+        "fire_employee": "Despedir Funcionário",
+        "manage_gang": "Gerir Membros da Gangue",
+        "manage_employees": "Gerir Funcionários",
+        "citizen_id": "ID do Cidadão: ",
+        "id": "ID: ",
+        "hire_gang": "Recrutar Civis Próximos",
+        "hire_members": "Recrutar Membros da Gangue",
+        "hire_civilians": "Contratar Civis Próximos",
+        "hire_employees": "Contratar Funcionários",
+        "check_gang": "Verificar a tua Lista de Gangues",
+        "check_employee": "Verificar a tua Lista de Funcionários",
+        "gang_menu": "Menu de Gangue",
+        "boss_menu": "Menu de Chefia",
+        "gang_management": "[E] - Abrir Gestão de Gangues",
+        "boss_management": "[E] - Abrir Gestão de Chefia",
+        "hours_in_days": "Hours worked in 7 days",
+        "last_checkin": "Last check in",
+        "employee_status": "Employee status",
+        "on_duty": "On Duty",
+        "off_duty": "Off Duty"
+    },
     "error": {
-        "bled_out": "Esvaíste-te em sangue..."
+        "cant_promote": "Não podes mudar o grau de uma pessoa cujo grau seja maior ou igual ao teu...",
+        "cant_promote_self": "Não podes mudar o teu próprio grau...",
+        "not_around": "Esta pessoa não está na cidade...",
+        "grade_not_exist": "Este grau parece não existir...",
+        "couldnt_hire": "Não conseguiste contratar esta pessoa...",
+        "kick_yourself": "Não podes expulsar-te...",
+        "fire_yourself": "Não te podes despedir...",
+        "fire_boss": "Não podes despedir alguém com um grau superior...",
+        "you_gang_fired": "Foste expulso de %s!",
+        "you_job_fired": "Foste despedido de %s! Boa sorte!",
+        "unable_fire": "Não consegues despedir esta pessoa...",
+        "person_doesnt_exist": "Esta pessoa parece não existir...",
+        "gang_fired": "Membro da gangue expulso!",
+        "job_fired": "Funcionário despedido!"
     },
     "success": {
-        "wounds_healed": "Os teus ferimentos foram curados!"
-    },
-    "info": {
-        "self_death": "Eles próprios ou um NPC",
-        "wep_unknown": "Desconhecido",
-        "status": "Verificação de Estado",
-        "healthy": "Estás novamente saudável!",
-        "pain_message": "O(s) teu(s) %s sente-se %s",
-        "many_places": "Tens dores em váios locais...",
-        "bleed_alert": "Tu estás %s",
-        "revive_player_a": "Reviver um Paciente ou tu mesmo (Somente Admin)",
-        "player_id": "ID do Jogador (opcional)",
-        "pain_level": "Define o nįvel de dor a ti ou a outro jogador (Somente Admin)",
-        "kill": "Matar um jogador ou a ti próprio (Somente Admin)",
-        "heal_player_a": "Curar um jogador ou a ti próprio (Somente Admin)"
-    },
-    "states": {
-        "irritated": "irritado",
-        "quite_painful": "um pouco doloroso",
-        "painful": "doloroso",
-        "really_painful": "bastante doloroso",
-        "little_bleed": "a sangrar um pouco...",
-        "bleed": "a sangrar...",
-        "lot_bleed": "a sangrar bastante...",
-        "big_bleed": "a sangrar terrivelmente..."
-    },
-    "body": {
-        "head": "Cabeça",
-        "neck": "Pescoço",
-        "spine": "Coluna",
-        "upper_body": "Membros Superiores",
-        "lower_body": "Membros Inferiores",
-        "left_arm": "Braço Esquerdo",
-        "left_hand": "Mão Esquerda",
-        "left_fingers": "Dedos Esquerdos",
-        "left_leg": "Perna Esquerda",
-        "left_foot": "Pé Esquerdo",
-        "right_arm": "Braço Direito",
-        "right_hand": "Mão Direita",
-        "right_fingers": "Dedos Direitos",
-        "right_leg": "Perna Direita",
-        "right_foot": "Pé Direito"
-    },
-    "logs": {
-        "death_log_title": "%s (%s) foi morto",
-        "death_log_message": "%s foi morto %s com uma **%s** (%s)"
+        "promoted": "Promovido com sucesso!",
+        "promoted_to": "Foste promovido a ",
+        "hired_to": "Foste contratado para ",
+        "hired_into": "Contrataste %s para %s"
     }
 }
