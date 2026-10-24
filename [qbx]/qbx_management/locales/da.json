@@ -1,53 +1,48 @@
 {
+    "menu": {
+        "grade": "Grad: ",
+        "expel_gang": "Udvis Bandemedlem",
+        "fire_employee": "Fyr Ansat",
+        "manage_gang": "Administrer Bandemedlemmer",
+        "manage_employees": "Administrer Ansatte",
+        "citizen_id": "Borger ID: ",
+        "id": "ID: ",
+        "hire_gang": "Rekrutter Nærliggende Civile",
+        "hire_members": "Rekrutter Bandemedlemmer",
+        "hire_civilians": "Ansæt Nærliggende Civile",
+        "hire_employees": "Ansæt Ansatte",
+        "check_gang": "Tjek din Bande Liste",
+        "check_employee": "Tjek medarbejderliste",
+        "gang_menu": "Bande Menu",
+        "boss_menu": "Boss Menu",
+        "gang_management": "[E] - Åbn Bande menu",
+        "boss_management": "[E] - Åbn Boss menu",
+        "hours_in_days": "Hours worked in 7 days",
+        "last_checkin": "Last check in",
+        "employee_status": "Employee status",
+        "on_duty": "On Duty",
+        "off_duty": "Off Duty"
+    },
     "error": {
-        "bled_out": "Du er blødt ud..."
+        "cant_promote": "Du kan ikke ændre graden for en person, hvis egen grad er større eller lig med din...",
+        "cant_promote_self": "Du kan ikke ændre din egen grad...",
+        "not_around": "Denne person er ikke i byen...",
+        "grade_not_exist": "Denne grad ser ikke ud til at eksistere...",
+        "couldnt_hire": "Du kunne ikke ansætte denne person...",
+        "kick_yourself": "Du kan ikke sparke dig selv...",
+        "fire_yourself": "Du kan ikke fyre dig selv...",
+        "fire_boss": "Du kan ikke fyre nogen med en højere grad...",
+        "you_gang_fired": "Du er blevet udvist fra banden!",
+        "you_job_fired": "Du er blevet fyret! Held og lykke!",
+        "unable_fire": "Du kan ikke fyre denne person...",
+        "person_doesnt_exist": "Denne person ser ikke ud til at eksistere...",
+        "gang_fired": "Bandemedlem udvist!",
+        "job_fired": "Ansat fyret!"
     },
     "success": {
-        "wounds_healed": "Dine sår er helet!"
-    },
-    "info": {
-        "self_death": "Sig selv eller en NPC",
-        "wep_unknown": "Ukendt",
-        "status": "Statuskontrol",
-        "healthy": "Du er helt rask igen!",
-        "pain_message": "Din %s føles %s",
-        "many_places": "Du har smerte mange steder...",
-        "bleed_alert": "Du er %s",
-        "revive_player_a": "Genopliv en spiller eller dig selv (Kun administrator)",
-        "player_id": "Spiller ID (kan være tomt)",
-        "pain_level": "Indstil din eller en spillers smerteniveau (Kun administrator)",
-        "kill": "Dræb en spiller eller dig selv (Kun administrator)",
-        "heal_player_a": "Helbred en spiller eller dig selv (Kun administrator)"
-    },
-    "states": {
-        "irritated": "irriteret",
-        "quite_painful": "ret smertefuldt",
-        "painful": "smertefuldt",
-        "really_painful": "virkelig smertefuldt",
-        "little_bleed": "bløder lidt...",
-        "bleed": "bløder...",
-        "lot_bleed": "bløder meget...",
-        "big_bleed": "bløder meget meget..."
-    },
-    "body": {
-        "head": "Hoved",
-        "neck": "Hals",
-        "spine": "Rygsøjle",
-        "upper_body": "Øverste krop",
-        "lower_body": "Nederste krop",
-        "left_arm": "Venstre arm",
-        "left_hand": "Venstre hånd",
-        "left_fingers": "Venstre fingre",
-        "left_leg": "Venstre ben",
-        "left_foot": "Venstre fod",
-        "right_arm": "Højre arm",
-        "right_hand": "Højre hånd",
-        "right_fingers": "Højre fingre",
-        "right_leg": "Højre ben",
-        "right_foot": "Højre fod"
-    },
-    "logs": {
-        "death_log_title": "%s (%s) er død",
-        "death_log_message": "%s har dræbt %s med et **%s** (%s)"
+        "promoted": "Fremmet med succes!",
+        "promoted_to": "Du er blevet forfremmet til ",
+        "hired_to": "Du er blevet ansat i ",
+        "hired_into": "Du ansatte %s i %s"
     }
 }
