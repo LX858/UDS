@@ -4,6 +4,16 @@ Nguồn chính là [`fbi3.c` đã decompile](https://github.com/YimMenu/GTA-V-De
 
 Tên clip trưng bày, hai kẹp điện và khăn dùng trong code đã được đối chiếu thêm với [`animDictsCompact.json`](https://github.com/DurtyFree/gta-v-data-dumps/blob/master/animDictsCompact.json). File dump xác nhận tên clip tồn tại; vị trí thực tế vẫn do game tính ở runtime.
 
+## Scene handoff v14 — bảo vệ successor khỏi danh sách dọn scene cũ
+
+Hai log v13 của cùng token `1:tool:1` cho thấy cảnh lấy cờ lê `374720` chạy và được cả hai phía xác nhận hoàn tất (actor 7214 ms, victim 7261 ms, thời gian tính riêng từ lúc bắt đầu trên mỗi máy). Khi chuyển sang idle, actor cấp `374722` nhưng local handle luôn `-1`, sau 2524 ms báo `actor_start`. Vì actor chưa bind idle, phía victim chỉ nhận lý do hủy và không có idle track để xác nhận. Đây là lỗi khởi tạo local ở lần thử này, chưa phải bằng chứng của lỗi actor rơi remote trong đòn đánh trước đó.
+
+Mã v13 giữ ID các scene bench hữu hạn trong `benchScenes` đến lần chuyển cảnh. Khi engine đã kết thúc một scene bench và giải phóng slot, `ReserveActorScene` có thể nhận lại chính ID đó. `StopRetiredScenes` v13 vẫn gọi stop trên ID cũ trong danh sách và vì vậy có thể hủy reservation mới. V14 truyền `pendingActorScene` làm ID được bảo vệ khi chuyển cảnh: không tra local handle, sửa loop/hold hoặc stop ID đó. Các ID cũ còn lại được dừng một lần; khi hủy toàn phiên thì reservation được dọn cùng danh sách, loại ID trùng để không stop hai lần.
+
+Kiểm thử thêm tình huống scene bench tự kết thúc rồi slot được cấp cho idle, cùng native giả lập không cho start một scene đã bị stop. Kiểm thử thất bại trên v13 tại `cannot start a scene stopped during handoff` và vượt qua trên v14. Bộ kiểm thử cũ vẫn qua. Đây xác minh lỗi logic có thể gây đúng dạng log trên; cần FiveM thật để xác nhận đường engine và triệu chứng remote đã hết.
+
+Marker mới: **scene handoff v14**. Sau `restart vx_torture`, đặt ghế mới và thử lấy cờ lê → idle/menu → đánh trái/giữa/phải → idle. Diagnostics đang bật. `scene_retire_skip network=... reason=reserved_successor` là thông tin đã tránh dọn nhầm ID; `scene_retire` là ID thực sự được stop. Nếu vẫn lỗi, lấy hai log cùng token từ prepare đến failed/cancel, kể cả `scene_handoff`, `scene_retire`, `scene_retire_skip` và `scene_trace/scene_sample`. Không đổi timeout, clip, native flags hoặc tọa độ trong bản này.
+
 ## Scene handoff v13 — cấp ID trước khi dừng cảnh cũ
 
 Log thực tế: actor 5856, network scene 374720 lặp lại ở các đòn; victim báo `remote_actor_timeout`, đôi khi `remote_scene_timeout`, trong khi prop vẫn chạy. Mã v12 dừng toàn bộ scene rồi mới tạo successor. Bộ test cũ chỉ cấp ID tăng dần, nên chưa kiểm tra việc engine tái sử dụng slot.

@@ -118,7 +118,7 @@ end
 
 function Impl:TraceScene(event, run, reason)
   if not cfg.sceneDiagnostics or not run then return end
-  print(('[vx_torture] scene_v13 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
+  print(('[vx_torture] scene_v14 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
     :format(event, run.setup.id, run.token, run.kind, run.step, run.generation,
       run.scene, GetGameTimer() - run.startedAt, reason or '-'))
 end
@@ -150,7 +150,7 @@ end
 
 function Impl:DumpSceneTrace(reason)
   if not cfg.sceneDiagnostics then return end
-  print('[vx_torture] scene_trace ' .. json.encode({ version = 13,
+  print('[vx_torture] scene_trace ' .. json.encode({ version = 14,
     gameBuild = GetGameBuildNumber(), role = self.seated and 'victim' or 'actor', reason = reason }))
   for _, sample in ipairs(self.sceneSamples or {}) do
     if GetGameTimer() - sample.time <= 5000 then
@@ -717,17 +717,31 @@ function Impl:UpdateSetup(setup)
   end
 end
 
-function Impl:StopRetiredScenes()
+function Impl:StopRetiredScenes(protectedScene)
   local retired = self.retiredScenes
   self.retiredScenes = nil
-  if retired and #retired > 0 then self.sceneStopPending = true end
+  local stopped = {}
   for _, scene in ipairs(retired or {}) do
-    local localScene = NetworkGetLocalSceneFromNetworkId(scene)
-    if localScene and localScene >= 0 then
-      SetSynchronizedSceneHoldLastFrame(localScene, false)
-      SetSynchronizedSceneLooped(localScene, false)
+    if scene == protectedScene then
+      -- Finite bench scenes may have already ended and freed their engine ID.
+      -- The successor can reuse that ID even while it is still in this list.
+      -- Do not query/mutate/stop the newly reserved scene through the stale ID.
+      if cfg.sceneDiagnostics then
+        print(('[vx_torture] scene_retire_skip network=%s reason=reserved_successor'):format(scene))
+      end
+    elseif not stopped[scene] then
+      stopped[scene] = true
+      local localScene = NetworkGetLocalSceneFromNetworkId(scene)
+      if localScene and localScene >= 0 then
+        SetSynchronizedSceneHoldLastFrame(localScene, false)
+        SetSynchronizedSceneLooped(localScene, false)
+      end
+      if cfg.sceneDiagnostics then
+        print(('[vx_torture] scene_retire network=%s local=%s'):format(scene, localScene))
+      end
+      NetworkStopSynchronisedScene(scene)
+      self.sceneStopPending = true
     end
-    NetworkStopSynchronisedScene(scene)
   end
 end
 
@@ -761,7 +775,9 @@ function Impl:ReserveActorScene(run, coords, heading, looped)
 end
 
 function Impl:StopStage(keepVictimTask, transitioning)
-  self:TraceScene('stop', transitioning and self.sceneRun and self.sceneRun.previous or self.sceneRun)
+  local stoppedRun = self.sceneRun
+  if transitioning then stoppedRun = stoppedRun and stoppedRun.previous end
+  self:TraceScene('stop', stoppedRun)
   if self.sceneRun then self.sceneRun.previous = nil end
   if not transitioning then self.sceneRun = nil end
   self.stageGeneration = (self.stageGeneration or 0) + 1
@@ -779,7 +795,7 @@ function Impl:StopStage(keepVictimTask, transitioning)
   if not transitioning and self.pendingActorScene then
     -- An unstarted reservation has no tracks. It still needs releasing when
     -- cancellation happens during the yielding stop/prop-preparation work.
-    NetworkStopSynchronisedScene(self.pendingActorScene)
+    self.retiredScenes[#self.retiredScenes + 1] = self.pendingActorScene
     self.pendingActorScene = nil
   end
   for _, scene in ipairs(self.benchScenes or {}) do
@@ -798,7 +814,7 @@ function Impl:StopStage(keepVictimTask, transitioning)
   -- Stopping the old scene after starting the successor can abort its tasks
   -- one frame later. NetworkStopSynchronisedScene has no acknowledgement;
   -- a retained local handle/held clip is not proof that the stop failed.
-  self:StopRetiredScenes()
+  self:StopRetiredScenes(transitioning and self.pendingActorScene or nil)
   if transitioning then
     if self.sceneStopPending then
       -- Drain the queued stop before assigning successor tasks. Do not clear
@@ -1898,7 +1914,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print(('[vx_torture] scene handoff v13 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
+  print(('[vx_torture] scene handoff v14 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('scenePeersReady', function(token, kind, step, scene)
     local run = self.sceneRun

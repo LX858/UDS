@@ -218,7 +218,9 @@ function NetworkAddEntityToSynchronisedScene(entity,scene,dict,clip,a,b,flags)
   assert(count<=3, 'network scene exceeds portable non-ped track capacity')
 end
 function NetworkStartSynchronisedScene(scene)
-  local s=scenes[scene]; s.started=now; s.running=true
+  local s=scenes[scene]
+  assert(not s.released, 'cannot start a scene stopped during handoff')
+  s.started=now; s.running=true
   s.duration=s.ped and GetAnimDuration(s.dict,s.clip)*1000 or 1
   for entity,track in pairs(s.tracks) do
     s.duration=math.max(s.duration,GetAnimDuration(track.dict,track.clip)*1000)
@@ -234,6 +236,7 @@ function NetworkStopSynchronisedScene(scene)
 end
 function NetworkGetLocalSceneFromNetworkId(scene)
   if currentPlayer==2 and remoteSceneReadyAt and now<remoteSceneReadyAt then return -1 end
+  if scenes[scene] and not scenes[scene].started then return -1 end
   if scenes[scene] and now-scenes[scene].started<localHandleDelay then return -1 end
   return scene+1000
 end
@@ -848,6 +851,17 @@ client:StopStage(); Wait(0); threads={}; reuseSceneSlots=true
 session('wrench')
 assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
 local predecessor=client.scene
+-- v14: finite bench scenes can end themselves while their IDs remain in Lua's
+-- retirement list. ReserveActorScene may receive precisely that freed slot.
+local endedBench=client.benchScenes[1]
+assert(endedBench and not scenes[endedBench].looped and not scenes[endedBench].hold)
+scenes[endedBench].running=false; scenes[endedBench].released=true
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true),
+  'a recycled bench ID must not be stopped by old-scene cleanup')
+assert(client.scene==endedBench and client.scene~=predecessor)
+assert(not scenes[endedBench].released and scenes[endedBench].running)
+predecessor=client.scene
+print('PASS: expired bench ID reused by successor survives retirement of old scenes')
 for _=1,8 do
   assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
   assert(client.scene~=predecessor, 'idle cannot reuse its immediate predecessor network ID')
