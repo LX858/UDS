@@ -4,6 +4,18 @@ Nguồn chính là [`fbi3.c` đã decompile](https://github.com/YimMenu/GTA-V-De
 
 Tên clip trưng bày, hai kẹp điện và khăn dùng trong code đã được đối chiếu thêm với [`animDictsCompact.json`](https://github.com/DurtyFree/gta-v-data-dumps/blob/master/animDictsCompact.json). File dump xác nhận tên clip tồn tại; vị trí thực tế vẫn do game tính ở runtime.
 
+## V16 — menu trolley, tạo dụng cụ theo lựa chọn và blend actor
+
+Người dùng xác nhận các cảnh v15 đã chạy ổn định hơn và báo đứng/giật ở ranh giới chuyển cảnh. Các mốc `handoff_wait` → `handoff_ready` trong hai log mới thường khoảng 280–340 ms: actor đã ngừng task cũ và đang đợi quan sát bên nạn nhân. Log cũng có một `actor_track_lost` ở lượt cờ lê đầu tiên; không coi các lượt sau chạy được là bằng chứng mọi lỗi đã hết.
+
+V16 giữ nguyên barrier và thời hạn của v15. `actorBlendSpeed = 4.0` dùng blend-in/out `4/-4` cho actor ở idle và clip dài; clip dưới một giây giữ `8/-8` để không làm mất chuyển động ngắn của can nước. [Tài liệu native Cfx](https://github.com/citizenfx/natives/blob/master/NETWORK/NetworkAddPedToSynchronisedScene.md) xác định giá trị blend-in nhỏ hơn hòa trộn chậm hơn, blend-out là số âm tương ứng. Đây là điều chỉnh phần hòa trộn, chưa xóa khoảng ngừng task cần thiết cho barrier; mức mượt và độ khớp tay/prop phải thử lại từ ba góc nhìn. Đặt `actorBlendSpeed = 8.0` để quay về tốc độ blend v15 mà vẫn dùng menu/prop mới.
+
+Preview và bước đặt ghế chỉ tạo nội thất (ghế, trolley, ghế phụ/ECG nếu có). Transform dụng cụ vẫn được tính/kiểm tra khi đặt nhưng không tạo object của chúng. Trolley giữ BoxZone mở menu đủ năm món, bỏ chọn từng món bằng điểm ngắm. `toolProps` khai báo bộ object theo món; điện gồm hai kẹp và pin, nước gồm can và khăn. Server tạo bộ đó sau khi kiểm tra quyền/trạng thái, rồi phát snapshot và chuẩn bị scene. Không cần dụng cụ của món khác tồn tại để chạy cảnh. Thoát vẫn phát bước đặt món xuống, sau đó server xóa prop; lỗi/timeout/thu hồi/giải phóng cũng dọn prop. Tạo thiếu một prop thì rollback bộ đang tạo, giữ nguyên nội thất.
+
+Kiểm thử Lua dùng snapshot chỉ có nội thất + dụng cụ được chọn chạy qua select/idle/toàn bộ action của năm món; kiểm tra menu khi chưa có object, companion, spam, người khác gửi yêu cầu, spawn thất bại giữa chừng, timeout, pack và xóa nhiều lần. Clip ngắn được kiểm tra giữ tốc độ blend cũ. Các kiểm thử logic và `git diff --check` đã qua; chưa thử v16 trên FiveM thật.
+
+Sau `restart vx_torture`, kiểm tra marker **scene handoff v16** trên hai client và server, đặt ghế mới. Kiểm tra tủ/preview trống, chọn đủ năm món, Thoát xóa đúng prop và thử cờ lê/điện/nước từ góc observer để đánh giá cú chuyển tư thế.
+
 ## Scene handoff v15 — xác nhận kết thúc task cũ trước khi gắn task mới
 
 Hai log v14 gửi ngày 24/10/2026 có 53 lần actor bắt đầu cảnh, 46 lần nhận readiness thành công và 7 lần hủy khi đang vào cảnh mới. Sáu lỗi là `remote_actor_timeout`/`remote_scene_timeout`; lỗi còn lại là `waterboard_ready_to_loop_player` hết phase trước ACK (`scene_ended_before_ack`, khoảng 624 ms). Các clip kìm/cờ lê/can nước có cả lượt thành công và lượt thất bại. Đây là bằng chứng lỗi không cố định theo tên clip. Chưa đủ bằng chứng kết luận lỗi engine, packet, hoặc resource khác thay task.

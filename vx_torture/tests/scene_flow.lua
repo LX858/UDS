@@ -30,6 +30,7 @@ local shortWaterTransitions=false
 local retainStoppedSceneState=false
 local reuseSceneSlots=false
 local autoAck = true
+local targetEntities, targetZones = {}, {}
 local function noop() end
 function NewImpl()
   local impl = { handlers = {}, intervals = {} }
@@ -55,8 +56,9 @@ lib = {
   registerContext = function(menu) menus[menu.id] = menu end,
   showContext = function(id) openMenu = id; shown = shown + 1 end,
 }
-exports = { ox_target = { addEntity = noop, removeEntity = noop, removeZone = noop,
-  addBoxZone = function(_, data) assert(data.debug == false); return 1 end },
+exports = { ox_target = { addEntity = function(_,id,options) targetEntities[id]=options end,
+  removeEntity = noop, removeZone = noop,
+  addBoxZone = function(_, data) assert(data.debug == false); targetZones[#targetZones+1]=data; return #targetZones end },
   qbx_core = { CreateUseableItem = noop } }
 LocalPlayer = { state = {} }
 function Player() return { state = {} } end
@@ -160,10 +162,16 @@ function IsModelInCdimage() return true end
 function IsModelValid() return true end
 function HasModelLoaded() return true end
 RequestModel,SetModelAsNoLongerNeeded=noop,noop
+local networkObjects, failObjectModel = {}, nil
+SetEntityRoutingBucket, SetEntityOrphanMode = noop, noop
 function CreateObjectNoOffset(model,x,y,z,networked)
-  assert(networked==false); nextObject=nextObject+1; cosmeticObjects[nextObject]=model; return nextObject
+  if model==failObjectModel then return 0 end
+  nextObject=nextObject+1
+  if networked then networkObjects[nextObject]=model else cosmeticObjects[nextObject]=model end
+  positions[nextObject]=vector3(x,y,z)
+  return nextObject
 end
-function DeleteEntity(id) cosmeticObjects[id]=nil; attached[id]=nil end
+function DeleteEntity(id) cosmeticObjects[id]=nil; networkObjects[id]=nil; attached[id]=nil end
 function GetGroundZFor_3dCoord() return true,0 end
 function DoesAnimDictExist() return true end
 function HasAnimDictLoaded() return true end
@@ -212,6 +220,7 @@ function NetworkAddPedToSynchronisedScene(ped,scene,dict,clip,a,b,flags)
   assert((flags & 4)~=0 and (flags & 8)==0,
     'block external interruption without stopping the clock on task replacement')
   local s=scenes[scene]; s.ped=ped; s.dict=dict; s.clip=clip; s.flags=flags
+  s.blendIn=a; s.blendOut=b
 end
 function NetworkAddEntityToSynchronisedScene(entity,scene,dict,clip,a,b,flags)
   assert(GetAnimDuration(dict,clip)>0, 'unknown entity clip: '..dict..'/'..clip)
@@ -674,6 +683,8 @@ for _,index in ipairs({2,4}) do
   client.activeAction={setupId=7,token='short-water',key='water_pour',actor=true,stage=index}
   local start=now
   assert(client:RunActorStage(setup,'short-water','water_pour',index))
+  assert(scenes[client.scene].blendIn==8.0 and scenes[client.scene].blendOut==-8.0,
+    'short transitions must keep their original blending')
   assert(now-start<1000, 'short actor transition must not wait for a background rag loop')
   if index==4 then
     assert(scenes[client.scene].tracks[setup.props.rag]==nil)
@@ -1273,3 +1284,71 @@ assert(setup.victim==victimBefore)
 send(2,'seatRecoveryFailed',7,setup.lastStoppedToolToken)
 assert(setup.victim==nil and server.seated[2]==nil)
 print('PASS: failed base-seat restoration releases only the matching closed session')
+
+-- Only the selected tool and its required companions exist. Exercise actual
+-- scene builders with sparse snapshots, rather than the old all-props fixture.
+setup.victim=2; setup.seatReady=true; server.seated[2]=7
+setup.toolState='empty'; setup.busy=nil; currentPlayer=1; threads={}; autoAck=true
+local beforeUnauthorized=nextObject
+server:TakeTool(3,7,'electric')
+assert(nextObject==beforeUnauthorized and not setup.tool)
+for _,tool in ipairs(Config.Torture.toolOrder) do
+  server:TakeTool(1,7,tool)
+  assert(setup.toolState=='selecting' and setup.tool==tool)
+  local selected={}; for _,key in ipairs(Config.Torture.toolProps[tool]) do selected[key]=true end
+  for key,prop in pairs(Config.Torture.props) do
+    if prop.onDemand then assert((setup.entities[key]~=nil)==(selected[key]==true), key..' spawn scope') end
+  end
+  local count=nextObject
+  server:TakeTool(1,7,tool)
+  assert(nextObject==count, 'spam cannot spawn another set while selecting')
+  local snapshot=server:Snapshot(setup)
+  client.setups[7]=snapshot
+  client.toolSession={setupId=7,token=setup.toolToken,tool=tool,actor=true,phase='select',idleEpoch=1}
+  client.activeAction=nil
+  for _,data in pairs(Config.Torture.toolScenes[tool]) do assert(client:ValidateSceneAssets(snapshot,data)) end
+  assert(client:RunActorToolScene(snapshot,setup.toolToken,Config.Torture.toolScenes[tool].select,false))
+  assert(client:RunActorToolScene(snapshot,setup.toolToken,Config.Torture.toolScenes[tool].idle,true))
+  assert(scenes[client.scene].blendIn==Config.Torture.actorBlendSpeed)
+  drain()
+  for key,action in pairs(Config.Torture.actions) do
+    if action.tool==tool then
+      client.activeAction={setupId=7,token='sparse:'..key,key=key,actor=true,stage=1}
+      for index,data in ipairs(action.stages) do
+        assert(client:ValidateSceneAssets(snapshot,data), 'missing selected companion '..key)
+        client.activeAction.stage=index
+        assert(client:RunActorStage(snapshot,'sparse:'..key,key,index))
+      end
+    end
+  end
+  client.activeAction=nil
+  client:StopStage(); server:StopTool(setup); client:EndToolSession(snapshot); drain(); Wait(0)
+  for key in pairs(selected) do assert(not setup.entities[key]) end
+  assert(next(networkObjects)==nil, 'selected props must be deleted on stop')
+end
+-- Partial electric creation (clip 1 succeeded, clip 2 failed) rolls back all.
+failObjectModel=Config.Torture.props.clipRight.model
+server:TakeTool(1,7,'electric'); failObjectModel=nil
+assert(setup.toolState=='empty' and not setup.tool and next(networkObjects)==nil)
+assert(setup.entities.chair and setup.entities.trolley, 'rollback preserves furniture')
+server:TakeTool(1,7,'wrench'); local preparationExpiry=timers[#timers]
+preparationExpiry()
+assert(setup.toolState=='empty' and next(networkObjects)==nil)
+server:DeleteToolProps(setup); server:DeleteToolProps(setup)
+-- Menu remains complete when the cupboard contains no tool entities.
+local emptySnapshot=server:Snapshot(setup)
+client.targets={}; client.setups[7]=emptySnapshot; client.toolSession=nil
+client:AddTargets(emptySnapshot)
+local choices=targetZones[#targetZones].options
+assert(#choices==1 and choices[1].canInteract())
+choices[1].onSelect()
+local menu=menus['vx_torture_tools_7']
+assert(menu and #menu.options==5)
+menu.options[3].onSelect()
+assert(events[#events].name=='takeTool' and events[#events].args[2]=='electric')
+currentPlayer=3; assert(not choices[1].canInteract()); currentPlayer=1
+print('PASS: sparse tool props across all scenes, companions, menu without entities, spawn rollback, spam and timeout cleanup')
+server:TakeTool(1,7,'electric')
+server:Pack(setup,false)
+assert(next(networkObjects)==nil and not server.setups[1] and next(server.sceneProps)==nil)
+print('PASS: packing an active tool session removes its props and scene registrations')

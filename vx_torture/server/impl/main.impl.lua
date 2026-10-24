@@ -50,7 +50,7 @@ end
 function Impl:SceneLog(event, setup, peer, reason)
   if not cfg.sceneDiagnostics and not reason then return end
   peer = peer or setup.peerScene or {}
-  print(('[vx_torture] scene_v15 event=%s setup=%s owner=%s victim=%s token=%s kind=%s step=%s scene=%s reason=%s')
+  print(('[vx_torture] scene_v16 event=%s setup=%s owner=%s victim=%s token=%s kind=%s step=%s scene=%s reason=%s')
     :format(event, setup.id, setup.owner, setup.victim, peer.token or setup.toolToken,
       peer.kind, peer.step, peer.netScene, reason or '-'))
 end
@@ -140,6 +140,55 @@ function Impl:SetPropSceneAccess(setup, allowed)
       if SetEntityRemoteSyncedScenesAllowed then SetEntityRemoteSyncedScenesAllowed(entity, allowed) end
     end
   end
+end
+
+function Impl:CreateSetupProp(setup, key)
+  local prop, pos = cfg.props[key], setup.positions[key]
+  if not prop or not pos then return nil end
+  local entity = CreateObjectNoOffset(joaat(prop.model), pos.x, pos.y, pos.z, true, true, false)
+  if entity == 0 or not DoesEntityExist(entity) then return nil end
+  SetEntityRoutingBucket(entity, setup.bucket)
+  local rotation = setup.rotations and setup.rotations[key]
+  if rotation then
+    SetEntityRotation(entity, rotation.x, rotation.y, rotation.z, 2, true)
+  elseif prop.rotation then
+    SetEntityRotation(entity, prop.rotation.x, prop.rotation.y,
+      (setup.heading + prop.rotation.z) % 360.0, 2, true)
+  else
+    SetEntityHeading(entity, setup.heading)
+  end
+  SetEntityOrphanMode(entity, 2)
+  FreezeEntityPosition(entity, true)
+  return entity
+end
+
+function Impl:DeleteToolProps(setup)
+  -- Remove registrations even if another resource already deleted the entity.
+  for net, entry in pairs(self.sceneProps) do
+    if entry.setup == setup and cfg.props[entry.key].onDemand then self.sceneProps[net] = nil end
+  end
+  for key, entity in pairs(setup.entities) do
+    if cfg.props[key] and cfg.props[key].onDemand then
+      if DoesEntityExist(entity) then
+        self.sceneProps[NetworkGetNetworkIdFromEntity(entity)] = nil
+        DeleteEntity(entity)
+      end
+      setup.entities[key] = nil
+    end
+  end
+end
+
+function Impl:SpawnToolProps(setup, tool)
+  self:DeleteToolProps(setup)
+  for _, key in ipairs(cfg.toolProps[tool]) do
+    local entity = self:CreateSetupProp(setup, key)
+    if not entity then
+      self:DeleteToolProps(setup)
+      return false
+    end
+    setup.entities[key] = entity
+  end
+  return true
 end
 
 function Impl:ValidatePropScene(sender, data)
@@ -244,6 +293,7 @@ function Impl:StopTool(setup, failed, reason)
   end
   self:EmitNet(self, 'stopTool', setup.owner, setup.id, token, reason)
   if setup.victim then self:EmitNet(self, 'stopTool', setup.victim, setup.id, token, reason) end
+  self:DeleteToolProps(setup)
   setup.tool = nil
   setup.toolReady = false
   setup.toolState = 'empty'
@@ -465,29 +515,18 @@ function Impl:Place(src, token, placement)
   end
 
   local entities = {}
+  local placementSetup = { positions = positions, rotations = rotations,
+    bucket = bucket, heading = placement.heading }
   for _, key in ipairs(cfg.propOrder) do
     local prop = cfg.props[key]
-    local pos = positions[key]
-    local entity = pos and CreateObjectNoOffset(joaat(prop.model), pos.x, pos.y, pos.z, true, true, false) or 0
-    if entity == 0 or not DoesEntityExist(entity) then
-      if prop.required then
+    if not prop.onDemand then
+      local entity = self:CreateSetupProp(placementSetup, key)
+      if entity then
+        entities[key] = entity
+      elseif prop.required then
         for _, spawned in pairs(entities) do DeleteEntity(spawned) end
         return self:PlaceFailed(src, key .. ':spawn')
       end
-    else
-      SetEntityRoutingBucket(entity, bucket)
-      if rotations[key] then
-        local rotation = rotations[key]
-        SetEntityRotation(entity, rotation.x, rotation.y, rotation.z, 2, true)
-      elseif prop.rotation then
-        SetEntityRotation(entity, prop.rotation.x, prop.rotation.y,
-          (placement.heading + prop.rotation.z) % 360.0, 2, true)
-      else
-        SetEntityHeading(entity, placement.heading)
-      end
-      SetEntityOrphanMode(entity, 2)
-      FreezeEntityPosition(entity, true)
-      entities[key] = entity
     end
   end
   local setup = {
@@ -535,13 +574,17 @@ end
 function Impl:TakeTool(src, setupId, tool)
   local setup = self:GetOwned(src, setupId)
   if not setup or setup.busy or setup.toolState ~= 'empty'
-    or not cfg.toolScenes[tool] or not setup.entities[tool]
+    or not cfg.toolScenes[tool] or not cfg.toolProps[tool]
     or not setup.victim or not setup.seatReady
     or self.seated[setup.victim] ~= setup.id or not isAlive(setup.victim)
     or GetPlayerRoutingBucket(setup.victim) ~= setup.bucket
     or not near(setup.victim, setup.entities.chair, cfg.candidateDistance)
     or not near(src, setup.entities.trolley, cfg.actionDistance) then
     return self:Notify(src, 'invalid_state')
+  end
+  if not self:SpawnToolProps(setup, tool) then
+    self:Sync(setup)
+    return self:Notify(src, 'action_failed')
   end
   setup.failureNotified = false
   self.nextTool = self.nextTool + 1
@@ -654,7 +697,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print(('[vx_torture] scene handoff v15 loaded (server) artifact=%s enforcedBuild=%s')
+  print(('[vx_torture] scene handoff v16 loaded (server) artifact=%s enforcedBuild=%s')
     :format(GetConvar and GetConvar('version', 'unknown') or 'unknown',
       GetConvar and GetConvar('sv_enforceGameBuild', 'unknown') or 'unknown'))
   self:AddEventHandler('startNetworkSyncedSceneEvent', function(sender, data)

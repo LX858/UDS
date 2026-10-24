@@ -118,7 +118,7 @@ end
 
 function Impl:TraceScene(event, run, reason)
   if not cfg.sceneDiagnostics or not run then return end
-  print(('[vx_torture] scene_v15 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
+  print(('[vx_torture] scene_v16 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
     :format(event, run.setup.id, run.token, run.kind, run.step, run.generation,
       run.scene, GetGameTimer() - run.startedAt, reason or '-'))
 end
@@ -150,7 +150,7 @@ end
 
 function Impl:DumpSceneTrace(reason)
   if not cfg.sceneDiagnostics then return end
-  print('[vx_torture] scene_trace ' .. json.encode({ version = 15,
+  print('[vx_torture] scene_trace ' .. json.encode({ version = 16,
     gameBuild = GetGameBuildNumber(), role = self.seated and 'victim' or 'actor', reason = reason }))
   for _, sample in ipairs(self.sceneSamples or {}) do
     if GetGameTimer() - sample.time <= 5000 then
@@ -199,8 +199,9 @@ function Impl:AddActorTrack(scene, ped, dict, clip, looped, origin, heading)
   -- Stop/replace tasks explicitly at the stage boundary.
   local flags = SCENE_DONT_INTERRUPT | SCENE_HIDE_WEAPON | SCENE_ABORT_ON_DEATH
     | (looped and SCENE_LOOP_WITHIN_SCENE or 0)
+  local blend = (looped or GetAnimDuration(dict, clip) >= 1.0) and cfg.actorBlendSpeed or 8.0
   NetworkAddPedToSynchronisedScene(ped, scene, dict, clip,
-    8.0, -8.0, flags, 0, 1000.0, 0)
+    blend, -blend, flags, 0, 1000.0, 0)
   self.actorTrack = { scene = scene, dict = dict, clip = clip, looped = looped,
     origin = origin, heading = heading, startedAt = GetGameTimer() }
 end
@@ -367,32 +368,6 @@ function Impl:MySetup()
   end
 end
 
-local function toolTargetPosition(setup, tool)
-  local position = setup.positions and setup.positions[tool]
-  if not position then return nil end
-  local offset = cfg.props[tool].targetOffset
-  if not offset then return position end
-  local rotation = setup.rotations and setup.rotations[tool]
-  return worldOffset(position, rotation and rotation.z or setup.heading, offset)
-end
-
-local function nearestRestingTool(setup, hitCoords)
-  if not hitCoords then return nil end
-  -- Tools have no collision, so the raycast hits the trolley beneath them.
-  -- Compare XY only; a raised prop should still map to its table position.
-  local nearest, bestDistance = nil, cfg.toolTargetRadius ^ 2 + 0.000001
-  for _, tool in ipairs(cfg.toolOrder) do
-    local position = toolTargetPosition(setup, tool)
-    if tool ~= setup.tool and position and targetReady(setup.props[tool]) then
-      local distanceSq = (hitCoords.x - position.x) ^ 2 + (hitCoords.y - position.y) ^ 2
-      if distanceSq < bestDistance then
-        nearest, bestDistance = tool, distanceSq
-      end
-    end
-  end
-  return nearest
-end
-
 function Impl:ApplyPropCollision(setup)
   if #(GetEntityCoords(PlayerPedId()) - setup.coords) > 45.0 then return end
   for _, key in ipairs(cfg.propOrder) do
@@ -483,7 +458,7 @@ function Impl:AddTargets(setup)
         if not current.victim or not current.seatReady then return notify('invalid_state') end
         local options = {}
         for _, tool in ipairs(cfg.toolOrder) do
-          if current.props[tool] then
+          if cfg.toolScenes[tool] then
             local selectedTool = tool
             options[#options + 1] = {
               title = cfg.toolLabels[tool],
@@ -498,26 +473,6 @@ function Impl:AddTargets(setup)
       end,
     },
     }
-    for _, tool in ipairs(cfg.toolOrder) do
-      local selectedTool = tool
-      local name = targetName('take_' .. selectedTool)
-      names.trolley[#names.trolley + 1] = name
-      trolleyOptions[#trolleyOptions + 1] = {
-        name = name,
-        icon = 'fa-solid fa-hand',
-        label = L('take_tool', cfg.toolLabels[selectedTool]),
-        distance = cfg.interactDistance,
-        canInteract = function(_, _, hitCoords)
-          local current = self.setups[setup.id]
-          return current and current.owner == playerSource() and current.victim
-            and current.seatReady and current.toolState == 'empty' and not current.busy
-            and nearestRestingTool(current, hitCoords) == selectedTool
-        end,
-        onSelect = function()
-          self:EmitNet(self, 'takeTool', setup.id, selectedTool)
-        end,
-      }
-    end
     local trolley = NetworkGetEntityFromNetworkId(setup.props.trolley)
     local min, max = GetModelDimensions(GetEntityModel(trolley))
     local center = GetOffsetFromEntityInWorldCoords(trolley,
@@ -606,7 +561,7 @@ function Impl:EndToolSession(setup)
   end
   local returnToSeat = self.seated == setup.id and not self.activeAction
   self:StopStage(returnToSeat)
-  if setup.owner == playerSource() and session.tool then
+  if setup.owner == playerSource() and session.tool and not cfg.props[session.tool].onDemand then
     local generation = self.runGeneration
     CreateThread(function()
       local function current() return not self.toolSession and self.runGeneration == generation end
@@ -1855,25 +1810,31 @@ function Impl:StartPreview(token)
       local model = joaat(prop.model)
       if loadModel(model, 4000) then
         local min, max = GetModelDimensions(model)
-        local here = GetEntityCoords(ped)
-        local entity = CreateObjectNoOffset(model, here.x, here.y, here.z - 5.0,
-          false, false, false)
-        if entity ~= 0 and DoesEntityExist(entity) then
-          preview.objects[key] = entity
-          setDisplayRotation(entity, GetEntityHeading(ped), prop)
-          local verticalMin, verticalMax = verticalBounds(entity, min, max)
-          preview.bounds[key] = {
-            min = min, max = max, verticalMin = verticalMin, verticalMax = verticalMax,
-          }
-          SetEntityCollision(entity, false, false)
-          SetEntityAlpha(entity, cfg.previewAlpha, false)
-          FreezeEntityPosition(entity, true)
-        elseif prop.required then
-          SetModelAsNoLongerNeeded(model)
-          self:EndPreview(token, true)
-          return previewFailed(key .. ':create_object')
+        if prop.onDemand then
+          -- Keep authored placement transforms for later server spawning,
+          -- without creating hidden/display objects during preview.
+          preview.bounds[key] = { min = min, max = max, verticalMin = min.z, verticalMax = max.z }
         else
-          preview.bounds[key] = nil
+          local here = GetEntityCoords(ped)
+          local entity = CreateObjectNoOffset(model, here.x, here.y, here.z - 5.0,
+            false, false, false)
+          if entity ~= 0 and DoesEntityExist(entity) then
+            preview.objects[key] = entity
+            setDisplayRotation(entity, GetEntityHeading(ped), prop)
+            local verticalMin, verticalMax = verticalBounds(entity, min, max)
+            preview.bounds[key] = {
+              min = min, max = max, verticalMin = verticalMin, verticalMax = verticalMax,
+            }
+            SetEntityCollision(entity, false, false)
+            SetEntityAlpha(entity, cfg.previewAlpha, false)
+            FreezeEntityPosition(entity, true)
+          elseif prop.required then
+            SetModelAsNoLongerNeeded(model)
+            self:EndPreview(token, true)
+            return previewFailed(key .. ':create_object')
+          else
+            preview.bounds[key] = nil
+          end
         end
         SetModelAsNoLongerNeeded(model)
       elseif prop.required then
@@ -1951,7 +1912,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print(('[vx_torture] scene handoff v15 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
+  print(('[vx_torture] scene handoff v16 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('sceneHandoffReady', function(token, kind, step, previous, nextScene, success, reason)
     local pending = self.sceneHandoff
@@ -2379,25 +2340,6 @@ function Impl:OnReady()
       self:AddTargets(setup)
     end
   end)
-  if Config.Debug then
-    self:Interval('toolTargetDebug', 0, function()
-      local setup = self:MySetup()
-      if not setup or #(GetEntityCoords(PlayerPedId()) - setup.coords) > 6.0 then
-        Wait(250)
-        return
-      end
-      for _, tool in ipairs(cfg.toolOrder) do
-        if tool ~= setup.tool and targetReady(setup.props[tool]) then
-          local position = toolTargetPosition(setup, tool)
-          if position then
-            DrawMarker(28, position.x, position.y, position.z, 0.0, 0.0, 0.0,
-              0.0, 0.0, 0.0, 0.14, 0.14, 0.14, 255, 170, 0, 180,
-              false, false, 2, false, nil, nil, false)
-          end
-        end
-      end
-    end)
-  end
   self:Interval('effectsSync', 50, function()
     for token, run in pairs(self.activeEffects) do self:TickEffect(token, run) end
   end)

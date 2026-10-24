@@ -77,7 +77,6 @@ Config.Torture = {
   candidateDistance = 3.0,
   interactDistance = 2.0,
   actionDistance = 3.0,
-  toolTargetRadius = 0.45,
   trolleyTargetPadding = vector3(0.35, 0.35, 0.5),
   sceneHeadingCorrection = 0.0,
   sceneOffset = vector3(0.0, 0.0, 0.0),
@@ -97,9 +96,12 @@ Config.Torture = {
   toolIdleTimeoutMs = 10000,
   scenePeerTimeoutMs = 4000,
   sceneReplicationTimeoutMs = 2000,
-  sceneDiagnostics = true, -- temporary bounded trace for v15 multiplayer reproduction; disable after verification
+  sceneDiagnostics = true, -- temporary bounded trace for v16 multiplayer reproduction; disable after verification
   stageConfirmTimeoutMs = 4000,
   remoteTrackGraceMs = 500,
+  -- Lower speed blends into/out of long actor clips more gradually. Short
+  -- transition clips keep 8/-8 so blending does not consume their motion.
+  actorBlendSpeed = 4.0,
   toolExitTimeoutMs = 15000,
   toolReturnAnimMs = 1000,
   toolReturnOffset = vector3(0.0, -0.85, 0.0),
@@ -113,11 +115,11 @@ Config.Torture = {
   props = {
     chair = { model = 'prop_torture_ch_01', offset = vector3(0.0, 0.0, 0.0), ground = true, required = true },
     trolley = { model = 'p_cs_trolley_01_s', offset = vector3(1.4, 0.15, 0.0), restClip = 'weapon_select_bench_bench', ground = true, required = true },
-    wrench = { model = 'prop_cs_wrench', offset = vector3(1.17, 0.37, 0.01), restClip = 'weapon_select_bench_wrench', surface = 'trolley', targetOffset = vector3(0.0, 0.0, 0.0), required = true, tool = true },
-    pliers = { model = 'p_pliers_01_s', offset = vector3(1.47, 0.37, 0.01), restClip = 'weapon_select_bench_pliers', surface = 'trolley', targetOffset = vector3(0.0, 0.0, 0.0), required = true, tool = true },
-    electric = { model = 'p_ld_crocclips01_s', offset = vector3(1.17, 0.08, 0.01), restClip = 'weapon_select_bench_clip1', surface = 'trolley', targetOffset = vector3(0.0, 0.0, 0.0), required = true, tool = true },
-    waterboard = { model = 'w_am_jerrycan', offset = vector3(1.73, 0.05, 0.01), restClip = 'weapon_select_bench_can', surface = 'trolley', targetOffset = vector3(0.0, 0.0, 0.0), required = true, tool = true },
-    syringe = { model = 'prop_syringe_01', offset = vector3(1.47, 0.08, 0.01), restClip = 'weapon_select_bench_syringe', surface = 'trolley', targetOffset = vector3(0.0, 0.0, 0.0), required = true, tool = true },
+    wrench = { model = 'prop_cs_wrench', offset = vector3(1.17, 0.37, 0.01), restClip = 'weapon_select_bench_wrench', surface = 'trolley', required = true, tool = true },
+    pliers = { model = 'p_pliers_01_s', offset = vector3(1.47, 0.37, 0.01), restClip = 'weapon_select_bench_pliers', surface = 'trolley', required = true, tool = true },
+    electric = { model = 'p_ld_crocclips01_s', offset = vector3(1.17, 0.08, 0.01), restClip = 'weapon_select_bench_clip1', surface = 'trolley', required = true, tool = true },
+    waterboard = { model = 'w_am_jerrycan', offset = vector3(1.73, 0.05, 0.01), restClip = 'weapon_select_bench_can', surface = 'trolley', required = true, tool = true },
+    syringe = { model = 'prop_syringe_01', offset = vector3(1.47, 0.08, 0.01), restClip = 'weapon_select_bench_syringe', surface = 'trolley', required = true, tool = true },
     battery = { model = 'prop_torture_01', offset = vector3(1.95, 0.55, 0.0), restClip = 'weapon_select_bench_battery', surface = 'trolley' },
     clipRight = { model = 'p_ld_crocclips02_s', offset = vector3(1.27, 0.08, 0.01), restClip = 'weapon_select_bench_clip2', surface = 'trolley', required = true },
     rag = { model = 'p_loose_rag_01_s', offset = vector3(1.7, 0.37, 0.02), restClip = 'weapon_select_bench_rag', surface = 'trolley', required = true },
@@ -125,6 +127,11 @@ Config.Torture = {
     ecg = { model = 'prop_ecg_01', offset = vector3(-1.4, 0.55, 0.0), referencePosition = vector3(143.1, -2201.345, 4.502), referenceRotation = vector3(0.0, 0.0, 173.1), ground = true },
   },
   toolOrder = { 'wrench', 'pliers', 'electric', 'waterboard', 'syringe' },
+  toolProps = {
+    wrench = { 'wrench' }, pliers = { 'pliers' },
+    electric = { 'electric', 'clipRight', 'battery' },
+    waterboard = { 'waterboard', 'rag' }, syringe = { 'syringe' },
+  },
   toolLabels = {
     wrench = 'cờ lê', pliers = 'kìm', electric = 'kẹp điện',
     waterboard = 'can nước', syringe = 'ống tiêm',
@@ -256,6 +263,11 @@ Config.Torture = {
 }
 
 -- Wire reasons are a fixed vocabulary. Client diagnostics never authorize damage.
+-- These props exist only for the currently selected tool session.
+for _, keys in pairs(Config.Torture.toolProps) do
+  for _, key in ipairs(keys) do Config.Torture.props[key].onDemand = true end
+end
+
 Config.Torture.failureReasons = {}
 for reason in ([=[cancelled asset_dict asset_clip asset_prop asset_pending
   tool_validation idle_timeout exit_timeout actor_distance_health
