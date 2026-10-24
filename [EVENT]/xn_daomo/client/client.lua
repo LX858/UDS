@@ -92,18 +92,18 @@ local function applyZombiePoison()
                 local curHealth = GetEntityHealth(ped)
                 -- Trong GTA V ped chết khi máu <= 100
                 if curHealth <= 100 then
-                    SetEntityHealth(ped, 0)
+                    ApplyDamageToPed(ped, 999, false)
                     clearPoison()
                     break
                 else
                     local newHealth = curHealth - damagePerTick
                     ShakeGameplayCam('SMALL_EXPLOSION_SHAKE', 0.15)
                     if newHealth <= 100 then
-                        SetEntityHealth(ped, 0)
+                        ApplyDamageToPed(ped, 999, false)
                         clearPoison()
                         break
                     else
-                        SetEntityHealth(ped, newHealth)
+                        ApplyDamageToPed(ped, damagePerTick, false)
                     end
                 end
 

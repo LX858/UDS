@@ -370,10 +370,19 @@ end
 
 function Impl:ApplyPropCollision(setup)
   if #(GetEntityCoords(PlayerPedId()) - setup.coords) > 45.0 then return end
+  local resting = setup.toolState == 'empty'
+    and not (self.toolSession and self.toolSession.setupId == setup.id)
+    and not (self.activeAction and self.activeAction.setupId == setup.id)
   for _, key in ipairs(cfg.propOrder) do
-    if key ~= 'chair' and key ~= 'trolley' and targetReady(setup.props[key]) then
+    if targetReady(setup.props[key]) then
       local entity = NetworkGetEntityFromNetworkId(setup.props[key])
-      SetEntityCollision(entity, false, false)
+      if key ~= 'chair' and key ~= 'trolley' then SetEntityCollision(entity, false, false) end
+      -- Reapply on streaming/ownership changes. Furniture never joins a scene;
+      -- chair and tools are unlocked only by their owning scene controller.
+      if key == 'trolley' or key == 'stool' or key == 'ecg'
+        or (resting and NetworkHasControlOfEntity(entity)) then
+        FreezeEntityPosition(entity, true)
+      end
     end
   end
 end
@@ -505,10 +514,10 @@ function Impl:PutPropBack(setup, key, current)
   local position = setup.positions and setup.positions[key]
   if not entity or not position or not requestControl(entity, 1500) then return false end
   if current and not current() then return false end
+  FreezeEntityPosition(entity, true)
   DetachEntity(entity, true, true)
   SetEntityCoordsNoOffset(entity, position.x, position.y, position.z, false, false, false)
   setDisplayRotation(entity, setup.heading, cfg.props[key], setup.rotations and setup.rotations[key])
-  FreezeEntityPosition(entity, true)
   return true
 end
 
@@ -1819,6 +1828,7 @@ function Impl:StartPreview(token)
           local entity = CreateObjectNoOffset(model, here.x, here.y, here.z - 5.0,
             false, false, false)
           if entity ~= 0 and DoesEntityExist(entity) then
+            FreezeEntityPosition(entity, true)
             preview.objects[key] = entity
             setDisplayRotation(entity, GetEntityHeading(ped), prop)
             local verticalMin, verticalMax = verticalBounds(entity, min, max)
@@ -1827,7 +1837,6 @@ function Impl:StartPreview(token)
             }
             SetEntityCollision(entity, false, false)
             SetEntityAlpha(entity, cfg.previewAlpha, false)
-            FreezeEntityPosition(entity, true)
           elseif prop.required then
             SetModelAsNoLongerNeeded(model)
             self:EndPreview(token, true)

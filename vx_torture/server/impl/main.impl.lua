@@ -147,6 +147,7 @@ function Impl:CreateSetupProp(setup, key)
   if not prop or not pos then return nil end
   local entity = CreateObjectNoOffset(joaat(prop.model), pos.x, pos.y, pos.z, true, true, false)
   if entity == 0 or not DoesEntityExist(entity) then return nil end
+  FreezeEntityPosition(entity, true)
   SetEntityRoutingBucket(entity, setup.bucket)
   local rotation = setup.rotations and setup.rotations[key]
   if rotation then
@@ -158,7 +159,6 @@ function Impl:CreateSetupProp(setup, key)
     SetEntityHeading(entity, setup.heading)
   end
   SetEntityOrphanMode(entity, 2)
-  FreezeEntityPosition(entity, true)
   return entity
 end
 
