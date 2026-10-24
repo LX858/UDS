@@ -28,6 +28,7 @@ function SetEntityRemoteSyncedScenesAllowed(entity,allowed) sceneAccess[entity]=
 local realClipLengths=false
 local shortWaterTransitions=false
 local retainStoppedSceneState=false
+local reuseSceneSlots=false
 local autoAck = true
 local function noop() end
 function NewImpl()
@@ -193,9 +194,16 @@ function GetAnimInitialOffsetPosition(dict,clip,x,y,z,rx,ry,rz)
   return vector3(x+1.3*math.cos(r)+.4*math.sin(r), y+1.3*math.sin(r)-.4*math.cos(r),z+zOffset)
 end
 function NetworkCreateSynchronisedScene(x,y,z,rx,ry,rz,order,hold,looped)
-  nextScene = nextScene+1
-  scenes[nextScene] = { pos=vector3(x,y,z), heading=rz, hold=hold, looped=looped, tracks={} }
-  return nextScene
+  local id
+  if reuseSceneSlots then
+    id=1000000
+    while scenes[id] and not scenes[id].released do id=id+1 end
+    assert(id<1000064, 'scene reservation leaked engine slots')
+  else
+    nextScene=nextScene+1; id=nextScene
+  end
+  scenes[id] = { pos=vector3(x,y,z), heading=rz, hold=hold, looped=looped, tracks={} }
+  return id
 end
 function NetworkAddPedToSynchronisedScene(ped,scene,dict,clip,a,b,flags)
   assert(not scenes[scene].started, 'register actor before starting network scene')
@@ -220,6 +228,7 @@ function NetworkStartSynchronisedScene(scene)
 end
 function NetworkStopSynchronisedScene(scene)
   stops=stops+1
+  scenes[scene].released=true
   if not retainStoppedSceneState then scenes[scene].running=false end
   delayedStops[#delayedStops+1]={ped=scenes[scene].ped,scene=scene,retain=retainStoppedSceneState}
 end
@@ -312,6 +321,7 @@ function joaat(value) return value end
 function IsPedInAnyVehicle() return false end
 
 dofile(RESOURCE_ROOT .. '/config.lua')
+Config.Torture.sceneDiagnostics=false
 dofile(RESOURCE_ROOT .. '/client/impl/main.impl.lua')
 local client=TEST_IMPL
 client.isClient=true
@@ -831,6 +841,36 @@ positions[3]=vector3(100,0,0); client.intervals.effectsSync(); drain()
 assert(not client.activeEffects.observer and not next(particleHandles) and not next(soundHandles))
 positions[3]=vector3(0,0,0); DestroyCam(client.camera); client.camera=nil; currentPlayer=1
 print('PASS: all six particles, original impact phases/audio refs, cosmetic cleanup, shared banks, ECG, observer range and cancellation race')
+
+-- v13: the engine recycles free slots. Every successor must reserve its ID
+-- before retiring the old actor and props; monotonic IDs hid this in v12 tests.
+client:StopStage(); Wait(0); threads={}; reuseSceneSlots=true
+session('wrench')
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
+local predecessor=client.scene
+for _=1,8 do
+  assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true))
+  assert(client.scene~=predecessor, 'idle cannot reuse its immediate predecessor network ID')
+  predecessor=client.scene
+  client.activeAction={setupId=7,token='reuse-action',key='wrench_left',actor=true,stage=1}
+  assert(client:RunActorStage(setup,'reuse-action','wrench_left',1))
+  assert(client.scene~=predecessor, 'action cannot reuse its immediate predecessor network ID')
+  predecessor=client.scene; client.activeAction=nil
+end
+-- Cancel while a successor is reserved but before any ped/prop track is added.
+local cancelReserved
+waitHook=function()
+  cancelReserved=client.pendingActorScene
+  assert(cancelReserved and not scenes[cancelReserved].started)
+  client:StopStage(); client.activeAction=nil
+end
+client.activeAction={setupId=7,token='cancel-reserved',key='wrench_left',actor=true,stage=1}
+assert(not client:RunActorStage(setup,'cancel-reserved','wrench_left',1))
+assert(not client.pendingActorScene and not client.scene and scenes[cancelReserved].released)
+client:StopStage(); Wait(0)
+for id=1000000,1000063 do assert(not scenes[id] or scenes[id].released, 'unreleased reservation') end
+reuseSceneSlots=false; client.activeAction=nil
+print('PASS: recycled engine scene IDs remain distinct across handoffs; cancelled reservations release all slots')
 
 -- v12: independent receiver monitor, completion, bounded diagnostics, and
 -- cancellation during preparation. No actor task is assigned by this receiver.

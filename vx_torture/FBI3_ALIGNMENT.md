@@ -4,6 +4,18 @@ Nguồn chính là [`fbi3.c` đã decompile](https://github.com/YimMenu/GTA-V-De
 
 Tên clip trưng bày, hai kẹp điện và khăn dùng trong code đã được đối chiếu thêm với [`animDictsCompact.json`](https://github.com/DurtyFree/gta-v-data-dumps/blob/master/animDictsCompact.json). File dump xác nhận tên clip tồn tại; vị trí thực tế vẫn do game tính ở runtime.
 
+## Scene handoff v13 — cấp ID trước khi dừng cảnh cũ
+
+Log thực tế: actor 5856, network scene 374720 lặp lại ở các đòn; victim báo `remote_actor_timeout`, đôi khi `remote_scene_timeout`, trong khi prop vẫn chạy. Mã v12 dừng toàn bộ scene rồi mới tạo successor. Bộ test cũ chỉ cấp ID tăng dần, nên chưa kiểm tra việc engine tái sử dụng slot.
+
+V13 gọi `ReserveActorScene` sau khi chuẩn bị entity, **trước** `StopStage` của cảnh cũ. Lúc đó slot cũ còn được giữ, scene actor mới phải có ID khác. Chỉ sau khi dừng task cũ mới đăng ký actor/prop và start successor. Không chạy đồng thời hai task actor, không tăng timeout, không đổi flag/clip/scene root. Reservation chưa start được giải phóng khi hủy hoặc bị lượt chạy mới thay thế.
+
+Đây là sửa thứ tự cấp scene, **chưa phải bằng chứng đã chữa hết lỗi engine/replication**. [Cfx issue #2910](https://github.com/citizenfx/fivem/issues/2910) mô tả actor đúng local nhưng rơi/đứng im remote. [PR #3149](https://github.com/citizenfx/fivem/pull/3149) sửa collision giữa người chơi bằng server-ID và serialization 32-bit; không chứng minh nguyên nhân hiện tại là cùng lỗi đó. `374720 = (5856 - 1) * 64` khớp allocator đã remap, nên không thể chỉ từ log kết luận client đang thiếu bản vá cũ. Phiên bản artifact thực chạy vẫn cần lấy từ console server; timestamp/VersionInfo 1.0.0.0 của file exe không xác nhận version.
+
+Đã bật tạm `sceneDiagnostics = true` để lần thử tiếp theo có dữ liệu. Sau `restart vx_torture`, hai F8 và console phải hiện **scene handoff v13**. Log `scene_handoff` ghi `previous` và `next`; ID liên tiếp phải khác nhau (không yêu cầu tăng dần). Thử cờ lê trái/giữa/phải, rồi kìm. Nếu còn rơi hoặc đứng im, lấy `scene_v13`, `scene_trace`, `scene_sample` và `scene_handoff` của cùng token ở cả hai máy và console server; chạy `vx_torture_diag` ngay khi nhìn thấy lỗi. Tắt diagnostics sau khi thu xong.
+
+Harness bổ sung allocator tái sử dụng slot, lặp idle/action 8 lượt, kiểm tra ID successor khác predecessor, hủy reservation giữa lúc yield và giải phóng mọi slot. Kiểm tra này xác minh quy tắc cấp/thu hồi ID; không mô phỏng task clone của engine hay rendering trên hai máy.
+
 ## Scene lifecycle v12 — kiểm chứng multiplayer còn chờ
 
 Bản này sửa vòng đời scene và xác nhận hai phía. Không đổi flag actor, blend, clip, scene root hay thêm task/teleport để chữa triệu chứng rơi xuống đất. Chưa có kết quả chạy hai/ba FiveM client thật; harness chỉ kiểm tra logic và native giả lập.

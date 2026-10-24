@@ -118,7 +118,7 @@ end
 
 function Impl:TraceScene(event, run, reason)
   if not cfg.sceneDiagnostics or not run then return end
-  print(('[vx_torture] scene_v12 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
+  print(('[vx_torture] scene_v13 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
     :format(event, run.setup.id, run.token, run.kind, run.step, run.generation,
       run.scene, GetGameTimer() - run.startedAt, reason or '-'))
 end
@@ -150,7 +150,7 @@ end
 
 function Impl:DumpSceneTrace(reason)
   if not cfg.sceneDiagnostics then return end
-  print('[vx_torture] scene_trace ' .. json.encode({ version = 12,
+  print('[vx_torture] scene_trace ' .. json.encode({ version = 13,
     gameBuild = GetGameBuildNumber(), role = self.seated and 'victim' or 'actor', reason = reason }))
   for _, sample in ipairs(self.sceneSamples or {}) do
     if GetGameTimer() - sample.time <= 5000 then
@@ -731,6 +731,35 @@ function Impl:StopRetiredScenes()
   end
 end
 
+function Impl:ReserveActorScene(run, coords, heading, looped)
+  if not self:SceneCurrent(run) then return nil end
+  if self.pendingActorScene then
+    -- A server timeout can supersede a coroutine during its two-frame yield.
+    -- This reservation has never owned a ped/prop task and can be released now.
+    NetworkStopSynchronisedScene(self.pendingActorScene)
+    self.pendingActorScene = nil
+  end
+  -- Allocate while the predecessor still occupies its engine slot. Lua tokens
+  -- cannot distinguish old/new engine tasks if both use the same network ID.
+  -- This creates no ped task; stop the predecessor before adding any tracks.
+  local previous = self.scene
+  local scene = NetworkCreateSynchronisedScene(coords.x, coords.y, coords.z,
+    0.0, 0.0, heading, 2, not looped, looped, 1.0, 0.0, 1.0)
+  if not scene or scene == -1 then return nil end
+  if scene == previous then
+    print(('[vx_torture] scene_reservation_failed previous=%s next=%s token=%s')
+      :format(previous, scene, run.token))
+    return nil
+  end
+  self.pendingActorScene = scene
+  run.scene = scene
+  if cfg.sceneDiagnostics then
+    print(('[vx_torture] scene_handoff token=%s kind=%s step=%s previous=%s next=%s')
+      :format(run.token, run.kind, run.step, previous, scene))
+  end
+  return scene
+end
+
 function Impl:StopStage(keepVictimTask, transitioning)
   self:TraceScene('stop', transitioning and self.sceneRun and self.sceneRun.previous or self.sceneRun)
   if self.sceneRun then self.sceneRun.previous = nil end
@@ -747,6 +776,12 @@ function Impl:StopStage(keepVictimTask, transitioning)
   self.peerScene = nil
   if not keepVictimTask then self:StopVictimScene() end
   self.retiredScenes = self.retiredScenes or {}
+  if not transitioning and self.pendingActorScene then
+    -- An unstarted reservation has no tracks. It still needs releasing when
+    -- cancellation happens during the yielding stop/prop-preparation work.
+    NetworkStopSynchronisedScene(self.pendingActorScene)
+    self.pendingActorScene = nil
+  end
   for _, scene in ipairs(self.benchScenes or {}) do
     self.retiredScenes[#self.retiredScenes + 1] = scene
   end
@@ -1197,6 +1232,8 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
     if not selected or not requestControl(selected, 1000) then return fail('selected_tool_control') end
   end
   if not current() then return false end
+  local scene = self:ReserveActorScene(run, coords, heading, looped)
+  if not scene then return fail('scene_create') end
   if not self:StopStage(false, true) then return fail('previous_scene_stop') end
   if not current() then return false end
   if not stageData.chair and not self:StaticChair(setup, current) then return fail('static_chair') end
@@ -1204,12 +1241,7 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
     return fail('attach_tool')
   end
   if not current() then return false end
-  local scene = NetworkCreateSynchronisedScene(
-    coords.x, coords.y, coords.z, 0.0, 0.0, heading,
-    2, not looped, looped, 1.0, 0.0, 1.0
-  )
-  if not scene or scene == -1 then return fail('create_scene') end
-  run.scene = scene
+  self.pendingActorScene = nil
   self.scene = scene
   self.actorStageActive = true
   self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, looped, coords, heading)
@@ -1405,18 +1437,16 @@ function Impl:RunActorStage(setup, token, key, index)
   end
   if not controlledChair then return fail("entity_control") end
   if not current() then return fail("action_validation") end
+  local scene = self:ReserveActorScene(run, coords, heading, looped)
+  if not scene then return fail('scene_create') end
   if not self:StopStage(false, true) then return fail('cancelled') end
   if not current() then return fail("action_validation") end
   if not stageData.chair and not self:StaticChair(setup, current) then return fail("action_validation") end
   if stageData.attachTool and not self:HoldTool(setup, action.tool, current) then return fail("action_validation") end
   if not current() then return fail("action_validation") end
-  local scene = NetworkCreateSynchronisedScene(
-    coords.x, coords.y, coords.z, 0.0, 0.0, heading,
-    2, not looped, looped, 1.0, 0.0, 1.0
-  )
   if scene and scene ~= -1 then
+    self.pendingActorScene = nil
     self.actorStageActive = true
-    run.scene = scene
     self.scene = scene
     self:AddActorTrack(scene, ped, stageData.dict, stageData.actor, looped, coords, heading)
     if stageData.chair then
@@ -1868,7 +1898,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print(('[vx_torture] scene lifecycle v12 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
+  print(('[vx_torture] scene handoff v13 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
   self:OnNet('scenePeersReady', function(token, kind, step, scene)
     local run = self.sceneRun

@@ -50,7 +50,7 @@ end
 function Impl:SceneLog(event, setup, peer, reason)
   if not cfg.sceneDiagnostics and not reason then return end
   peer = peer or setup.peerScene or {}
-  print(('[vx_torture] scene_v12 event=%s setup=%s owner=%s victim=%s token=%s kind=%s step=%s scene=%s reason=%s')
+  print(('[vx_torture] scene_v13 event=%s setup=%s owner=%s victim=%s token=%s kind=%s step=%s scene=%s reason=%s')
     :format(event, setup.id, setup.owner, setup.victim, peer.token or setup.toolToken,
       peer.kind, peer.step, peer.netScene, reason or '-'))
 end
@@ -652,7 +652,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print(('[vx_torture] scene lifecycle v12 loaded (server) artifact=%s enforcedBuild=%s')
+  print(('[vx_torture] scene handoff v13 loaded (server) artifact=%s enforcedBuild=%s')
     :format(GetConvar and GetConvar('version', 'unknown') or 'unknown',
       GetConvar and GetConvar('sv_enforceGameBuild', 'unknown') or 'unknown'))
   self:AddEventHandler('startNetworkSyncedSceneEvent', function(sender, data)
