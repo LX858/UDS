@@ -38,6 +38,8 @@ function NewImpl()
     local args={...}; events[#events+1] = { name = name, args = args }
     if self.isClient and autoAck and name=='bindVictimScene' then
       self.handlers.victimSceneReady(args[2],args[3],args[4],args[5],true)
+    elseif self.isClient and autoAck and name=='requestSceneHandoff' then
+      self.handlers.sceneHandoffReady(args[2],args[3],args[4],args[5],args[6],true)
     end
   end
   function impl:Interval(name, ms, fn) self.intervals[name] = fn end
@@ -886,6 +888,36 @@ for id=1000000,1000063 do assert(not scenes[id] or scenes[id].released, 'unrelea
 reuseSceneSlots=false; client.activeAction=nil
 print('PASS: recycled engine scene IDs remain distinct across handoffs; cancelled reservations release all slots')
 
+-- v15: a successor must not start just because two local frames elapsed.
+session('wrench')
+assert(client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.select,false))
+autoAck=false
+local createdBefore=nextScene
+local ok,reason=client:RunActorToolScene(setup,'token',Config.Torture.toolScenes.wrench.idle,true)
+assert(not ok and reason=='handoff_timeout')
+for id=createdBefore+1,nextScene do
+  assert(not scenes[id].started and scenes[id].released, 'unacknowledged successor cannot start/leak')
+end
+assert(not client.scene and not client.pendingActorScene and not client.sceneHandoff)
+autoAck=true; threads={}; Wait(0)
+local testRun=client:BeginSceneRun(setup,'handoff','idle',7,Config.Torture.toolScenes.wrench.idle)
+testRun.scene=555; testRun.retiringActor={scene=554,dict='old',clip='old'}
+autoAck=false
+waitHook=function()
+  client.handlers.sceneHandoffReady('stale','idle',7,554,555,true)
+  assert(client.sceneHandoff.ready==nil)
+  client.handlers.sceneHandoffReady('handoff','idle',6,554,555,true)
+  assert(client.sceneHandoff.ready==nil)
+  client.handlers.sceneHandoffReady('handoff','idle',7,554,555,true)
+end
+assert(client:WaitForSceneHandoff(testRun))
+waitHook=function() client:StopStage() end
+assert(not client:WaitForSceneHandoff(testRun))
+client.handlers.sceneHandoffReady('handoff','idle',7,554,555,true)
+assert(not client.sceneRun and not client.sceneHandoff)
+autoAck=true; client.toolSession=nil
+print('PASS: handoff timeout prevents start, reservation cleanup, stale acknowledgements and cancellation')
+
 -- v12: independent receiver monitor, completion, bounded diagnostics, and
 -- cancellation during preparation. No actor task is assigned by this receiver.
 client:StopStage(); Wait(0); threads={}; currentPlayer=2
@@ -909,6 +941,31 @@ local function observed(data,kind,step)
 end
 setup.tool='wrench'
 local finite=Config.Torture.actions.wrench_left.stages[1]
+watcher.toolSession={setupId=7,token='handoff-watch',phase='startingIdle',idleEpoch=1}
+pedTasks[1]={dict=finite.dict,clip=finite.actor,advanced=true}
+local observeAt=now
+local beforeClears=clears
+watcher.handlers.awaitSceneHandoff(setup,'handoff-watch','idle',1,100,101,
+  {dict=finite.dict,clip=finite.actor})
+local queued=#threads
+watcher.handlers.awaitSceneHandoff(setup,'handoff-watch','idle',1,100,101,
+  {dict=finite.dict,clip=finite.actor})
+assert(#threads==queued)
+local function delayedRetirement()
+  if now-observeAt>=240 then pedTasks[1]=nil else waitHook=delayedRetirement end
+end
+waitHook=delayedRetirement
+drain()
+assert(now-observeAt>=340 and events[#events].name=='sceneHandoffObserved'
+  and events[#events].args[7]==true and clears==beforeClears,
+  'observer must wait for replicated task retirement without clearing the remote ped')
+watcher.remoteHandoff=nil; watcher.toolSession.idleEpoch=2
+pedTasks[1]={dict=finite.dict,clip=finite.actor,advanced=true}
+watcher.handlers.awaitSceneHandoff(setup,'handoff-watch','idle',2,101,102,
+  {dict=finite.dict,clip=finite.actor}); drain()
+assert(events[#events].args[7]==false and events[#events].args[8]=='handoff_timeout')
+watcher.remoteHandoff=nil; watcher.toolSession=nil; pedTasks[1]=nil
+print('PASS: remote retirement observation, duplicate request and stuck previous track timeout')
 local run,observedScene=observed(finite,'action',1)
 local completeBefore=eventCount('sceneComplete')
 Wait(980); remoteActorMissing=true
@@ -1152,6 +1209,32 @@ pending=client.peerScene
 client:StopStage()
 assert(pending.reason=='victim_track_failed', 'cleanup must preserve the actual rejection')
 print('PASS: peer rejection reasons, large/reused scene IDs, stale ack rejection and cleanup diagnostics')
+
+setup.sceneHandoff=nil
+send(1,'requestSceneHandoff',7,'peer-test','select',0,374720,374725)
+local handoff=setup.sceneHandoff
+assert(handoff and events[#events].name=='awaitSceneHandoff')
+local handoffEvents=eventCount('awaitSceneHandoff')
+send(1,'requestSceneHandoff',7,'peer-test','select',0,374720,374725)
+assert(eventCount('awaitSceneHandoff')==handoffEvents)
+send(3,'sceneHandoffObserved',7,'peer-test','select',0,374720,374725,true)
+send(1,'sceneHandoffObserved',7,'peer-test','select',0,374720,374725,true)
+send(2,'sceneHandoffObserved',7,'old','select',0,374720,374725,true)
+send(2,'sceneHandoffObserved',7,'peer-test','select',0,374720,374726,true)
+assert(not handoff.reported)
+local handoffDamage=damageCount()
+send(2,'sceneHandoffObserved',7,'peer-test','select',0,374720,374725,true)
+assert(handoff.ready and events[#events].name=='sceneHandoffReady' and damageCount()==handoffDamage)
+local ackEvents=eventCount('sceneHandoffReady')
+send(2,'sceneHandoffObserved',7,'peer-test','select',0,374720,374725,true)
+assert(eventCount('sceneHandoffReady')==ackEvents)
+setup.sceneHandoff=nil
+send(1,'requestSceneHandoff',7,'peer-test','select',0,374720,374725)
+Wait(Config.Torture.scenePeerTimeoutMs+1)
+send(2,'sceneHandoffObserved',7,'peer-test','select',0,374720,374725,true)
+assert(not setup.sceneHandoff.reported)
+setup.sceneHandoff=nil
+print('PASS: server handoff role, identity, deduplication, expiry and no damage on retirement ack')
 
 -- v12 completion protocol: stale reports, wrong roles/handles, timeout and
 -- notification deduplication must not apply damage or disturb a new idle.

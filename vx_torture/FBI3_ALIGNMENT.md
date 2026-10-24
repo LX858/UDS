@@ -4,6 +4,24 @@ Nguồn chính là [`fbi3.c` đã decompile](https://github.com/YimMenu/GTA-V-De
 
 Tên clip trưng bày, hai kẹp điện và khăn dùng trong code đã được đối chiếu thêm với [`animDictsCompact.json`](https://github.com/DurtyFree/gta-v-data-dumps/blob/master/animDictsCompact.json). File dump xác nhận tên clip tồn tại; vị trí thực tế vẫn do game tính ở runtime.
 
+## Scene handoff v15 — xác nhận kết thúc task cũ trước khi gắn task mới
+
+Hai log v14 gửi ngày 24/10/2026 có 53 lần actor bắt đầu cảnh, 46 lần nhận readiness thành công và 7 lần hủy khi đang vào cảnh mới. Sáu lỗi là `remote_actor_timeout`/`remote_scene_timeout`; lỗi còn lại là `waterboard_ready_to_loop_player` hết phase trước ACK (`scene_ended_before_ack`, khoảng 624 ms). Các clip kìm/cờ lê/can nước có cả lượt thành công và lượt thất bại. Đây là bằng chứng lỗi không cố định theo tên clip. Chưa đủ bằng chứng kết luận lỗi engine, packet, hoặc resource khác thay task.
+
+`prepareTool` và `prepareAction` đã tải/kiểm tra clip ở hai phía từ trước. V15 không thêm một cơ chế preload trùng. Chỗ thay đổi là giữa stop cũ và start mới: v14 chỉ nhường hai frame local, không quan sát trạng thái ped ở máy nạn nhân.
+
+- Giữ reservation và bảo vệ ID của v13/v14. Sau khi stop, nếu actor local còn clip giữ cuối, `ClearPedTasks` dọn task **của chính actor một lần tại ranh giới**. Không có task bổ sung hoặc thao tác chỉnh vị trí trên ped remote.
+- `requestSceneHandoff` gửi setup/token/kind/step/ID cũ/ID mới. Server kiểm tra chủ ghế, phiên, người còn sống, bucket, khoảng cách và ID của scene đã bind gần nhất; dict/clip cũ lấy từ config mà server đã lưu, không lấy tên clip tùy ý từ actor.
+- `awaitSceneHandoff` chỉ quan sát actor phía nạn nhân. Clip cũ phải vắng liên tục ít nhất 100 ms; nếu còn clip thì đặt lại mốc. Dùng hạn hiện hữu `sceneReplicationTimeoutMs`/`scenePeerTimeoutMs`; không tăng các timeout. Xác nhận thiếu/sai/hết hạn không được mở cảnh kế tiếp. Đây là xác nhận quan sát task, **không phải ACK native hoặc bằng chứng mọi observer đã đồng bộ**.
+- Cảnh mới chỉ được gắn ped/prop sau `handoff_ready`; readiness và xác nhận hoàn tất cũ vẫn bắt buộc. Camera cũ giữ đến khi camera mới sẵn sàng. Có thể xuất hiện khoảng chuyển tư thế ngắn trong lúc đợi quan sát; phải kiểm tra hình ảnh trên máy thật.
+- Giữ nguyên nguyên nhân ở nhánh thất bại action thay vì đổi thành `peer_ready`. Riêng đoạn can nước ngắn vẫn có thể bị từ chối nếu scene đến quá muộn; v15 chưa chứng minh đã giải quyết giới hạn latency đó và không bỏ kiểm tra để tính sát thương cho cảnh không được thấy đầy đủ.
+
+Đã kiểm tra bằng `uv run --with lupa python tests/run_scene_flow.py`: các luồng 5 dụng cụ/21 stage, thiếu ACK không start successor, hủy khi đang chờ, ID/epoch/token cũ, observation chậm, clip cũ không kết thúc, không clear remote ped, quyền người gửi, hạn ACK và không tính sát thương từ ACK bàn giao. `git diff --check` kiểm tra whitespace. Harness không mô phỏng replication/rendering GTA; chưa nghiệm thu multiplayer.
+
+Sau `restart vx_torture`, cả hai F8 và server phải có **scene handoff v15**. Đặt ghế mới, thử cờ lê lấy → chờ → trái/giữa/phải → chờ, kìm nhiều lượt và can nước. Nếu lỗi, lấy log cả hai phía gồm `handoff_wait`, `handoff_observed`, `handoff_ready`, `start`, `ready` và `scene_trace/scene_sample` cùng token. Nếu đã `handoff_ready` nhưng remote vẫn mất task, kiểm tra đường engine/replication tiếp; không coi bước này là đã xác định nguyên nhân rơi dưới đất.
+
+Tham chiếu: [`NetworkStopSynchronisedScene`](https://github.com/citizenfx/natives/blob/master/NETWORK/NetworkStopSynchronisedScene.md) không trả ACK. [Issue FiveM #2910](https://github.com/citizenfx/fivem/issues/2910) từng mô tả triệu chứng tương tự, nhưng đã được đóng bằng bản sửa ID; triệu chứng giống nhau không chứng minh máy hiện tại mắc cùng lỗi.
+
 ## Scene handoff v14 — bảo vệ successor khỏi danh sách dọn scene cũ
 
 Hai log v13 của cùng token `1:tool:1` cho thấy cảnh lấy cờ lê `374720` chạy và được cả hai phía xác nhận hoàn tất (actor 7214 ms, victim 7261 ms, thời gian tính riêng từ lúc bắt đầu trên mỗi máy). Khi chuyển sang idle, actor cấp `374722` nhưng local handle luôn `-1`, sau 2524 ms báo `actor_start`. Vì actor chưa bind idle, phía victim chỉ nhận lý do hủy và không có idle track để xác nhận. Đây là lỗi khởi tạo local ở lần thử này, chưa phải bằng chứng của lỗi actor rơi remote trong đòn đánh trước đó.

@@ -118,7 +118,7 @@ end
 
 function Impl:TraceScene(event, run, reason)
   if not cfg.sceneDiagnostics or not run then return end
-  print(('[vx_torture] scene_v14 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
+  print(('[vx_torture] scene_v15 event=%s setup=%s token=%s kind=%s step=%s generation=%s scene=%s elapsed=%s reason=%s')
     :format(event, run.setup.id, run.token, run.kind, run.step, run.generation,
       run.scene, GetGameTimer() - run.startedAt, reason or '-'))
 end
@@ -150,7 +150,7 @@ end
 
 function Impl:DumpSceneTrace(reason)
   if not cfg.sceneDiagnostics then return end
-  print('[vx_torture] scene_trace ' .. json.encode({ version = 14,
+  print('[vx_torture] scene_trace ' .. json.encode({ version = 15,
     gameBuild = GetGameBuildNumber(), role = self.seated and 'victim' or 'actor', reason = reason }))
   for _, sample in ipairs(self.sceneSamples or {}) do
     if GetGameTimer() - sample.time <= 5000 then
@@ -757,6 +757,7 @@ function Impl:ReserveActorScene(run, coords, heading, looped)
   -- cannot distinguish old/new engine tasks if both use the same network ID.
   -- This creates no ped task; stop the predecessor before adding any tracks.
   local previous = self.scene
+  run.retiringActor = self.actorTrack
   local scene = NetworkCreateSynchronisedScene(coords.x, coords.y, coords.z,
     0.0, 0.0, heading, 2, not looped, looped, 1.0, 0.0, 1.0)
   if not scene or scene == -1 then return nil end
@@ -774,12 +775,44 @@ function Impl:ReserveActorScene(run, coords, heading, looped)
   return scene
 end
 
+-- A local frame yield does not flush the remote ped task tree. Before assigning
+-- the successor, observe the old actor clip gone locally AND on the victim.
+-- This is a bounded observation barrier, not a native stop acknowledgement.
+function Impl:WaitForSceneHandoff(run)
+  if not self:SceneCurrent(run) then return false, 'cancelled' end
+  local old = run.retiringActor
+  if not old then return self:SceneCurrent(run) end
+  local pending = { run = run, previous = old.scene, nextScene = run.scene }
+  self.sceneHandoff = pending
+  -- A finite scene may retain its held ped task after NetworkStop. Retire
+  -- that owned task once at this boundary; never clear/re-task the remote ped.
+  if nativeTrue(IsEntityPlayingAnim(PlayerPedId(), old.dict, old.clip, 3)) then
+    ClearPedTasks(PlayerPedId())
+  end
+  local expires = GetGameTimer() + cfg.scenePeerTimeoutMs
+  self:TraceScene('handoff_wait', run)
+  self:EmitNet(self, 'requestSceneHandoff', run.setup.id, run.token, run.kind,
+    run.step, old.scene, run.scene)
+  while self:SceneCurrent(run) and self.sceneHandoff == pending and GetGameTimer() < expires do
+    if pending.ready == false then break end
+    local playing = nativeTrue(IsEntityPlayingAnim(PlayerPedId(), old.dict, old.clip, 3))
+    if pending.ready == true and not playing then
+      self.sceneHandoff = nil
+      self:TraceScene('handoff_ready', run)
+      return true
+    end
+    Wait(0)
+  end
+  if self.sceneHandoff == pending then self.sceneHandoff = nil end
+  return false, pending.reason or 'handoff_timeout'
+end
+
 function Impl:StopStage(keepVictimTask, transitioning)
   local stoppedRun = self.sceneRun
   if transitioning then stoppedRun = stoppedRun and stoppedRun.previous end
   self:TraceScene('stop', stoppedRun)
   if self.sceneRun then self.sceneRun.previous = nil end
-  if not transitioning then self.sceneRun = nil end
+  if not transitioning then self.sceneRun = nil; self.sceneHandoff = nil; self.remoteHandoff = nil end
   self.stageGeneration = (self.stageGeneration or 0) + 1
   local generation = self.stageGeneration
   for _, track in ipairs(self.handPropTracks or {}) do
@@ -817,9 +850,8 @@ function Impl:StopStage(keepVictimTask, transitioning)
   self:StopRetiredScenes(transitioning and self.pendingActorScene or nil)
   if transitioning then
     if self.sceneStopPending then
-      -- Drain the queued stop before assigning successor tasks. Do not clear
-      -- the ped here: the successor network task replaces its previous pose.
-      -- WaitForActorTrack validates the NEW scene before camera/menu readiness.
+      -- Drain the local stop queue first. WaitForSceneHandoff then observes
+      -- retirement on both participants before any successor task is assigned.
       for _ = 1, 2 do
         Wait(0)
         if self.stageGeneration ~= generation then return false end
@@ -957,6 +989,7 @@ function Impl:WaitForVictimScene(setup, token, kind, step, scene, localScene)
     Wait(0)
   end
   if self.peerScene ~= pending or self.scene ~= scene or pending.ready ~= true then
+    pending.reason = pending.reason or 'ack_timeout'
     print(('[vx_torture] peer_failed reason=%s token=%s kind=%s step=%s scene=%s ready=%s')
       :format(pending.reason or 'ack_timeout', token, kind, step, scene, pending.ready))
     return false
@@ -1252,6 +1285,8 @@ function Impl:RunActorToolScene(setup, token, stageData, looped)
   if not scene then return fail('scene_create') end
   if not self:StopStage(false, true) then return fail('previous_scene_stop') end
   if not current() then return false end
+  local handed, handoffReason = self:WaitForSceneHandoff(run)
+  if not handed then return fail(handoffReason or 'cancelled') end
   if not stageData.chair and not self:StaticChair(setup, current) then return fail('static_chair') end
   if attachSelected and not self:HoldTool(setup, session.tool, current) then
     return fail('attach_tool')
@@ -1457,6 +1492,8 @@ function Impl:RunActorStage(setup, token, key, index)
   if not scene then return fail('scene_create') end
   if not self:StopStage(false, true) then return fail('cancelled') end
   if not current() then return fail("action_validation") end
+  local handed, handoffReason = self:WaitForSceneHandoff(run)
+  if not handed then return fail(handoffReason or 'cancelled') end
   if not stageData.chair and not self:StaticChair(setup, current) then return fail("action_validation") end
   if stageData.attachTool and not self:HoldTool(setup, action.tool, current) then return fail("action_validation") end
   if not current() then return fail("action_validation") end
@@ -1509,7 +1546,7 @@ function Impl:RunActorStage(setup, token, key, index)
         return fail("camera_start")
       end
       if not self:WaitForVictimScene(setup, token, 'action', index, scene, localScene) then
-        return fail("peer_ready")
+        return fail(self.peerScene and self.peerScene.reason or 'peer_ready')
       end
       -- durationMs is an effect/gameplay estimate, not the loaded clip length.
       -- Advance by the real scene phase, with the same hard deadline as server.
@@ -1914,8 +1951,67 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print(('[vx_torture] scene handoff v14 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
+  print(('[vx_torture] scene handoff v15 loaded (client) gameBuild=%s'):format(GetGameBuildNumber()))
   RegisterCommand('vx_torture_diag', function() self:PrintSceneDiagnostics() end, false)
+  self:OnNet('sceneHandoffReady', function(token, kind, step, previous, nextScene, success, reason)
+    local pending = self.sceneHandoff
+    local run = pending and pending.run
+    if run and self:SceneCurrent(run) and run.token == token and run.kind == kind
+      and run.step == step and pending.previous == previous and pending.nextScene == nextScene then
+      pending.ready = success == true
+      pending.reason = reason
+    end
+  end)
+  self:OnNet('awaitSceneHandoff', function(setup, token, kind, step, previous, nextScene, old)
+    if self.seated ~= setup.id or setup.victim ~= playerSource() then return end
+    local session, action = self.toolSession, self.activeAction
+    if kind == 'action' then
+      if not action or action.token ~= token or action.stage > step then return end
+    else
+      if not session or session.token ~= token then return end
+      if kind == 'idle' and session.idleEpoch and session.idleEpoch > step then return end
+      if kind == 'select' and session.phase ~= 'prepare' and session.phase ~= 'select' then return end
+    end
+    local prior = self.remoteHandoff
+    if prior and prior.token == token and prior.kind == kind and prior.step == step then return end
+    local pending = { token = token, kind = kind, step = step }
+    self.remoteHandoff = pending
+    CreateThread(function()
+      local expires = GetGameTimer() + cfg.sceneReplicationTimeoutMs
+      local absentAt, phaseSeen, success, reason
+      reason = 'handoff_timeout'
+      while self.remoteHandoff == pending and self.seated == setup.id and GetGameTimer() < expires do
+        local session, action = self.toolSession, self.activeAction
+        local current = kind == 'action' and action and action.token == token and action.stage == step
+          or kind == 'idle' and session and session.token == token and session.idleEpoch == step
+            and session.phase == 'startingIdle' and not action
+          or kind == 'select' and session and session.token == token and session.phase == 'select'
+        if phaseSeen and not current then return end
+        if current then
+          phaseSeen = true
+          local player = GetPlayerFromServerId(setup.owner)
+          local actor = player ~= -1 and GetPlayerPed(player) or 0
+          if actor == 0 or not DoesEntityExist(actor) or nativeTrue(IsEntityDead(actor)) then
+            reason = 'entity_missing'; break
+          end
+          if nativeTrue(IsEntityPlayingAnim(actor, old.dict, old.clip, 3)) then
+            absentAt = nil
+          else
+            absentAt = absentAt or GetGameTimer()
+            if GetGameTimer() - absentAt >= 100 then success = true; break end
+          end
+        end
+        Wait(0)
+      end
+      if self.remoteHandoff ~= pending or self.seated ~= setup.id then return end
+      if cfg.sceneDiagnostics then
+        print(('[vx_torture] handoff_observed token=%s kind=%s step=%s previous=%s next=%s success=%s reason=%s')
+          :format(token, kind, step, previous, nextScene, success == true, success and '-' or reason))
+      end
+      self:EmitNet(self, 'sceneHandoffObserved', setup.id, token, kind, step,
+        previous, nextScene, success == true, not success and reason or nil)
+    end)
+  end)
   self:OnNet('scenePeersReady', function(token, kind, step, scene)
     local run = self.sceneRun
     if run and run.token == token and run.kind == kind and run.step == step and run.scene == scene then

@@ -50,7 +50,7 @@ end
 function Impl:SceneLog(event, setup, peer, reason)
   if not cfg.sceneDiagnostics and not reason then return end
   peer = peer or setup.peerScene or {}
-  print(('[vx_torture] scene_v14 event=%s setup=%s owner=%s victim=%s token=%s kind=%s step=%s scene=%s reason=%s')
+  print(('[vx_torture] scene_v15 event=%s setup=%s owner=%s victim=%s token=%s kind=%s step=%s scene=%s reason=%s')
     :format(event, setup.id, setup.owner, setup.victim, peer.token or setup.toolToken,
       peer.kind, peer.step, peer.netScene, reason or '-'))
 end
@@ -252,6 +252,8 @@ function Impl:StopTool(setup, failed, reason)
   setup.toolPhaseAt = nil
   setup.toolReadyPeers = nil
   setup.peerScene = nil
+  setup.sceneHandoff = nil
+  setup.lastActorScene = nil
   self:Sync(setup)
   if failed then self:NotifySceneFailure(setup) end
 end
@@ -652,7 +654,7 @@ function Impl:Init()
 end
 
 function Impl:OnReady()
-  print(('[vx_torture] scene handoff v14 loaded (server) artifact=%s enforcedBuild=%s')
+  print(('[vx_torture] scene handoff v15 loaded (server) artifact=%s enforcedBuild=%s')
     :format(GetConvar and GetConvar('version', 'unknown') or 'unknown',
       GetConvar and GetConvar('sv_enforceGameBuild', 'unknown') or 'unknown'))
   self:AddEventHandler('startNetworkSyncedSceneEvent', function(sender, data)
@@ -691,7 +693,7 @@ function Impl:OnReady()
       local busy = setup.busy
       if busy and busy.token == token and busy.stage == step then
         local stage = cfg.actions[busy.key].stages[step]
-        return stage, stage.loopMs ~= nil or stage.victimLoop == true
+        if stage then return stage, stage.loopMs ~= nil or stage.victimLoop == true end
       end
     elseif setup.toolToken == token and setup.tool and cfg.toolScenes[setup.tool] then
       if kind == 'select' and step == 0 and setup.toolState == 'selecting'
@@ -703,6 +705,48 @@ function Impl:OnReady()
       end
     end
   end
+  local function handoffValid(setup)
+    return setup and setup.victim and setup.seatReady and self.seated[setup.victim] == setup.id
+      and isAlive(setup.owner) and isAlive(setup.victim)
+      and GetPlayerRoutingBucket(setup.owner) == setup.bucket
+      and GetPlayerRoutingBucket(setup.victim) == setup.bucket
+      and near(setup.owner, setup.entities.chair, cfg.actionDistance + 1.0)
+      and near(setup.victim, setup.entities.chair, cfg.candidateDistance)
+  end
+  self:OnNet('requestSceneHandoff', function(setupId, token, kind, step, previous, nextScene)
+    local setup = self:GetOwned(source, setupId)
+    if not handoffValid(setup) or not sceneStage(setup, token, kind, step) then return end
+    if not finite(nextScene) or nextScene < 0 or nextScene % 1 ~= 0 or nextScene > 2147483647
+      or previous == nextScene then return end
+    local old = setup.lastActorScene
+    if not old or old.netScene ~= previous then
+      self:EmitNet(self, 'sceneHandoffReady', setup.owner, token, kind, step,
+        previous, nextScene, false, 'handoff_mismatch')
+      return
+    end
+    local prior = setup.sceneHandoff
+    if prior and prior.token == token and prior.kind == kind and prior.step == step then return end
+    local pending = { token = token, kind = kind, step = step, previous = previous,
+      nextScene = nextScene, expires = GetGameTimer() + cfg.scenePeerTimeoutMs }
+    setup.sceneHandoff = pending
+    self:EmitNet(self, 'awaitSceneHandoff', setup.victim, self:Snapshot(setup), token,
+      kind, step, previous, nextScene, { dict = old.dict, clip = old.clip })
+  end)
+  self:OnNet('sceneHandoffObserved', function(setupId, token, kind, step, previous, nextScene, success, reason)
+    local setup
+    for _, candidate in pairs(self.setups) do
+      if candidate.id == setupId and candidate.victim == source then setup = candidate; break end
+    end
+    local pending = setup and setup.sceneHandoff
+    if not pending or pending.reported or pending.token ~= token or pending.kind ~= kind
+      or pending.step ~= step or pending.previous ~= previous or pending.nextScene ~= nextScene
+      or GetGameTimer() > pending.expires or not sceneStage(setup, token, kind, step)
+      or not handoffValid(setup) then return end
+    pending.reported = true
+    pending.ready = success == true
+    self:EmitNet(self, 'sceneHandoffReady', setup.owner, token, kind, step, previous,
+      nextScene, pending.ready, not pending.ready and failureReason(reason, 'handoff_timeout') or nil)
+  end)
   self:OnNet('bindVictimScene', function(setupId, token, kind, step, netScene, victimClock)
     local setup = self:GetOwned(source, setupId)
     if not setup or not setup.victim or not finite(netScene) or netScene < 0
@@ -714,6 +758,9 @@ function Impl:OnReady()
     end
     local scene, looped = sceneStage(setup, token, kind, step)
     if not scene then return reject('server_stage_mismatch') end
+    local handoff = setup.sceneHandoff
+    if handoff and handoff.token == token and handoff.kind == kind and handoff.step == step
+      and (not handoff.ready or handoff.nextScene ~= netScene) then return reject('handoff_mismatch') end
     if victimClock ~= nil and ((kind ~= 'select' and kind ~= 'action') or not scene.victimLoop
       or not finite(victimClock) or victimClock < 0 or victimClock % 1 ~= 0
       or victimClock > 2147483647 or victimClock == netScene) then
@@ -728,6 +775,7 @@ function Impl:OnReady()
     if previous and previous.token == token and previous.kind == kind and previous.step == step then return end
     setup.peerScene = { token = token, kind = kind, step = step, netScene = netScene,
       victimClock = victimClock, ready = false }
+    setup.lastActorScene = { netScene = netScene, dict = scene.dict, clip = scene.actor }
     self:SceneLog("bind", setup, setup.peerScene)
     self:EmitNet(self, 'joinVictimScene', setup.victim, self:Snapshot(setup), token, kind, step, netScene, scene, looped, victimClock)
   end)

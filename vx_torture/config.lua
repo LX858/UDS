@@ -97,7 +97,7 @@ Config.Torture = {
   toolIdleTimeoutMs = 10000,
   scenePeerTimeoutMs = 4000,
   sceneReplicationTimeoutMs = 2000,
-  sceneDiagnostics = true, -- temporary bounded trace for v14 multiplayer reproduction; disable after verification
+  sceneDiagnostics = true, -- temporary bounded trace for v15 multiplayer reproduction; disable after verification
   stageConfirmTimeoutMs = 4000,
   remoteTrackGraceMs = 500,
   toolExitTimeoutMs = 15000,
@@ -268,7 +268,7 @@ for reason in ([=[cancelled asset_dict asset_clip asset_prop asset_pending
   victim_state_changed victim_scene_late remote_scene_timeout remote_actor_timeout
   remote_track_lost victim_rejected server_stage_mismatch invalid_victim_clock
   invalid_scene_origin victim_not_alive victim_bucket actor_distance action_validation
-  session_stopped_before_ack ack_timeout scene_ended_before_ack]=]):gmatch('%S+') do
+  session_stopped_before_ack ack_timeout scene_ended_before_ack handoff_timeout handoff_mismatch]=]):gmatch('%S+') do
   Config.Torture.failureReasons[reason] = true
 end
 
