@@ -264,36 +264,36 @@ def run(config):
         check('NUI state handles oxmysql boolean flags and paid/rejected/exhausted statuses')
         playtime=lua.globals().testImpls['Playtime']
         query("UPDATE tipi_invite_codes SET code='ABCDEFGH2345' WHERE citizenid='owner'")
-        for src,seconds in enumerate([17999,18000,18001],20):
+        for src,seconds in enumerate([3599,3600,3601],20):
             cid=f'entry-{seconds}'
             account(cid)
             query('UPDATE players SET playtime=? WHERE citizenid=?',[seconds,cid])
             lua.globals().testPlayers[src]=lua.table_from({'identifier':cid})
             assert playtime.GetPlaytimeBySource(playtime,src)==seconds
             result=runtime.redeem(src,cid,'ABCDEFGH2345')
-            assert result['ok'] is (seconds<=18000)
-            if seconds>18000:
+            assert result['ok'] is (seconds<3600)
+            if seconds>=3600:
                 assert result['code']=='invite_playtime_limit'
                 assert not query('SELECT id FROM tipi_invite_redemptions WHERE invitee=?',[cid])
         account('entry-live')
-        query("UPDATE players SET playtime=18000 WHERE citizenid='entry-live'")
+        query("UPDATE players SET playtime=3599 WHERE citizenid='entry-live'")
         lua.globals().testPlayers[23]=lua.table_from({'identifier':'entry-live'})
-        assert playtime.GetPlaytimeBySource(playtime,23)==18000
+        assert playtime.GetPlaytimeBySource(playtime,23)==3599
         assert runtime.state('entry-live')['canRedeem'] is True
         lua.globals().testNow=lua.globals().testNow+1
         assert runtime.redeem(23,'entry-live','ABCDEFGH2345')['ok'] is False
         assert runtime.state('entry-live')['canRedeem'] is False
-        assert query("SELECT playtime FROM players WHERE citizenid='entry-live'")[0]['playtime']==18000
+        assert query("SELECT playtime FROM players WHERE citizenid='entry-live'")[0]['playtime']==3599
         account('entry-vip')
         lua.globals().testPlayers[24]=lua.table_from({'identifier':'entry-vip'})
-        playtime.AddPlaytime(playtime,24,18001)
+        playtime.AddPlaytime(playtime,24,3600)
         assert runtime.redeem(24,'entry-vip','ABCDEFGH2345')['ok'] is False
-        assert runtime.state('entry-18000')['redemption']['status']=='pending'
-        assert row('entry-18000')['inviter']=='owner'
+        assert runtime.state('entry-3599')['redemption']['status']=='pending'
+        assert row('entry-3599')['inviter']=='owner'
         lua.globals().testImpls['Playtime']=None
         assert runtime.redeem(23,'entry-live','ABCDEFGH2345')['ok'] is False
         lua.globals().testImpls['Playtime']=playtime
-        check('Entry gate: <=5 hours allowed, >5 blocked, live unsaved seconds and VIP included, existing referrals retained, unavailable playtime fails closed')
+        check('Entry gate: <1 hour allowed, >=1 blocked, live unsaved seconds and VIP included, existing referrals retained, unavailable playtime fails closed')
         account('balance')
         lua.globals().MySQL['update']=lua.table_from({'await':lambda sql,args=None: query(sql,sql_args(args))})
         lua.execute('''exports={qbx_core={GetPlayer=function(_,src)

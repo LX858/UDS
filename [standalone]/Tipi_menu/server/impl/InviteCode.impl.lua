@@ -171,8 +171,8 @@ local function redemptionEligibility(cid)
         return false, 'Chưa thể kiểm tra giờ chơi hiện tại. Vui lòng thử lại sau.'
     end
     local maximum = Config.InviteCode.MaxRedeemPlaytimeSeconds
-    if seconds > maximum then
-        return false, ('Bạn đã chơi trên %g tiếng nên không thể nhập mã mời nữa.'):format(maximum / 3600), seconds
+    if seconds >= maximum then
+        return false, ('Bạn đã chơi từ %g tiếng trở lên nên không thể nhập mã mời nữa.'):format(maximum / 3600), seconds
     end
     return true, nil, seconds
 end

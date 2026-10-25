@@ -10,7 +10,7 @@ fs.mkdirSync(output, {recursive:true});
   const page = await context.newPage();
   await page.addInitScript(() => { window.GetParentResourceName=()=> 'nui-frame-app'; });
   const errors=[]; page.on('pageerror',e=>errors.push(e.message));
-  let state={ok:true,code:'ABCDEFGH2345',blocked:false,canRedeem:true,playtimeSeconds:18000,maxRedeemPlaytimeSeconds:18000,requiredSeconds:180000,maxRewarded:50,inviteeCoin:50,inviterCoin:100,
+  let state={ok:true,code:'ABCDEFGH2345',blocked:false,canRedeem:true,playtimeSeconds:3599,maxRedeemPlaytimeSeconds:3600,requiredSeconds:180000,maxRewarded:50,inviteeCoin:50,inviterCoin:100,
     counts:{valid:5,pending:7,rejected:1,used:5},totalCoin:750,
     milestones:[{count:1,coin:0},{count:5,coin:250},{count:10,coin:600},{count:20,coin:1500},{count:30,coin:2500},{count:50,coin:5000}].map(m=>({...m,reached:m.count<=5,received:m.count===5}))};
   const calls=[];
@@ -66,13 +66,13 @@ fs.mkdirSync(output, {recursive:true});
   await page.screenshot({path:path.join(output,'invite-exhausted.png')});
   await panel.getByText('Mốc 6 · 50 người',{exact:false}).scrollIntoViewIfNeeded();
   await page.screenshot({path:path.join(output,'invite-milestones.png')});
-  state={...state,redemption:undefined,canRedeem:false,playtimeSeconds:18001,
-    redeemBlockReason:'Bạn đã chơi trên 5 tiếng nên không thể nhập mã mời nữa.'};
+  state={...state,redemption:undefined,canRedeem:false,playtimeSeconds:3600,
+    redeemBlockReason:'Bạn đã chơi từ 1 tiếng trở lên nên không thể nhập mã mời nữa.'};
   await panel.getByRole('button',{name:'Tải lại',exact:true}).click();
   await panel.getByText(state.redeemBlockReason,{exact:true}).waitFor();
   assert.equal(await panel.getByLabel('Nhập mã người đã mời bạn').count(),0);
   assert.equal(await panel.getByRole('button',{name:'Sao chép',exact:true}).count(),1);
   assert.deepEqual(errors,[]);
-  console.log('PASS: 3 viewports, copy, acknowledgement, exhausted-cap confirmation, immutable redemption, 4 statuses, >5-hour entry lock, no page errors.');
+  console.log('PASS: 3 viewports, copy, acknowledgement, exhausted-cap confirmation, immutable redemption, 4 statuses, >=1-hour entry lock, no page errors.');
   await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});

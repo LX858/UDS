@@ -154,7 +154,7 @@ export default function InviteCodePanel() {
         <label htmlFor='invite-code'>Nhập mã người đã mời bạn</label>
         <input id='invite-code' value={code} maxLength={12} autoComplete='off' spellCheck={false} disabled={busy}
           placeholder='Mã mời gồm 12 ký tự' onChange={e => { setCode(e.target.value.toUpperCase()); setExhaustedCode(null); setConfirmed(false) }} />
-        <Notice>Chỉ được nhập mã khi tổng giờ chơi hiện tại không quá {(state.maxRedeemPlaytimeSeconds ?? 18000) / 3600} tiếng.
+        <Notice>Chỉ được nhập mã khi tổng giờ chơi hiện tại dưới {(state.maxRedeemPlaytimeSeconds ?? 3600) / 3600} tiếng.
           Mã chỉ được nhập một lần và không thể thay đổi. Cần đủ 50 giờ online sau khi nhập mã và vượt qua kiểm tra.
           Chỉ 50 người đủ điều kiện đầu tiên của chủ mã được thưởng; nhập mã không giữ suất.</Notice>
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
