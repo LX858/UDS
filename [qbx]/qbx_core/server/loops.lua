@@ -49,7 +49,23 @@ CreateThread(function()
     end
 end)
 
-local function processPaychecks()
+local paycheckRunning = false
+local paycheckProfile = {}
+local function measurePaycheck(stage, fn, ...)
+    local started = GetGameTimer()
+    local result = table.pack(pcall(fn, ...))
+    local elapsed = GetGameTimer() - started
+    local metric = paycheckProfile[stage] or { calls = 0, totalMs = 0, maxMs = 0, errors = 0 }
+    metric.calls, metric.totalMs = metric.calls + 1, metric.totalMs + elapsed
+    metric.maxMs = math.max(metric.maxMs, elapsed)
+    if not result[1] then metric.errors = metric.errors + 1 end
+    paycheckProfile[stage] = metric
+    if not result[1] then error(result[2], 0) end
+    return table.unpack(result, 2, result.n)
+end
+exports('GetPaycheckProfile', function() return paycheckProfile end)
+
+local function runPaychecks()
     local eligible = {}
     local totalPayment = 0
 
@@ -82,12 +98,12 @@ local function processPaychecks()
     -- Bước 2: Kiểm tra và trừ 1 LẦN DUY NHẤT từ tài khoản 'bcso'
     if config.money.paycheckSociety then
         local accountName = config.money.paycheckAccount or 'bcso'
-        local currentBalance = config.getSocietyAccount(accountName)
+        local currentBalance = measurePaycheck('balance', config.getSocietyAccount, accountName)
         if not currentBalance or currentBalance < totalPayment then
             print(('[QBX Paycheck] Ngân sách %s không đủ tiền! Cần: $%s, Số dư: $%s'):format(accountName, totalPayment, tostring(currentBalance)))
             for i = 1, #eligible do
                 local item = eligible[i]
-                if QBX.Players[item.source] then
+                if QBX.Players[item.source] == item.player then
                     Notify(item.source, locale('error.company_too_poor'), 'error')
                 end
             end
@@ -95,12 +111,12 @@ local function processPaychecks()
         end
 
         local reason = ('Chi trả lương duty định kỳ cho %d nhân viên'):format(#eligible)
-        local removed = config.removeSocietyMoney(accountName, totalPayment, reason, 'Tòa Thị Chính')
+        local removed = measurePaycheck('debitAndLedger', config.removeSocietyMoney, accountName, totalPayment, reason, 'Tòa Thị Chính')
         if not removed then
             print(('[QBX Paycheck] Trừ tiền ngân sách %s thất bại!'):format(accountName))
             for i = 1, #eligible do
                 local item = eligible[i]
-                if QBX.Players[item.source] then
+                if QBX.Players[item.source] == item.player then
                     Notify(item.source, locale('error.company_too_poor'), 'error')
                 end
             end
@@ -112,13 +128,24 @@ local function processPaychecks()
     -- Bước 3: Phát tiền cho từng người chơi với Wait(50) phân tán tải mạng
     for i = 1, #eligible do
         local item = eligible[i]
-        if QBX.Players[item.source] then
-            config.sendPaycheck(item.player, item.payment)
+        if QBX.Players[item.source] == item.player then
+            measurePaycheck('payment', config.sendPaycheck, item.player, item.payment)
             Wait(50)
         end
     end
 end
 
+local function processPaychecks()
+    if paycheckRunning then return false end
+    paycheckRunning = true
+    local ok, err = pcall(runPaychecks)
+    paycheckRunning = false
+    if not ok then lib.print.error(('Paycheck interrupted: %s'):format(tostring(err))) end
+    if GetConvarInt('qbx:profilePaychecks', 0) == 1 then
+        print('[QBX Paycheck profile, elapsed wall ms] ' .. json.encode(paycheckProfile))
+    end
+    return ok
+end
 exports('ProcessPaychecks', processPaychecks)
 
 RegisterCommand('testpaycheck', function(source)

@@ -93,7 +93,7 @@ async function openDetail(name) {
     if (!result.selected) { const p = document.createElement('p'); p.textContent = 'Không còn dữ liệu cho event này.'; panel.appendChild(p); return; }
     const grid = document.createElement('div'); grid.className = 'detail-grid';
     detailList(grid, 'Theo resource', result.selected.resources, item => item.phase ? `${item.resource} · ${item.phase}` : item.resource);
-    if (statsView === 'client') detailList(grid, 'Theo ID đích', result.selected.targets, item => item.id === '-1' ? '-1 · broadcast' : `Player #${item.id}`);
+    if (statsView === 'client') detailList(grid, 'Theo ID đích', result.selected.targets, item => item.id === '-1' ? '-1 · broadcast' : item.id === 'aggregate' ? 'Tổng hợp · không lưu ID' : `Player #${item.id}`);
     if (statsView === 'handled') detailList(grid, 'Theo ID người gửi', result.selected.senders, item => `Player #${item.id}`);
     if (statsView === 'exports') detailList(grid, 'Theo bước', result.selected.phases, item => item.phase === 'call' ? 'Gọi' : 'Thực thi');
     panel.appendChild(grid);
@@ -132,9 +132,9 @@ async function refreshRecords() {
     const row = document.createElement('tr');
     cell(row, time(item.timestamp), 'cell-muted'); cell(row, `${item.kind} / ${item.phase}`, 'cell-strong');
     cell(row, item.targetResource ? `${value(item.resource)} → ${item.targetResource}` : item.resource);
-    cell(row, item.name, 'cell-strong');
+    cell(row, item.aggregate ? `${item.name} · ${number(item.count)} lượt` : item.name, 'cell-strong');
     cell(row, item.status === 'broadcast' ? '-1 · broadcast' : item.playerSessionId ? `#${item.playerSessionId} ${item.playerName || ''}` : item.entityNetId !== null ? `Net ${item.entityNetId}` : null);
-    cell(row, [item.payloadBytes !== null ? `${number(item.payloadBytes)} B` : '', item.wallMs !== null ? `${number(item.wallMs)} ms` : ''].filter(Boolean).join(' · '));
+    cell(row, [item.payloadBytes !== null ? `${number(item.payloadBytes)} B${item.aggregate ? ' tổng' : ''}` : '', item.wallMs !== null ? `${number(item.wallMs)} ms${item.aggregate ? ' max' : ''}` : ''].filter(Boolean).join(' · '));
     cell(row, item.status, item.status === 'error' ? 'cell-status error' : 'cell-status'); body.appendChild(row);
   }
   if (!result.records.length) empty(body, 7, 'Không có bản ghi phù hợp.');
@@ -165,7 +165,7 @@ async function refresh(force = false) {
     const [health, summary] = await Promise.all([api('/health'), api('/summary')]);
     $('health-badge').textContent = health.status;
     $('health-badge').className = `badge ${health.status === 'degraded' ? 'bad' : health.status === 'warming' ? 'warm' : ''}`;
-    $('agent-info').textContent = `${health.freshAgents} agent đang gửi · queue ${number(health.queue)}`;
+    $('agent-info').textContent = `${health.collectionMode || 'detail'} · ${health.freshAgents} agent đang gửi · queue ${number(health.queue)} · chờ xử lý ${number(health.inputQueue)}`;
     $('metric-total').textContent = number(summary.total); $('metric-players').textContent = number(summary.players);
     $('metric-entities').textContent = number(summary.entities);
     $('metric-dropped').textContent = number((summary.dropped.agentsAfterStart || 0) + summary.dropped.collector + summary.dropped.disk);

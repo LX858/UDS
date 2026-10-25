@@ -39,6 +39,8 @@ async function main() {
   global.GetCurrentResourceName = () => 'vx_runtime_monitor';
   global.GetResourcePath = () => root;
   global.GetConvar = (name, fallback) => ({ vx_monitor_host: '127.0.0.1', vx_monitor_port: String(port), vx_monitor_token: token })[name] || fallback;
+  global.GetConvarInt = (_name, fallback) => fallback;
+  global.RegisterCommand = () => {};
   global.GetPlayers = () => [];
   global.GetAllObjects = () => [];
   global.GetAllPeds = () => [];

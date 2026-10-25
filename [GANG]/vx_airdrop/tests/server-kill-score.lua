@@ -48,7 +48,8 @@ local function advance(ms)
   end
 end
 exports = {
-  qbx_core = { GetPlayer = function(_, src)
+  qbx_core = { GetPlayerCitizenId = function(_, src) return players[src] and players[src].citizenid end,
+    GetPlayer = function(_, src)
     return players[src] and { PlayerData = { citizenid = players[src].citizenid } }
   end },
   qbx_medical = { Revive = function(_, src)
@@ -61,14 +62,14 @@ dofile('server/impl/main.impl.lua')
 lib = { callback = { register = function() end } }
 WS = {
   RegisterEventHandler = function(name, callback) hitHandlers[name] = callback end,
-  TriggerClientEvent = function() end,
+  TriggerClientEvent = TriggerClientEvent,
 }
 function AddEventHandler() end
 function RegisterNetEvent() end
 function TriggerEvent(name, ...)
   if name == 'neons_ddame:server:kill' then impl:HandleKill(...) end
 end
-dofile('../[standalone]/neons_ddame/server.lua')
+dofile('../../[standalone]/neons_ddame/server.lua')
 
 local function newRound()
   timers, scoreBroadcasts = {}, 0
@@ -227,4 +228,21 @@ impl:ScoreZone()
 assert(round.scores.A == 0 and round.scores.B == 0,
   'Dead players must not capture the zone')
 
-print('server-kill-score: all scenarios passed')
+round = newRound()
+local deltas = {}
+local originalSend = TriggerClientEvent
+TriggerClientEvent = function(name, target, id, version, removed)
+  if name == 'vx_airdrop:cl:uniformsDelta' then
+    deltas[#deltas + 1] = { target = target, version = version, removed = removed }
+  end
+end
+players[1].online, players[2].online = false, false
+impl:RemovePlayer(1, nil, true)
+impl:RemovePlayer(2, nil, true)
+assert(#deltas == 0, 'Disconnect burst must coalesce before sending')
+advance(0)
+assert(#deltas == 2 and #deltas[1].removed == 2 and deltas[1].version == 1,
+  'One delta version per burst, sent only to remaining participants')
+assert(round.members[3] and round.members[4] and not round.members[1])
+TriggerClientEvent = originalSend
+print('server-kill-score: all scenarios including batched disconnects passed')

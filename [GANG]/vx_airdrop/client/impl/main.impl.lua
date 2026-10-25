@@ -183,8 +183,9 @@ function Impl:OnReady()
       if selecting then self:ShowWeapons() end
     end
   end)
-  WS.RegisterEventHandler(prefix .. 'cl:uniforms', function(roundId, roster)
+  WS.RegisterEventHandler(prefix .. 'cl:uniforms', function(roundId, roster, version)
     if self.phase ~= 'match' or self.roundId ~= roundId or type(roster) ~= 'table' then return end
+    if self.rosterRoundId == roundId and version and self.rosterVersion and version < self.rosterVersion then return end
     local uniforms = {}
     for _, entry in ipairs(roster) do
       local serverId = type(entry) == 'table' and tonumber(entry.source) or nil
@@ -192,7 +193,18 @@ function Impl:OnReady()
       if serverId and (team == 'A' or team == 'B') then uniforms[serverId] = team end
     end
     self.uniformTeams = uniforms
+    self.rosterRoundId, self.rosterVersion = roundId, version or 0
     self.uniformTeams[GetPlayerServerId(PlayerId())] = self.team
+  end)
+  self.eventHandlers[#self.eventHandlers + 1] = RegisterNetEvent(prefix .. 'cl:uniformsDelta', function(roundId, version, removed)
+    if self.phase ~= 'match' or self.roundId ~= roundId or type(removed) ~= 'table' then return end
+    if self.rosterRoundId ~= roundId or not self.rosterVersion or version > self.rosterVersion + 1 then
+      TriggerServerEvent(prefix .. 'sv:ready')
+      return
+    end
+    if version <= self.rosterVersion then return end
+    for _, src in ipairs(removed) do self.uniformTeams[tonumber(src)] = nil end
+    self.rosterVersion = version
   end)
   WS.RegisterEventHandler(prefix .. 'cl:score', function(roundId, scores, endsAt, overtime, serverNow)
     if self.phase == 'match' and roundId == self.roundId then self:UpdateScore(scores, endsAt, overtime, serverNow) end

@@ -29,10 +29,24 @@ function Framework.GetGang(src)
     return Player.PlayerData.gang
 end
 
+local appearanceWrites = {}
 function Framework.SaveAppearance(appearance, citizenID)
-    Database.PlayerSkins.UpdateActiveField(citizenID, 0)
-    Database.PlayerSkins.DeleteByModel(citizenID, appearance.model)
-    Database.PlayerSkins.Add(citizenID, appearance.model, json.encode(appearance), 1)
+    if not citizenID or type(appearance) ~= 'table' or not appearance.model then return false end
+    local previous, pending = appearanceWrites[citizenID], promise.new()
+    appearanceWrites[citizenID] = pending
+    if previous then Citizen.Await(previous) end
+    local ok, result = pcall(function()
+        return MySQL.transaction.await({
+            { query = 'UPDATE playerskins SET active = ? WHERE citizenid = ?', values = { 0, citizenID } },
+            { query = 'DELETE FROM playerskins WHERE citizenid = ? AND model = ?', values = { citizenID, appearance.model } },
+            { query = 'INSERT INTO playerskins (citizenid, model, skin, active) VALUES (?, ?, ?, ?)',
+                values = { citizenID, appearance.model, json.encode(appearance), 1 } }
+        })
+    end)
+    if appearanceWrites[citizenID] == pending then appearanceWrites[citizenID] = nil end
+    pending:resolve(true)
+    if not ok or result ~= true then error(('Appearance save failed: %s'):format(tostring(result)), 0) end
+    return true
 end
 
 function Framework.GetAppearance(citizenID, model)

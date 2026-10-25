@@ -11,6 +11,20 @@ const TRACE_LIMIT = 20;
 const TRACE_BYTES_LIMIT = 512 * 1024 * 1024;
 const WINDOWS = { '5m': 5 * 60 * 1000, '1h': 60 * 60 * 1000, '24h': DAY_MS };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+function captureContext() {
+  const read = fn => { try { return fn(); } catch { return null; } };
+  const mode = read(() => GetConvar('vx_monitor_mode', 'light'));
+  const detailUntil = read(() => GetConvarInt('vx_monitor_detail_until', 0));
+  return {
+    players: read(() => GetNumPlayerIndices()),
+    entities: { vehicles: read(() => GetAllVehicles().length), peds: read(() => GetAllPeds().length),
+      objects: read(() => GetAllObjects().length) },
+    monitor: read(() => GetResourceState('vx_runtime_monitor')),
+    monitorMode: mode === 'detail' && detailUntil <= Math.floor(Date.now() / 1000) ? 'light' : mode,
+    build: read(() => GetConvar('version', 'unknown')),
+    codeRevision: read(() => GetConvar('vx_profiler_revision', 'unknown')),
+  };
+}
 const round = value => Math.round(value * 1000) / 1000;
 
 function histogramPercentile(histogram, p) {
@@ -144,6 +158,7 @@ class ProfilerMonitor {
     this.activeId = id;
     try {
       const knownResources = this.knownResources();
+      const context = captureContext();
       this.phase = 'recording';
       this.record();
       await sleep(100);
@@ -167,7 +182,7 @@ class ProfilerMonitor {
       if (result.recordedFrames < 350 || result.analyzedFrames < 349) {
         throw new Error(`incomplete_capture_${result.recordedFrames}_${result.analyzedFrames}`);
       }
-      const sample = { id, at: this.startedAt, atMs: Date.parse(this.startedAt),
+      const sample = { id, at: this.startedAt, atMs: Date.parse(this.startedAt), context,
         recordedFrames: result.recordedFrames, analyzedFrames: result.analyzedFrames,
         incompleteFrames: result.incompleteFrames, unmatchedScopes: result.unmatchedScopes,
         eventCount: result.eventCount, frames: result.frames, frameHistogram: result.frameHistogram,

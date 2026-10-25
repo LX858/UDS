@@ -152,6 +152,22 @@ local function sanitizeMessage(message)
 end
 
 local Type = type
+local ledgerProfile = { calls = 0, maxRows = 0, maxBytes = 0, totalEncodeMs = 0, maxEncodeMs = 0 }
+local function encodeLedger(rows)
+    local started = GetGameTimer()
+    local encoded = json.encode(rows)
+    local elapsed = GetGameTimer() - started
+    ledgerProfile.calls = ledgerProfile.calls + 1
+    ledgerProfile.maxRows = math.max(ledgerProfile.maxRows, #rows)
+    ledgerProfile.maxBytes = math.max(ledgerProfile.maxBytes, #encoded)
+    ledgerProfile.totalEncodeMs = ledgerProfile.totalEncodeMs + elapsed
+    ledgerProfile.maxEncodeMs = math.max(ledgerProfile.maxEncodeMs, elapsed)
+    if GetConvarInt('qbx:profilePaychecks', 0) == 1 and elapsed >= 20 then
+        print(('[Renewed-Banking] ledger encode %d ms, %d rows, %d bytes'):format(elapsed, #rows, #encoded))
+    end
+    return encoded
+end
+exports('GetLedgerProfile', function() return ledgerProfile end)
 local function handleTransaction(account, title, amount, message, issuer, receiver, transType, transID)
     if not account or Type(account) ~= 'string' then return print(locale("err_trans_account", account)) end
     if not title or Type(title) ~= 'string' then return print(locale("err_trans_title", title)) end
@@ -174,13 +190,13 @@ local function handleTransaction(account, title, amount, message, issuer, receiv
     }
     if cachedAccounts[account] then
         table.insert(cachedAccounts[account].transactions, 1, transaction)
-        local transactions = json.encode(cachedAccounts[account].transactions)
+        local transactions = encodeLedger(cachedAccounts[account].transactions)
         MySQL.prepare("INSERT INTO bank_accounts_new (id, transactions) VALUES (?, ?) ON DUPLICATE KEY UPDATE transactions = ?",{
             account, transactions, transactions
         })
     elseif cachedPlayers[account] then
         table.insert(cachedPlayers[account].transactions, 1, transaction)
-        local transactions = json.encode(cachedPlayers[account].transactions)
+        local transactions = encodeLedger(cachedPlayers[account].transactions)
         MySQL.prepare("INSERT INTO player_transactions (id, transactions) VALUES (?, ?) ON DUPLICATE KEY UPDATE transactions = ?", {
             account, transactions, transactions
         })

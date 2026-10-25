@@ -47,8 +47,39 @@ local function setCache(citizenid, data, dateKey)
 	return OnlineCache[citizenid]
 end
 
+local function persistOnlineCache(citizenid, cached)
+    cached.dirty = true
+    local ok, err = pcall(ExecuteSql, 'UPDATE tipi_daily_rewards SET daily_online = ? WHERE citizenid = ?', {
+        json.encode(cached.data), citizenid
+    })
+    if ok then
+        cached.dirty = false
+        if cached.disconnected and OnlineCache[citizenid] == cached then OnlineCache[citizenid] = nil end
+        return true
+    end
+    if not cached.retryPending then
+        cached.retryPending = true
+        SetTimeout(5000, function()
+            cached.retryPending = false
+            WithDailyOnlineLock(citizenid, function()
+                local latest = OnlineCache[citizenid]
+                if latest and latest.dirty then persistOnlineCache(citizenid, latest) end
+            end)
+        end)
+        print(('[Tipi_Daily_Rewards] Retaining unsaved minutes for retry: %s'):format(tostring(err)))
+    end
+    return false
+end
+
 local function loadCacheFromDb(citizenid)
 	local dateKey = getDateKey()
+    local pending = OnlineCache[citizenid]
+    if pending and pending.dirty then
+        pending.dateKey = dateKey
+        local today = OnlineNormalizeToday(pending.data[dateKey])
+        pending.minutes, pending.present = today.minutes, today.present
+        return pending
+    end
 	local row = ExecuteSql('SELECT daily_online FROM tipi_daily_rewards WHERE citizenid = ?', { citizenid })
 	if not row or not row[1] then
 		ExecuteSql('INSERT IGNORE INTO tipi_daily_rewards (citizenid) VALUES (?)', { citizenid })
@@ -58,6 +89,7 @@ local function loadCacheFromDb(citizenid)
 end
 
 function OnlineSaveToday(citizenid, minutes, present)
+    if OnlineCache[citizenid] and OnlineCache[citizenid].dirty then loadCacheFromDb(citizenid) end
 	local dateKey = getDateKey()
 	local cached = OnlineCache[citizenid]
 	local data
@@ -173,6 +205,7 @@ function OnlineBuildMonthFreeDays(row)
 end
 
 function OnlineMarkPresent(citizenid)
+    if OnlineCache[citizenid] and OnlineCache[citizenid].dirty then loadCacheFromDb(citizenid) end
 	local cached = OnlineCache[citizenid]
 	local dateKey = getDateKey()
 	if cached and cached.dateKey == dateKey and cached.data then
@@ -207,7 +240,7 @@ function OnlineMarkPresent(citizenid)
 end
 
 --- Cộng 1 phút online — ưu tiên cache để tránh SELECT lặp (SQL global busy lock).
-function OnlineAddMinute(citizenid)
+function OnlineAddMinute(citizenid, amount)
 	local dateKey = getDateKey()
 	local cached = OnlineCache[citizenid]
 	if not cached or cached.dateKey ~= dateKey or not cached.data then
@@ -215,7 +248,7 @@ function OnlineAddMinute(citizenid)
 	end
 
 	local previousMinutes = cached.minutes
-	local minutes = previousMinutes + 1
+	local minutes = previousMinutes + (amount or 1)
 	local monthMin = OnlineGetMonthClaimMinMinutes()
 	local monthClaimReady = previousMinutes < monthMin and minutes >= monthMin
 
@@ -226,50 +259,72 @@ function OnlineAddMinute(citizenid)
 	cached.minutes = minutes
 	cached.present = true
 
-	ExecuteSql('UPDATE tipi_daily_rewards SET daily_online = ? WHERE citizenid = ?', {
-		json.encode(cached.data),
-		citizenid,
-	})
+    cached.disconnected = false
+    persistOnlineCache(citizenid, cached)
 
 	return minutes, monthClaimReady
 end
 
-CreateThread(function()
-	while true do
-		Wait(60000)
-		local dateKey = getDateKey()
+-- Serialize character read/modify/write operations, including nested calls.
+for _, name in ipairs({ 'OnlineAddMinute', 'OnlineMarkPresent', 'OnlineSaveToday' }) do
+    local original = _G[name]
+    _G[name] = function(identifier, ...)
+        return WithDailyOnlineLock(identifier, original, identifier, ...)
+    end
+end
 
-		for _, playerId in ipairs(GetPlayers()) do
-			local src = tonumber(playerId)
-			local player = FrameworkGetPlayer(src)
-			local citizenid = FrameworkGetIdentifier(player)
-			if citizenid then
-				local cached = OnlineCache[citizenid]
-				if cached and cached.dateKey ~= dateKey then
-					OnlineCache[citizenid] = nil
-				end
-				local _, monthClaimReady = OnlineAddMinute(citizenid)
-				if monthClaimReady then
-					TriggerClientEvent('Tipi_Daily_Rewards:Client:MonthClaimReady', src, {
-						minutes = OnlineGetMonthClaimMinMinutes(),
-						todayReward = MonthGetTodayDay(),
-					})
-				end
-				-- Push realtime mỗi phút — Tipi_menu / NUI không phải chờ poll 30s
-				if DailyOnline and DailyOnline.PushSync then
-					DailyOnline.PushSync(src, citizenid)
-				end
-			end
-		end
-	end
+local onlineSources = {}
+local function onlineIdentifier(src)
+    if Framework.Name == 'qbx' then return exports.qbx_core:GetPlayerCitizenId(src) end
+    return FrameworkGetIdentifier(FrameworkGetPlayer(src))
+end
+CreateThread(function()
+    while true do
+        local players = GetPlayers()
+        local seen = {}
+        for i, id in ipairs(players) do
+            local src, now = tonumber(id), GetGameTimer()
+            local citizenid = onlineIdentifier(src)
+            seen[src] = true
+            if citizenid then
+                local session = onlineSources[src]
+                if not session or session.citizenid ~= citizenid then
+                    session = { citizenid = citizenid, lastMinute = now }
+                    onlineSources[src] = session
+                end
+                local minutes = math.floor((now - session.lastMinute) / 60000)
+                if minutes > 0 then
+                    local ok, err = pcall(function()
+                        local _, ready = OnlineAddMinute(citizenid, minutes)
+                        session.lastMinute = session.lastMinute + minutes * 60000
+                        if onlineSources[src] ~= session or onlineIdentifier(src) ~= citizenid then return end
+                        if ready then
+                            TriggerClientEvent('Tipi_Daily_Rewards:Client:MonthClaimReady', src, {
+                                minutes = OnlineGetMonthClaimMinMinutes(), todayReward = MonthGetTodayDay()
+                            })
+                        end
+                        if DailyOnline and DailyOnline.PushSync then DailyOnline.PushSync(src, citizenid) end
+                    end)
+                    if not ok then print(('[Tipi_Daily_Rewards] Online update failed: %s'):format(tostring(err))) end
+                end
+            end
+            if i % 16 == 0 then Wait(0) end
+        end
+        for src in pairs(onlineSources) do if not seen[src] then onlineSources[src] = nil end end
+        Wait(1000)
+    end
 end)
 
 AddEventHandler('playerDropped', function()
 	local src = source
 	local player = FrameworkGetPlayer(src)
-	local citizenid = FrameworkGetIdentifier(player)
+	local citizenid = onlineSources[src] and onlineSources[src].citizenid or FrameworkGetIdentifier(player)
+    onlineSources[src] = nil
 	if citizenid then
-		OnlineCache[citizenid] = nil
+        DailyOnlineRows[citizenid] = nil
+        local cached = OnlineCache[citizenid]
+        if cached and cached.dirty then cached.disconnected = true
+        else OnlineCache[citizenid] = nil end
 	end
 end)
 
@@ -288,4 +343,14 @@ CreateThread(function()
 			end
 		end)
 	end
+end)
+
+local function flushPendingOnline()
+    for citizenid, cached in pairs(OnlineCache) do
+        if cached.dirty then WithDailyOnlineLock(citizenid, function() persistOnlineCache(citizenid, cached) end) end
+    end
+end
+AddEventHandler('txAdmin:events:serverShuttingDown', flushPendingOnline)
+AddEventHandler('onResourceStop', function(resource)
+    if resource == GetCurrentResourceName() then flushPendingOnline() end
 end)

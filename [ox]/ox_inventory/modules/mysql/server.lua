@@ -122,36 +122,61 @@ end)
 
 db = {}
 
+-- All inventory writes share FIFO submission order, including disconnect saves.
+-- A small transaction per chunk prevents older autosave snapshots winning later.
+local writeTail
+local function orderedWrite(statements)
+    local previous, ticket = writeTail, promise.new()
+    writeTail = ticket
+    if previous then Citizen.Await(previous) end
+    local ok, result = pcall(MySQL.transaction.await, statements)
+    if writeTail == ticket then writeTail = nil end
+    ticket:resolve(true)
+    if not ok or result ~= true then
+        lib.print.error(('Inventory write failed; retained dirty state: %s'):format(tostring(result)))
+        return false
+    end
+    return true
+end
+local function waitForWrites()
+    local pending = writeTail
+    if pending then Citizen.Await(pending) end
+end
+
 function db.loadPlayer(identifier)
+    waitForWrites()
     local inventory = MySQL.prepare.await(Query.SELECT_PLAYER, { identifier }) --[[@as string?]]
     return inventory and json.decode(inventory)
 end
 
 function db.savePlayer(owner, inventory)
-    return MySQL.prepare(Query.UPDATE_PLAYER, { inventory, owner })
+    return orderedWrite({{ query = Query.UPDATE_PLAYER, values = { inventory, owner } }})
 end
 
 function db.saveStash(owner, dbId, inventory)
-    return MySQL.prepare(Query.UPSERT_STASH, { inventory, owner and tostring(owner) or '', dbId })
+    return orderedWrite({{ query = Query.UPSERT_STASH, values = { inventory, owner and tostring(owner) or '', dbId } }})
 end
 
 function db.loadStash(owner, name)
+    waitForWrites()
     return MySQL.prepare.await(Query.SELECT_STASH, { owner and tostring(owner) or '', name })
 end
 
 function db.saveGlovebox(id, inventory)
-    return MySQL.prepare(Query.UPDATE_GLOVEBOX, { inventory, id })
+    return orderedWrite({{ query = Query.UPDATE_GLOVEBOX, values = { inventory, id } }})
 end
 
 function db.loadGlovebox(id)
+    waitForWrites()
     return MySQL.prepare.await(Query.SELECT_GLOVEBOX, { id })
 end
 
 function db.saveTrunk(id, inventory)
-    return MySQL.prepare(Query.UPDATE_TRUNK, { inventory, id })
+    return orderedWrite({{ query = Query.UPDATE_TRUNK, values = { inventory, id } }})
 end
 
 function db.loadTrunk(id)
+    waitForWrites()
     return MySQL.prepare.await(Query.SELECT_TRUNK, { id })
 end
 
@@ -184,97 +209,20 @@ end
 ---@param stashes (InventorySaveData | string | number)[]
 ---@param total number[]
 function db.saveInventories(players, trunks, gloveboxes, stashes, total)
-    local start = os.nanotime()
-    local saveStr = 'Saved %d/%d %s (%.4f ms)'
-    local pending = 0
-
-    shared.info(('Saving %s inventories to the database'):format(total[5]))
-
-    if total[1] > 0 then
-        pending += 1
-
-        Citizen.CreateThreadNow(function()
-            local resp = safeQuery(MySQL.prepare.await, Query.UPDATE_PLAYER, players)
-            pending -= 1
-
-            if resp then
-                shared.info(saveStr:format(countRows(resp), total[1], 'players', (os.nanotime() - start) / 1e6))
-            end
-        end)
+    local statements = {}
+    for index, rows in ipairs({ players, trunks, gloveboxes }) do
+        local query = ({ Query.UPDATE_PLAYER, Query.UPDATE_TRUNK, Query.UPDATE_GLOVEBOX })[index]
+        for _, values in ipairs(rows) do statements[#statements + 1] = { query = query, values = values } end
     end
-
-    if total[2] > 0 then
-        pending += 1
-
-        Citizen.CreateThreadNow(function()
-            local resp = safeQuery(MySQL.prepare.await, Query.UPDATE_TRUNK, trunks)
-            pending -= 1
-
-            if resp then
-                shared.info(saveStr:format(countRows(resp), total[2], 'trunks', (os.nanotime() - start) / 1e6))
-            end
-        end)
-    end
-
-    if total[3] > 0 then
-        pending += 1
-
-        Citizen.CreateThreadNow(function()
-            local resp = safeQuery(MySQL.prepare.await, Query.UPDATE_GLOVEBOX, gloveboxes)
-            pending -= 1
-
-            if resp then
-                shared.info(saveStr:format(countRows(resp), total[3], 'gloveboxes', (os.nanotime() - start) / 1e6))
-            end
-        end)
-    end
-
-    if total[4] > 0 then
-        pending += 1
-
-        if server.bulkstashsave then
-            total[4] /= 3
-
-            Citizen.CreateThreadNow(function()
-                local query = Query.UPSERT_STASH:gsub('%(%?, %?, %?%)', string.rep('(?, ?, ?)', total[4], ', '))
-                local resp = safeQuery(MySQL.query.await, query, stashes)
-                pending -= 1
-
-                if resp then
-                    local affectedRows = resp.affectedRows
-
-                    if total[4] == 1 then
-                        if affectedRows == 2 then affectedRows = 1 end
-                    else
-                        affectedRows -= tonumber(resp.info:match('Duplicates: (%d+)'), 10) or 0
-                    end
-
-                    shared.info(saveStr:format(affectedRows, total[4], 'stashes', (os.nanotime() - start) / 1e6))
-                end
-            end)
-        else
-            Citizen.CreateThreadNow(function()
-                local resp = safeQuery(MySQL.rawExecute.await, Query.UPSERT_STASH, stashes)
-                pending -= 1
-
-                if resp then
-                    local affectedRows = 0
-
-                    if table.type(resp) == 'hash' then
-                        if resp.affectedRows > 0 then affectedRows = 1 end
-                    else
-                        for i = 1, #resp do
-                            if resp[i].affectedRows > 0 then affectedRows += 1 end
-                        end
-                    end
-
-                    shared.info(saveStr:format(affectedRows, total[4], 'stashes', (os.nanotime() - start) / 1e6))
-                end
-            end)
+    if server.bulkstashsave then
+        for i = 1, total[4], 3 do
+            statements[#statements + 1] = { query = Query.UPSERT_STASH, values = { stashes[i], stashes[i + 1], stashes[i + 2] } }
         end
+    else
+        for _, values in ipairs(stashes) do statements[#statements + 1] = { query = Query.UPSERT_STASH, values = values } end
     end
-
-    repeat Wait(0) until pending == 0
+    if #statements == 0 then return true end
+    return orderedWrite(statements)
 end
 
 ---Cập nhật metadata degrade cho tất cả items hiện có

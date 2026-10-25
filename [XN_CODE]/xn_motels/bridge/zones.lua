@@ -41,7 +41,7 @@ ZoneMenu = function(data)
 		title = data.label
 	})
 	if data.type == 'stash' then
-		local motels = GlobalState.Motels[data.motel]
+		local motels = GetMotelSnapshot()[data.motel]
 		local room = motels?.rooms[data.index] or {}
 		local keys = GetPlayerKeys(data,room)
 		for identifier,name in pairs(keys) do
@@ -119,7 +119,7 @@ RoomMenu = function(type,data,targetCoords)
 		title = type:upper()
 	})
 	if type == 'stash' then
-		local motels = GlobalState.Motels[data.motel]
+		local motels = GetMotelSnapshot()[data.motel]
 		local room = motels?.rooms[data.index] or {}
 		local keys = GetPlayerKeys(data,room)
 		for identifier,name in pairs(keys) do

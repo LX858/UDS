@@ -92,3 +92,32 @@ test('disk failure counts loss, backs off and recovers when storage returns', as
     assert.equal((await store.historicalRecords({ limit: '10' })).records[0].name, 'second');
   } finally { cleanup(); }
 });
+
+
+test('light aggregates preserve exact event counts and targeted totals after deferred intake', async () => {
+  const { store, cleanup } = fixture();
+  try {
+    store.enqueueBatch({ resource: 'busy', records: [
+      { kind: 'event', phase: 'send-client', name: 'ping', aggregate: true, targeted: true, count: 1000 },
+      { kind: 'event', phase: 'send-client', name: 'ping', aggregate: true, status: 'broadcast', count: 50 },
+    ] });
+    assert.equal(store.total, 0, 'native-facing callback must defer normalization');
+    await store.flushAll();
+    const stats = await store.stats.get({ window: '5m', view: 'client' });
+    assert.equal(store.total, 1050);
+    assert.equal(stats.total, 1050);
+    assert.equal(stats.targeted, 1000);
+    assert.equal(stats.broadcast, 50);
+    assert.equal(store.inputCount, 0);
+  } finally { cleanup(); }
+});
+
+test('overflow counts lost underlying events instead of aggregate rows', async () => {
+  const { store, cleanup } = fixture({ queueLimit: 1 });
+  try {
+    store.record({ kind: 'event', phase: 'handler', name: 'first', count: 9 });
+    store.record({ kind: 'event', phase: 'handler', name: 'second', count: 500 });
+    assert.equal(store.droppedCollector, 500);
+    await store.flushAll();
+  } finally { cleanup(); }
+});

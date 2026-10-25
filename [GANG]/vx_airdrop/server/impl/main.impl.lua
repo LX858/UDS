@@ -20,8 +20,7 @@ local function alive(src)
 end
 
 local function citizenId(src)
-  local player = exports.qbx_core:GetPlayer(src)
-  return player and player.PlayerData and player.PlayerData.citizenid
+  return exports.qbx_core:GetPlayerCitizenId(src)
 end
 
 local function notify(src, message, kind)
@@ -227,7 +226,7 @@ function Impl:SyncPlayer(src)
     local member = round.members[src]
     TriggerClientEvent(prefix .. 'cl:matchSync', src, round.id, member.team, round.endsAt,
       round.scores, round.overtime, member.selecting, os.time())
-    WS.TriggerClientEvent(prefix .. 'cl:uniforms', src, round.id, self:GetUniformRoster())
+    WS.TriggerClientEvent(prefix .. 'cl:uniforms', src, round.id, self:GetUniformRoster(), round.rosterVersion or 0)
   else
     TriggerClientEvent(prefix .. 'cl:reset', src)
   end
@@ -299,8 +298,28 @@ function Impl:BroadcastUniforms()
   if not round or (round.phase ~= 'match' and round.phase ~= 'result') then return end
   local roster = self:GetUniformRoster()
   for src in pairs(round.members) do
-    WS.TriggerClientEvent(prefix .. 'cl:uniforms', src, round.id, roster)
+    WS.TriggerClientEvent(prefix .. 'cl:uniforms', src, round.id, roster, round.rosterVersion or 0)
   end
+end
+
+function Impl:FlushMemberChanges(round)
+  if self.round ~= round or round.phase ~= 'match' then return end
+  local removed = round.removedMembers
+  if not removed or #removed == 0 then return end
+  round.removedMembers = nil
+  round.rosterVersion = (round.rosterVersion or 0) + 1
+  for src in pairs(round.members) do
+    TriggerClientEvent(prefix .. 'cl:uniformsDelta', src, round.id, round.rosterVersion, removed)
+  end
+end
+
+function Impl:QueueMemberChanges(round)
+  if round.memberFlushPending then return end
+  round.memberFlushPending = true
+  SetTimeout(0, function()
+    round.memberFlushPending = nil
+    if self.round == round and round.phase == 'match' then self:CheckTeams() end
+  end)
 end
 
 function Impl:BroadcastScore()
@@ -439,14 +458,17 @@ function Impl:RemovePlayer(src, reason, dropped, skipTeamCheck)
     if killEvent.attackerSrc == src then round.killEvents[victimSrc] = nil end
   end
   round.members[src] = nil
-  if round.phase == 'match' then self:BroadcastUniforms() end
+  if round.phase == 'match' then
+    round.removedMembers = round.removedMembers or {}
+    round.removedMembers[#round.removedMembers + 1] = src
+  end
   if not dropped and online(src) and citizenId(src) == member.citizenid then
     exports.qbx_medical:Revive(src)
     TriggerClientEvent(prefix .. 'cl:leave', src, round.id, member.origin, reason)
     SetPlayerRoutingBucket(tostring(src), member.bucket)
     clearClothingStateAfterRestore(src, round.id)
   end
-  if round.phase == 'match' and not skipTeamCheck then self:CheckTeams() end
+  if round.phase == 'match' and not skipTeamCheck then self:QueueMemberChanges(round) end
 end
 
 function Impl:CheckTeams()
@@ -464,6 +486,7 @@ function Impl:CheckTeams()
       if member.team == 'A' then a = a + 1 else b = b + 1 end
     end
   end
+  self:FlushMemberChanges(round)
   if a == 0 and b == 0 then
     self:CancelRound('Airdrop bị hủy vì không còn người tham gia.')
   elseif a == 0 then
@@ -581,14 +604,8 @@ function Impl:Tick()
     end
     if now >= round.registrationEnds then self:BeginMatch() end
   elseif round.phase == 'match' then
-    for src in pairs(round.members) do
-      local member = round.members[src]
-      if not online(src) or not onFoot(src) or citizenId(src) ~= member.citizenid
-        or GetPlayerRoutingBucket(tostring(src)) ~= Config.Airdrop.Bucket then
-        self:RemovePlayer(src, 'Bạn đã rời điều kiện tham gia airdrop.', not online(src))
-      end
-      if self.round ~= round or round.phase ~= 'match' then return end
-    end
+    self:CheckTeams()
+    if self.round ~= round or round.phase ~= 'match' then return end
     if now >= round.nextScoreAt then
       round.nextScoreAt = now + Config.Airdrop.ScoreEverySeconds
       self:ScoreZone()

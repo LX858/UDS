@@ -32,42 +32,44 @@ function add(aggregate, record, limit = GROUP_LIMIT) {
   if (!useful(record)) return;
   const time = Date.parse(record.timestamp);
   if (!Number.isFinite(time)) return;
-  aggregate.total++;
+  const count = Number.isSafeInteger(record.count) && record.count > 0 ? Math.min(record.count, 1000000) : 1;
+  aggregate.total += count;
   aggregate.earliest = aggregate.earliest === null ? time : Math.min(aggregate.earliest, time);
   aggregate.latest = aggregate.latest === null ? time : Math.max(aggregate.latest, time);
   const view = viewOf(record);
   const isBroadcast = view === 'client' && record.status === 'broadcast';
-  const isTargeted = view === 'client' && !isBroadcast && Number.isSafeInteger(record.playerSessionId) && record.playerSessionId > 0;
-  if (isBroadcast) aggregate.broadcast++;
-  if (isTargeted) aggregate.targeted++;
+  const isTargeted = view === 'client' && !isBroadcast && (record.targeted === true ||
+    (Number.isSafeInteger(record.playerSessionId) && record.playerSessionId > 0));
+  if (isBroadcast) aggregate.broadcast += count;
+  if (isTargeted) aggregate.targeted += count;
   const resource = record.resource || 'Không rõ';
   const phase = view === 'exports' ? record.phase : null;
   const key = JSON.stringify([record.name, resource, phase]);
   let group = aggregate.groups.get(key);
   if (!group) {
     if (aggregate.groups.size >= limit) {
-      aggregate.overflow++;
-      if (isBroadcast) aggregate.overflowBroadcast++;
-      if (isTargeted) aggregate.overflowTargeted++;
+      aggregate.overflow += count;
+      if (isBroadcast) aggregate.overflowBroadcast += count;
+      if (isTargeted) aggregate.overflowTargeted += count;
       return;
     }
     group = { name: record.name, resource, phase, count: 0, broadcast: 0, targeted: 0,
       targets: new Map(), senders: new Map(), lastAt: 0, errors: 0 };
     aggregate.groups.set(key, group);
   }
-  group.count++;
+  group.count += count;
   group.lastAt = Math.max(group.lastAt, time);
-  if (record.status === 'error') group.errors++;
+  if (record.status === 'error') group.errors += count;
   if (isBroadcast) {
-    group.broadcast++;
-    group.targets.set('-1', (group.targets.get('-1') || 0) + 1);
+    group.broadcast += count;
+    group.targets.set('-1', (group.targets.get('-1') || 0) + count);
   } else if (isTargeted) {
-    group.targeted++;
-    const target = String(record.playerSessionId);
-    group.targets.set(target, (group.targets.get(target) || 0) + 1);
+    group.targeted += count;
+    const target = record.playerSessionId ? String(record.playerSessionId) : 'aggregate';
+    group.targets.set(target, (group.targets.get(target) || 0) + count);
   } else if (view === 'handled' && Number.isSafeInteger(record.playerSessionId) && record.playerSessionId > 0) {
     const sender = String(record.playerSessionId);
-    group.senders.set(sender, (group.senders.get(sender) || 0) + 1);
+    group.senders.set(sender, (group.senders.get(sender) || 0) + count);
   }
 }
 

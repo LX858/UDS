@@ -523,7 +523,7 @@ local function hasActiveInventory(playerId, owner)
 			end
 
 			Inventory.CloseAll(inventory)
-			db.savePlayer(owner, json.encode(inventory:minimal()))
+			if db.savePlayer(owner, json.encode(inventory:minimal())) == false then return true end
 			Inventory.Remove(inventory)
 			Wait(100)
 		end
@@ -563,7 +563,7 @@ RegisterCommand('clearActiveIdentifier', function(source, args)
     end
 
     Inventory.CloseAll(inventory)
-    db.savePlayer(inventory.owner, json.encode(inventory:minimal()))
+    if db.savePlayer(inventory.owner, json.encode(inventory:minimal())) == false then return end
     Inventory.Remove(inventory)
 end, true)
 
@@ -631,11 +631,12 @@ function Inventory.Remove(inv)
 
 	if not inv then return end
 
+    if inv.savePending then Citizen.Await(inv.savePending) end
+    if Inventories[inv.id] ~= inv then return end
+
     if inv.type == 'drop' then
         TriggerClientEvent('ox_inventory:removeDrop', -1, inv.id)
         Inventory.Drops[inv.id] = nil
-    elseif inv.player then
-        activeIdentifiers[inv.owner] = nil
     end
 
     for playerId in pairs(inv.openedBy) do
@@ -649,10 +650,10 @@ function Inventory.Remove(inv)
     end
 
     if not inv.datastore and inv.changed then
-        Inventory.Save(inv)
+        if Inventory.Save(inv) == false or inv.changed then return end
     end
-
-    Inventories[inv.id] = nil
+    if inv.player then activeIdentifiers[inv.owner] = nil end
+    if Inventories[inv.id] == inv then Inventories[inv.id] = nil end
 end
 
 exports('RemoveInventory', Inventory.Remove)
@@ -700,6 +701,8 @@ function Inventory.Save(inv)
 
 	if not inv or inv.datastore then return end
 
+    if inv.savePending then Citizen.Await(inv.savePending) end
+    if Inventories[inv.id] ~= inv then return false end
     local buffer, n = {}, 0
 
     for k, v in pairs(inv.items) do
@@ -715,17 +718,26 @@ function Inventory.Save(inv)
     end
 
     local data = next(buffer) and json.encode(buffer) or nil
+    local pending = promise.new()
+    inv.savePending = pending
     inv.changed = false
 
-    if inv.player then
-        return shared.framework ~= 'esx' and db.savePlayer(inv.owner, data)
-    elseif inv.type == 'trunk' then
-        return db.saveTrunk(inv.dbId, data)
-    elseif inv.type == 'glovebox' then
-        return db.saveGlovebox(inv.dbId, data)
-    end
+    local ok, success = pcall(function()
+        if inv.player then
+            return shared.framework == 'esx' or db.savePlayer(inv.owner, data)
+        elseif inv.type == 'trunk' then
+            return db.saveTrunk(inv.dbId, data)
+        elseif inv.type == 'glovebox' then
+            return db.saveGlovebox(inv.dbId, data)
+        end
+        return db.saveStash(inv.owner, inv.dbId, data)
+    end)
+    if not ok or success == false then inv.changed = true end
+    inv.savePending = nil
+    pending:resolve(true)
+    if not ok then lib.print.error(success) end
+    return ok and success
 
-    return db.saveStash(inv.owner, inv.dbId, data)
 end
 
 ---@alias RandomLoot { [1]: string, [2]: number, [3]: number, [4]?: number }
@@ -2678,57 +2690,91 @@ local function prepareInventorySave(inv, buffer, time)
     return 4, { data, inv.owner and tostring(inv.owner) or '', inv.dbId }
 end
 
-local isSaving = false
+local savePending
 local inventoryClearTime = GetConvarInt('inventory:cleartime', 5) * 60
+local saveChunkSize = math.max(1, math.min(50, GetConvarInt('inventory:saveChunkSize', 20)))
 
 local function saveInventories(clearInventories)
-	if isSaving then return end
-
-	local time = os.time()
-	local parameters = { {}, {}, {}, {} }
-	local total = { 0, 0, 0, 0, 0 }
-    local buffer = {}
-
-	for _, inv in pairs(Inventories) do
-        local index, data = prepareInventorySave(inv, buffer, time)
-
-        if index and data then
-            total[5] += 1
-
-            if index == 4 and server.bulkstashsave then
-                for i = 1, 3 do
-					total[index] += 1
-                    parameters[index][total[index]] = data[i]
+    while savePending do Citizen.Await(savePending) end
+    local ticket = promise.new()
+    savePending = ticket
+    local batchInventories = {}
+    local batchPending = promise.new()
+    local function releaseBatch()
+        for _, inv in ipairs(batchInventories) do
+            if inv.savePending == batchPending then inv.savePending = nil end
+        end
+        batchPending:resolve(true)
+    end
+    local ok, err = pcall(function()
+        local parameters, total = { {}, {}, {}, {} }, { 0, 0, 0, 0, 0 }
+        local snapshot = {}
+        for _, inv in pairs(Inventories) do snapshot[#snapshot + 1] = inv end
+        local function flush()
+            if total[5] == 0 then return end
+            local success = db.saveInventories(parameters[1], parameters[2], parameters[3], parameters[4], total)
+            if not success then
+                for _, inv in ipairs(batchInventories) do inv.changed = true end
+                error('Inventory batch failed; dirty inventories retained for retry')
+            end
+            releaseBatch()
+            batchPending = promise.new()
+            batchInventories = {}
+            parameters, total = { {}, {}, {}, {} }, { 0, 0, 0, 0, 0 }
+        end
+        local sliceStart = GetGameTimer()
+        for i, inv in ipairs(snapshot) do
+            if Inventories[inv.id] == inv then
+                -- Flush earlier snapshots before waiting on a direct save.
+                local priorSave = inv.savePending
+                if priorSave then
+                    flush()
+                    Citizen.Await(priorSave)
                 end
-            else
-				total[index] += 1
-                parameters[index][total[index]] = data
+                local index, data
+                if Inventories[inv.id] == inv then index, data = prepareInventorySave(inv, {}, os.time()) end
+                if index and data then
+                    batchInventories[#batchInventories + 1] = inv
+                    inv.savePending = batchPending
+                    total[5] = total[5] + 1
+                    if index == 4 and server.bulkstashsave then
+                        for j = 1, 3 do
+                            total[index] = total[index] + 1
+                            parameters[index][total[index]] = data[j]
+                        end
+                    else
+                        total[index] = total[index] + 1
+                        parameters[index][total[index]] = data
+                    end
+                end
+            end
+            if total[5] >= saveChunkSize or i % 20 == 0 or GetGameTimer() - sliceStart >= 2 then
+                -- Submit all snapshots before yielding; a later disconnect save follows them.
+                flush()
+                Wait(0)
+                sliceStart = GetGameTimer()
             end
         end
-	end
-
-    if total[5] > 0 then
-        isSaving = true
-        local ok, err = pcall(db.saveInventories, parameters[1], parameters[2], parameters[3], parameters[4], total)
-        isSaving = false
-
-        if not ok and err then return lib.print.error(err) end
-    end
-
-    if not clearInventories then return end
-
-    for _, inv in pairs(Inventories) do
-        if not inv.open and not inv.player then
-            -- clear inventory from memory if unused for x minutes, or on entity/netid mismatch
-            if inv.type == 'glovebox' or inv.type == 'trunk' then
-                if NetworkGetEntityFromNetworkId(inv.netid) ~= inv.entityId then
-                    Inventory.Remove(inv)
+        flush()
+        if clearInventories then
+            for i, inv in ipairs(snapshot) do
+                if Inventories[inv.id] == inv and not inv.open and not inv.player and not inv.changed then
+                    if inv.type == 'glovebox' or inv.type == 'trunk' then
+                        if NetworkGetEntityFromNetworkId(inv.netid) ~= inv.entityId then Inventory.Remove(inv) end
+                    elseif os.time() - inv.time >= inventoryClearTime then Inventory.Remove(inv) end
                 end
-            elseif time - inv.time >= inventoryClearTime then
-                Inventory.Remove(inv)
+                if i % 20 == 0 then Wait(0) end
             end
         end
+    end)
+    if not ok then
+        for _, inv in ipairs(batchInventories) do inv.changed = true end
+        releaseBatch()
+        lib.print.error(err)
     end
+    savePending = nil
+    ticket:resolve(true)
+    return ok
 end
 
 lib.cron.new('*/5 * * * *', function()

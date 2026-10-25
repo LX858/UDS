@@ -84,6 +84,10 @@ class MonitorStore {
     this.maxDiskBytes = options.maxDiskBytes || MAX_DISK_BYTES;
     this.retentionMs = options.retentionMs || DAY_MS;
     this.queue = [];
+    this.flushBatchSize = options.flushBatchSize || 250;
+    this.inputBatches = [];
+    this.inputCount = 0;
+    this.draining = false;
     this.recent = new Array(this.recentSize);
     this.recentWrite = 0;
     this.recentCount = 0;
@@ -129,7 +133,7 @@ class MonitorStore {
     this.timers = [];
     await this.flushAll();
     if (this.queue.length) {
-      this.droppedDisk += this.queue.length;
+      this.droppedDisk += this.queue.reduce((n, record) => n + record.count, 0);
       this.queue = [];
     }
   }
@@ -155,6 +159,9 @@ class MonitorStore {
       wallMs: nonNegativeNumber(input.wallMs),
       monoMs: nonNegativeNumber(input.monoMs),
       status: short(input.status, 32),
+      count: Math.min(1000000, positiveInteger(input.count) || 1),
+      aggregate: input.aggregate === true,
+      targeted: input.targeted === true,
     };
   }
 
@@ -162,24 +169,24 @@ class MonitorStore {
     const record = this.normalize(input);
     if (!record) return false;
     if (this.queue.length >= this.queueLimit) {
-      this.droppedCollector++;
+      this.droppedCollector += record.count;
       return false;
     }
     this.queue.push(record);
     this.recent[this.recentWrite] = record;
     this.recentWrite = (this.recentWrite + 1) % this.recentSize;
     this.recentCount = Math.min(this.recentCount + 1, this.recentSize);
-    this.total++;
-    this.increment(this.countByKind, kindKey(record));
-    this.increment(this.countByName, `${record.kind}:${record.name}`);
-    this.increment(this.countByResource, record.resource || 'unknown');
+    this.total += record.count;
+    this.increment(this.countByKind, kindKey(record), record.count);
+    this.increment(this.countByName, `${record.kind}:${record.name}`, record.count);
+    this.increment(this.countByResource, record.resource || 'unknown', record.count);
     return true;
   }
 
-  increment(map, key) {
-    if (map.has(key)) map.set(key, map.get(key) + 1);
-    else if (map.size < 5000) map.set(key, 1);
-    else map.set('other', (map.get('other') || 0) + 1);
+  increment(map, key, count = 1) {
+    if (map.has(key)) map.set(key, map.get(key) + count);
+    else if (map.size < 5000) map.set(key, count);
+    else map.set('other', (map.get('other') || 0) + count);
   }
 
   acceptBatch(batch) {
@@ -202,6 +209,34 @@ class MonitorStore {
       const age = batchMono !== null && eventMono !== null ? Math.max(0, Math.min(60000, batchMono - eventMono)) : 0;
       this.record({ ...input, resource, timestamp: new Date(receivedAt - age).toISOString() });
     }
+  }
+
+  // The native event callback only enqueues; process at most 128 records per turn.
+  enqueueBatch(batch) {
+    if (!batch || !Array.isArray(batch.records) || batch.records.length > 4096) return;
+    if (this.inputCount + batch.records.length > this.queueLimit || this.inputBatches.length >= 512) {
+      this.droppedCollector += batch.records.reduce((n, r) => n + (positiveInteger(r?.count) || 1), 0);
+      return;
+    }
+    this.inputBatches.push({ batch, offset: 0 });
+    this.inputCount += batch.records.length;
+    if (!this.draining) {
+      this.draining = true;
+      setImmediate(() => this.drainInput());
+    }
+  }
+
+  drainInput() {
+    const item = this.inputBatches[0];
+    if (item) {
+      const records = item.batch.records.slice(item.offset, item.offset + 128);
+      this.acceptBatch({ ...item.batch, records });
+      item.offset += records.length;
+      this.inputCount -= records.length;
+      if (item.offset >= item.batch.records.length) this.inputBatches.shift();
+    }
+    if (this.inputBatches.length) setImmediate(() => this.drainInput());
+    else this.draining = false;
   }
 
   upsertPlayer(id, name) {
@@ -227,7 +262,7 @@ class MonitorStore {
 
   async flush() {
     if (this.writing || !this.queue.length || this.now() < this.retryAfter) return this.writing;
-    const batch = this.queue.splice(0, 5000);
+    const batch = this.queue.splice(0, this.flushBatchSize);
     this.writing = (async () => {
       try {
         const text = batch.map(record => JSON.stringify(record)).join('\n') + '\n';
@@ -239,7 +274,7 @@ class MonitorStore {
         this.diskError = null;
         this.retryAfter = 0;
       } catch (error) {
-        this.droppedDisk += batch.length;
+        this.droppedDisk += batch.reduce((n, record) => n + record.count, 0);
         this.diskError = String(error.message || error).slice(0, 300);
         this.retryAfter = this.now() + 5000;
         this.segment = null;
@@ -255,6 +290,7 @@ class MonitorStore {
   }
 
   async flushAll() {
+    while (this.draining) await new Promise(resolve => setImmediate(resolve));
     while (this.writing || this.queue.length) {
       if (this.writing) await this.writing;
       else if (this.now() < this.retryAfter) break;

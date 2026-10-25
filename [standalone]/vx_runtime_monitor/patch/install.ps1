@@ -27,7 +27,29 @@ if ($source.Contains('VX_RUNTIME_MONITOR_HOOK_V1_BEGIN')) {
     if ($state.targetPath -ne $TargetPath -or $state.installedHash -ne $currentHash) {
         throw 'Hooked scheduler differs from the recorded installation; refusing to modify.'
     }
-    Write-Output "Hook already installed: $TargetPath"
+    $newHook = (Get-Content -LiteralPath (Join-Path $PSScriptRoot 'scheduler-hook.lua') -Raw).TrimEnd()
+    $pattern = '(?s)-- VX_RUNTIME_MONITOR_HOOK_V1_BEGIN.*?-- VX_RUNTIME_MONITOR_HOOK_V1_END'
+    if ([regex]::Matches($source, $pattern).Count -ne 1) { throw 'Ambiguous hook block; refusing upgrade.' }
+    $updated = [regex]::Replace($source, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($match) $newHook })
+    $callAnchor = "`t`t`t`tlocal started = vxMonitorEnabled and GetGameTimer() or nil"
+    $fastPath = "`t`t`t`tif not vxMonitorEnabled then`n`t`t`t`t`treturn exportProcessResult(resource, k2, pcall(exportsCallbackCache[resource][k2], ...))`n`t`t`t`tend`n"
+    $normalized = $updated.Replace("`r`n", "`n")
+    if (-not $normalized.Contains($fastPath + $callAnchor)) {
+        if (-not $normalized.Contains($callAnchor)) { throw 'Missing export caller upgrade anchor.' }
+        $normalized = $normalized.Replace($callAnchor, $fastPath + $callAnchor)
+    }
+    $updated = $normalized.Replace("`n", "`r`n")
+    if ($updated -ne $source) {
+        try {
+            [System.IO.File]::WriteAllText($TargetPath, $updated, [System.Text.UTF8Encoding]::new($false))
+            $state.installedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $TargetPath).Hash
+            $state | ConvertTo-Json | Set-Content -LiteralPath $statePath -Encoding utf8
+        } catch {
+            [System.IO.File]::WriteAllBytes($TargetPath, $bytes)
+            throw
+        }
+    }
+    Write-Output "Hook verified/upgraded: $TargetPath. Restart FXServer to load the change."
     exit 0
 }
 
@@ -138,6 +160,9 @@ Replace-Once 'setCB(_G[exportName])' 'setCB(vxMonitorWrapExport(exportName, _G[e
 Replace-Once @'
 				return exportProcessResult(resource, k2, pcall(exportsCallbackCache[resource][k2], ...))
 '@ @'
+				if not vxMonitorEnabled then
+					return exportProcessResult(resource, k2, pcall(exportsCallbackCache[resource][k2], ...))
+				end
 				local started = vxMonitorEnabled and GetGameTimer() or nil
 				local result = table_pack(pcall(exportsCallbackCache[resource][k2], ...))
 				if vxMonitorEnabled then

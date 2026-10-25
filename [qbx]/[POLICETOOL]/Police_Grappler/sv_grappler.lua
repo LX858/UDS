@@ -1,5 +1,23 @@
 grapplers = {}
 handBrakeEnabled = {}
+local grapplersByOwner = {}
+local grapplerEntities = {}
+
+local function unindexGrappler(netId)
+    local old = grapplers[netId]
+    local owner = old and tonumber(old.owner)
+    local index = owner and grapplersByOwner[owner]
+    if index then
+        index[netId] = nil
+        if not next(index) then grapplersByOwner[owner] = nil end
+    end
+end
+
+local function removeGrappler(netId)
+    unindexGrappler(netId)
+    grapplers[netId], handBrakeEnabled[netId], grapplerEntities[netId] = nil, nil, nil
+    TriggerClientEvent('Client:updateGrapplerTable', -1, netId, 'inactive', nil)
+end
 
 grapplerActions = {
     install = "install",
@@ -81,6 +99,7 @@ AddEventHandler("Server:updateGrapplerTable", function(key, vehicleNetId, mode, 
     local playerId = source
     
     if key == eventKey then
+        unindexGrappler(vehicleNetId)
         if grapplers[vehicleNetId] == nil then
             grapplers[vehicleNetId] = {}
         end
@@ -88,11 +107,19 @@ AddEventHandler("Server:updateGrapplerTable", function(key, vehicleNetId, mode, 
         grapplers[vehicleNetId].mode = mode
         grapplers[vehicleNetId].model = vehicleModel
         grapplers[vehicleNetId].owner = playerId
+        if mode ~= grapplerModes.inactive then
+            grapplersByOwner[playerId] = grapplersByOwner[playerId] or {}
+            grapplersByOwner[playerId][vehicleNetId] = true
+            grapplerEntities[vehicleNetId] = NetworkGetEntityFromNetworkId(vehicleNetId)
+        end
         
         if vehicleModel == nil then
             TriggerClientEvent("Client:updateGrapplerTable", -1, vehicleNetId, mode, playerId)
         else
             TriggerClientEvent("Client:updateGrapplerTable", -1, vehicleNetId, mode, playerId, vehicleModel)
+        end
+        if mode == grapplerModes.inactive then
+            grapplers[vehicleNetId], handBrakeEnabled[vehicleNetId], grapplerEntities[vehicleNetId] = nil, nil, nil
         end
     end
 end)
@@ -127,12 +154,30 @@ AddEventHandler("playerEnteredScope", function(data)
     local enteringPlayer = data.player
     local targetPlayer = data["for"]
     
-    for netId, grapplerData in pairs(grapplers) do
-        local ownerPlayerId = tonumber(grapplerData.owner)
-        local targetPlayerId = tonumber(targetPlayer)
-        
-        if ownerPlayerId == targetPlayerId then
-            TriggerClientEvent("Client:GrapplerInstallForOutOfScope", enteringPlayer, grapplers, netId)
+    for netId in pairs(grapplersByOwner[tonumber(targetPlayer)] or {}) do
+        TriggerClientEvent("Client:GrapplerInstallForOutOfScope", enteringPlayer, { [netId] = grapplers[netId] }, netId)
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    local index = grapplersByOwner[tonumber(source)]
+    if not index then return end
+    for netId in pairs(index) do removeGrappler(netId) end
+end)
+
+CreateThread(function()
+    while true do
+        Wait(10000)
+        local checked = 0
+        for netId, entity in pairs(grapplerEntities) do
+            local current = NetworkGetEntityFromNetworkId(netId)
+            if current == 0 or (entity ~= 0 and current ~= entity) then
+                removeGrappler(netId)
+            else
+                grapplerEntities[netId] = current
+            end
+            checked = checked + 1
+            if checked % 32 == 0 then Wait(0) end
         end
     end
 end)

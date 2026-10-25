@@ -1,3 +1,31 @@
+-- Full snapshot changes are infrequent; cleaning replicates only the affected motel's room state.
+local motelSnapshot
+local function applyCleaning(motel, changes)
+    local rooms = motelSnapshot and motelSnapshot[motel] and motelSnapshot[motel].rooms
+    if not rooms or type(changes) ~= 'table' then return end
+    for index, clean in pairs(changes) do
+        local room = rooms[index] or rooms[tonumber(index)]
+        if room and (clean.lastCleaned or 0) > (room.lastCleaned or 0) then
+            room.trashCount, room.lastCleaned = clean.trashCount, clean.lastCleaned
+        end
+    end
+end
+function GetMotelSnapshot()
+    if not motelSnapshot then
+        motelSnapshot = GlobalState.Motels
+        for motel in pairs(motelSnapshot or {}) do applyCleaning(motel, GlobalState['MotelCleaning:' .. motel]) end
+    end
+    return motelSnapshot
+end
+AddStateBagChangeHandler(nil, 'global', function(_, key, value)
+    if key == 'Motels' then
+        motelSnapshot = value
+        for motel in pairs(motelSnapshot or {}) do applyCleaning(motel, GlobalState['MotelCleaning:' .. motel]) end
+    elseif key:sub(1, 14) == 'MotelCleaning:' then
+        applyCleaning(key:sub(15), value)
+    end
+end)
+
 local kvpname = GetCurrentServerEndpoint()..'_inshells'
 local maxRentDaysLimit = 365
 -- Create blips on map for motels
@@ -19,7 +47,7 @@ end
 
 -- Callback for confirming occupant addition
 lib.callback.register('renzu_motels:confirmoccupant', function(data)
-	local motels = GlobalState.Motels
+	local motels = GetMotelSnapshot()
 	local motelData = motels[data.motel]
 	local motelLabel = 'Unknown Motel'
 	
@@ -122,7 +150,7 @@ GetPlayerKeys = function(data,room)
 end
 
 SetDoorState = function(data)
-	local motels = GlobalState.Motels or {}
+	local motels = GetMotelSnapshot() or {}
 	local doorindex = data.index + (joaat(data.motel))
 	DoorSystemSetDoorState(doorindex, 1)
 end
@@ -197,7 +225,7 @@ end)
 
 Door = function(data)
     local dist = #(data.coord - GetEntityCoords(cache.ped)) < 2
-    local motel = GlobalState.Motels[data.motel]
+    local motel = GetMotelSnapshot()[data.motel]
 	local moteldoor = motel and motel.rooms[data.index]
 	
 	-- Debug access checks
@@ -282,7 +310,7 @@ end
 
 isRentExpired = function(data)
 	if data and data.isQuickSleep then return false end
-	local motels = GlobalState.Motels[data.motel]
+	local motels = GetMotelSnapshot()[data.motel]
 	local room = motels?.rooms[data.index] or {}
 	local player = room?.players[PlayerData.identifier] or {}
 	return player?.duration and player?.duration < GlobalState.MotelTimer
@@ -307,7 +335,7 @@ RoomFunction = function(data,identifier,targetCoords)
 		return OpenStash(data,stashid)
 	elseif data.type == 'wardrobe' then
 		if not data.isQuickSleep then
-			local motels = GlobalState.Motels
+			local motels = GetMotelSnapshot()
 			local rooms = motels[data.motel] and motels[data.motel].rooms
 			local room = rooms and (rooms[data.index] or rooms[tostring(data.index)] or rooms[tonumber(data.index)])
 			local trashCount = room and room.trashCount or 0
@@ -557,7 +585,7 @@ Notify = function(msg,type)
 end
 
 MyRoomMenu = function(data)
-	local motels = GlobalState.Motels
+	local motels = GetMotelSnapshot()
 	local rate = motels[data.motel].hour_rate or data.rate
 
 	local options = {
@@ -655,7 +683,7 @@ RoomList = function(data)
 	if maxRentDays then maxRentDaysLimit = maxRentDays end
 	local rate = motels[data.motel].hour_rate or data.rate
 	local options = {}
-	--local motels = GlobalState.Motels
+	--local motels = GetMotelSnapshot()
 	for doorindex,v in ipairs(data.doors) do
 		local playerroom = motels[data.motel].rooms[doorindex].players[PlayerData.identifier]
 		local duration = playerroom?.duration
@@ -720,7 +748,7 @@ RoomList = function(data)
 end
 
 IsOwnerOrEmployee = function(motel)
-	local motels = GlobalState.Motels
+	local motels = GetMotelSnapshot()
 	if not motels or not motels[motel] or not PlayerData or not PlayerData.identifier then
 		if config.debug then
 			print('^1[DEBUG] IsOwnerOrEmployee - Missing data:^7')
@@ -856,7 +884,7 @@ Owner.Rooms.Occupants = function(data,index)
 end
 
 Owner.Rooms.List = function(data)
-	local motels = GlobalState.Motels
+	local motels = GetMotelSnapshot()
 	local options = {}
 	for doorindex,v in ipairs(data.doors) do
 		local occupants = CountOccupants(motels[data.motel].rooms[doorindex].players)
@@ -881,7 +909,7 @@ end
 
 Owner.Employee = {}
 Owner.Employee.Manage = function(data)
-	local motel = GlobalState.Motels[data.motel]
+	local motel = GetMotelSnapshot()[data.motel]
 	local options = {
 		{
 			title = 'Thêm nhân viên',
@@ -929,7 +957,7 @@ Owner.Employee.Manage = function(data)
 end
 
 MotelOwner = function(data)
-	local motels = GlobalState.Motels
+	local motels = GetMotelSnapshot()
 	if not motels[data.motel].owned then
 		local buy = lib.alertDialog({
 			header = data.label,
@@ -1363,7 +1391,7 @@ RegisterNetEvent('renzu_motels:officeEnterConfirmed', function(coord)
 		
 		function officeLockerPoint:onEnter()
 			-- Kiểm tra xem người chơi có quyền không
-			local motels = GlobalState.Motels
+			local motels = GetMotelSnapshot()
 			local motelData = motels[motelId]
 			if motelData then
 				local identifier = PlayerData?.identifier
@@ -1497,7 +1525,7 @@ ApplyWorkClothes = function(motelId, role)
 end
 
 OpenLockerMenu = function(motelId)
-	local motels = GlobalState.Motels
+	local motels = GetMotelSnapshot()
 	local motelData = motels[motelId]
 	if not motelData then return end
 	
@@ -1694,6 +1722,11 @@ function CleanTrashPile(data, entity, trashIndex)
 	})
 	
 	if success then
+        local cleanedAll = lib.callback.await('renzu_motels:cleanTrashPile', false, data.motel, data.index)
+        if cleanedAll == nil then
+            isCleaningTrash = false
+            return
+        end
 		if DoesEntityExist(entity) then
 			DeleteEntity(entity)
 		end
@@ -1706,7 +1739,6 @@ function CleanTrashPile(data, entity, trashIndex)
 			end
 		end
 		
-		local cleanedAll = lib.callback.await('renzu_motels:cleanTrashPile', false, data.motel, data.index)
 		if cleanedAll then
 			lib.notify({ title = 'Dọn dẹp', description = 'Phòng trọ hiện đã hoàn toàn sạch sẽ!', type = 'success' })
 		else
@@ -1725,7 +1757,7 @@ function SpawnRoomTrash(data, spawn, house)
 	end
 	spawnedTrash = {}
 
-	local motels = GlobalState.Motels
+	local motels = GetMotelSnapshot()
 	local rooms = motels[data.motel] and motels[data.motel].rooms
 	local room = rooms and (rooms[data.index] or rooms[tostring(data.index)] or rooms[tonumber(data.index)])
 	local trashCount = room and room.trashCount or 0
@@ -1839,7 +1871,7 @@ end
 EnterShell = function(data,login)
 	-- Security check - only allow entry if login or quicksleep or has proper access
 	if not login and not data.isQuickSleep then
-		local motel = GlobalState.Motels[data.motel]
+		local motel = GetMotelSnapshot()[data.motel]
 		local moteldoor = motel and motel.rooms[data.index]
 		
 		if not moteldoor then
@@ -1967,7 +1999,7 @@ lib.onCache('weapon', function(weapon)
 		Wait(100)
 		if IsPedShooting(cache.ped) then
 			local _, bullet, _ = RayCastGamePlayCamera(200.0, 1)
-			local motels = GlobalState.Motels or {}
+			local motels = GetMotelSnapshot() or {}
 			for _, data in pairs(config.motels) do
 				if data.doors and motels[data.motel] and motels[data.motel].rooms then
 					for k, v in pairs(data.doors) do
@@ -2050,7 +2082,7 @@ RegisterCommand('saveinteriorpos', function(source, args)
 end, false)
 
 Citizen.CreateThread(function()
-	while GlobalState.Motels == nil do Wait(1) end
+	while GetMotelSnapshot() == nil do Wait(1) end
     for motel, data in pairs(config.motels) do
 		-- Spawn NPC immediately on startup
 		local point = MotelRentalPoints(data)

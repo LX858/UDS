@@ -430,7 +430,7 @@ RegisterNetEvent('renzu_motels:enterOffice', function(motelId)
 
 	if not isOpen then
 		-- Đóng cửa: chỉ chủ hoặc nhân viên mới vào được
-		local motels = GlobalState.Motels
+		local motels = ServerMotels
 		local motelData = motels and motels[motelId]
 		if not motelData then return end
 		local identifier = xPlayer.identifier
@@ -468,7 +468,7 @@ lib.callback.register('renzu_motels:toggleOffice', function(src, motelId, isOpen
 	local xPlayer = GetPlayerFromId(src)
 	if not xPlayer then return false end
 
-	local motels = GlobalState.Motels
+	local motels = ServerMotels
 	local motelData = motels and motels[motelId]
 	if not motelData then return false end
 
@@ -493,7 +493,7 @@ end)
 
 -- Callback to get contacts for a motel (offline/online owner and employees grade >= 2)
 lib.callback.register('renzu_motels:getMotelContacts', function(src, motelName)
-	local motels = GlobalState.Motels
+	local motels = ServerMotels
 	if not motels then return {} end
 	local motel = motels[motelName]
 	if not motel then return {} end
@@ -919,6 +919,7 @@ Citizen.CreateThreadNow(function()
 	end
 
 	ServerMotels = db.fetchAll()
+    for motel in pairs(ServerMotels) do GlobalState['MotelCleaning:' .. motel] = nil end
 	-- Khởi tạo trạng thái công ty (office) cho các nhà trọ có enabled = true
 	local officeStates = {}
 	for k, v in pairs(config.motels) do
@@ -1679,7 +1680,79 @@ AddEventHandler('playerDropped', function(reason)
 	end
 end)
 
+local cleaningStates, cleaningWrites, cleanCooldown = {}, {}, {}
+local function flushCleanMotel(motel)
+    local state = cleaningWrites[motel]
+    while state and state.writing do
+        Citizen.Await(state.completion)
+        state = cleaningWrites[motel]
+    end
+    if not state then return end
+    if not ServerMotels[motel] then cleaningWrites[motel] = nil return end
+    state.writing = true
+    local completion = promise.new()
+    state.completion = completion
+    local batch = state.changes
+    state.changes = {}
+    -- Update only cleaning fields. Never rewrite rentals/revenue with an older room snapshot.
+    local expressions, parameters = {}, {}
+    for index, clean in pairs(batch) do
+        local number = tonumber(index)
+        for _, field in ipairs({ 'trashCount', 'lastCleaned' }) do
+            expressions[#expressions + 1] = "CASE WHEN JSON_TYPE(rooms) = 'ARRAY' THEN ? ELSE ? END, ?"
+            parameters[#parameters + 1] = ('$[%d].%s'):format(number - 1, field)
+            parameters[#parameters + 1] = ('$.' .. '"%s".%s'):format(index, field)
+            parameters[#parameters + 1] = clean[field]
+        end
+    end
+    parameters[#parameters + 1] = motel
+    local ok, result = pcall(MySQL.update.await,
+        "UPDATE renzu_motels SET rooms = COALESCE(JSON_SET(rooms, " .. table.concat(expressions, ', ') .. '), rooms) WHERE motel = ?', parameters)
+    state.writing = false
+    if not ok or result == nil then
+        for index, clean in pairs(batch) do state.changes[index] = state.changes[index] or clean end
+        print(('[xn_motels] Retaining room cleanup for retry: %s'):format(tostring(result)))
+    end
+    if next(state.changes) then
+        SetTimeout(ok and 250 or 5000, function() flushCleanMotel(motel) end)
+    else cleaningWrites[motel] = nil end
+    completion:resolve(true)
+end
+local function publishCleanRoom(motel, roomIndex, room)
+    local index = tostring(roomIndex)
+    local clean = { trashCount = room.trashCount, lastCleaned = room.lastCleaned }
+    local changes = cleaningStates[motel] or {}
+    cleaningStates[motel] = changes
+    changes[index] = clean
+    GlobalState['MotelCleaning:' .. motel] = changes
+    local state = cleaningWrites[motel]
+    if state then state.changes[index] = clean return end
+    cleaningWrites[motel] = { changes = { [index] = clean } }
+    SetTimeout(250, function() flushCleanMotel(motel) end)
+end
+AddEventHandler('playerDropped', function() cleanCooldown[source] = nil end)
+local function flushAllCleaning()
+    for motel in pairs(cleaningWrites) do flushCleanMotel(motel) end
+end
+AddEventHandler('txAdmin:events:serverShuttingDown', flushAllCleaning)
+AddEventHandler('txAdmin:events:scheduledRestart', function(event)
+    if event.secondsRemaining == 60 then flushAllCleaning() end
+end)
+AddEventHandler('onResourceStop', function(resource)
+    if resource == GetCurrentResourceName() then
+        flushAllCleaning()
+    end
+end)
+
 lib.callback.register('renzu_motels:cleanTrashPile', function(src, motel, roomIndex)
+	roomIndex = tonumber(roomIndex)
+    if type(motel) ~= 'string' or not roomIndex or roomIndex < 1 or roomIndex % 1 ~= 0 then return nil end
+    if not ServerMotels[motel] then return nil end
+    local expectedBucket = GetMotelUniqueId(motel) * 10000 + tonumber(roomIndex)
+    if GetPlayerRoutingBucket(src) ~= expectedBucket or not routings[src] then return nil end
+    local now = GetGameTimer()
+    if cleanCooldown[src] and now - cleanCooldown[src] < 3000 then return nil end
+    cleanCooldown[src] = now
 	local rooms = ServerMotels[motel] and ServerMotels[motel].rooms
 	if rooms then
 		local room = rooms[roomIndex] or rooms[tostring(roomIndex)] or rooms[tonumber(roomIndex)]
@@ -1689,8 +1762,7 @@ lib.callback.register('renzu_motels:cleanTrashPile', function(src, motel, roomIn
 				room.trashCount = currentTrash - 1
 				room.lastCleaned = os.time()
 				if room.trashCount == 0 then
-					GlobalState.Motels = ServerMotels
-					db.updateall('rooms = ?', '`motel`', motel, json.encode(ServerMotels[motel].rooms))
+					publishCleanRoom(motel, roomIndex, room)
 					local xCleaner = GetPlayerFromId(src)
 					LogCleanup(motel, roomIndex, xCleaner and xCleaner.name or 'Unknown', tostring(src))
 				end

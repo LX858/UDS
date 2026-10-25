@@ -55,9 +55,14 @@ local function grantConfiguredReward(src, player, identifier, reward)
 	end
 end
 
-local function ensurePlayerRow(identifier)
+local function ensurePlayerRow(identifier, allowCache)
+    local cached = DailyOnlineRows[identifier]
+    if allowCache and cached and GetGameTimer() - cached.at < 300000 then return cached.row end
 	local existingData = ExecuteSql('SELECT * FROM tipi_daily_rewards WHERE citizenid = ?', { identifier })
-	if existingData and existingData[1] then return existingData[1] end
+	if existingData and existingData[1] then
+        DailyOnlineRows[identifier] = { row = existingData[1], at = GetGameTimer() }
+        return existingData[1]
+    end
 	ExecuteSql('INSERT IGNORE INTO tipi_daily_rewards (citizenid) VALUES (?)', { identifier })
 	local created = ExecuteSql('SELECT * FROM tipi_daily_rewards WHERE citizenid = ?', { identifier })
 	return created and created[1]
@@ -454,7 +459,7 @@ DailyOnline = DailyOnline or {}
 
 function DailyOnline.PushSync(src, identifier)
 	if not src or not identifier then return end
-	local row = ensurePlayerRow(identifier)
+	local row = ensurePlayerRow(identifier, true)
 	if not row then return end
 	TriggerClientEvent('Tipi_Daily_Rewards:Client:SyncOnline', src, buildOnlineProgressPayload(row, identifier))
 end

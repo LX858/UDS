@@ -22,6 +22,8 @@ test('loopback API rejects missing credentials and exposes only sanitized record
   const token = 'test-token-'.padEnd(64, 'x');
   global.GetCurrentResourceName = () => 'vx_runtime_monitor';
   global.GetResourcePath = () => root;
+  global.GetConvarInt = (_name, fallback) => fallback;
+  global.RegisterCommand = () => {};
   global.GetConvar = (name, fallback) => ({ vx_monitor_host: '127.0.0.1', vx_monitor_port: String(port), vx_monitor_token: token })[name] || fallback;
   global.GetPlayers = () => ['12'];
   global.GetPlayerName = () => 'Alice';

@@ -165,6 +165,12 @@ end
 
 exports('GetPlayer', GetPlayer)
 
+-- Scalar lookup for hot paths without serializing the complete player object.
+exports('GetPlayerCitizenId', function(source)
+    local player = QBX.Players[tonumber(source)]
+    return player and player.PlayerData.citizenid
+end)
+
 ---@param citizenid string
 ---@return Player?
 function GetPlayerByCitizenId(citizenid)

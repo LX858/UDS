@@ -77,7 +77,7 @@ ShellTargets = function(data,offsets,loc,house)
 				if not data.isQuickSleep then
 					-- Target stash chỉ hiển thị cho chủ phòng
 					local canInteractFn = function(entity, distance, coords, name)
-						local motels = GlobalState.Motels[data.motel]
+						local motels = GetMotelSnapshot()[data.motel]
 						if not motels then return false end
 						local room = motels.rooms and motels.rooms[data.index]
 						if not room then return false end

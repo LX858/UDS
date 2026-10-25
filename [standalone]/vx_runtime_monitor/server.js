@@ -75,10 +75,25 @@ async function snapshot() {
 }
 
 function lifecycle(kind, phase, name, fields = {}) {
+  if (GetConvar('vx_monitor_mode', 'light') === 'off') return;
   store.record({ kind, phase, name, resource: RESOURCE, status: 'ok', ...fields });
 }
 
-on('__vx_runtime_monitor:batch', batch => store.acceptBatch(batch));
+on('__vx_runtime_monitor:batch', batch => {
+  if (GetConvar('vx_monitor_mode', 'light') !== 'off') store.enqueueBatch(batch);
+});
+
+// Console/ACE restricted. Detailed capture expires even if the command is not repeated.
+RegisterCommand('vx_monitor_detail', (_source, args) => {
+  const seconds = Math.min(300, Math.max(1, Number.parseInt(args[0], 10) || 60));
+  SetConvar('vx_monitor_detail_until', String(Math.floor(Date.now() / 1000) + seconds));
+  SetConvar('vx_monitor_mode', 'detail');
+}, true);
+RegisterCommand('vx_monitor_mode', (_source, args) => {
+  if (!['light', 'off'].includes(args[0])) return;
+  SetConvar('vx_monitor_detail_until', '0');
+  SetConvar('vx_monitor_mode', args[0]);
+}, true);
 
 on('playerConnecting', (name, _setKickReason, _deferrals) => {
   const id = currentSource();
@@ -138,7 +153,10 @@ function health() {
   const patched = hookPresent();
   const warming = now - bootTime < 15000;
   return {
-    status: !patched || (!warming && fresh === 0) || store.diskError ? 'degraded' : warming ? 'warming' : 'ok',
+    status: GetConvar('vx_monitor_mode', 'light') === 'off' ? 'off' : !patched || (!warming && fresh === 0) || store.diskError ? 'degraded' : warming ? 'warming' : 'ok',
+    collectionMode: GetConvar('vx_monitor_mode', 'light') === 'detail' &&
+      GetConvarInt('vx_monitor_detail_until', 0) <= Math.floor(now / 1000) ? 'light' : GetConvar('vx_monitor_mode', 'light'),
+    inputQueue: store.inputCount,
     schedulerHookPresent: patched,
     freshAgents: fresh,
     knownAgents: store.agents.size,

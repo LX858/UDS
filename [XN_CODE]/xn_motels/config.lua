@@ -91,7 +91,7 @@ config.shells = {
 }
 
 config.messageApi = function(data) -- {title,message,motel}
-	local motel = GlobalState.Motels[data.motel]
+	local motel = (GetMotelSnapshot and GetMotelSnapshot() or GlobalState.Motels)[data.motel]
 	local identifier = motel.owned -- owner identifier
 	-- add your custom message here. ex. SMS phone 
 

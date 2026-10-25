@@ -610,7 +610,11 @@ end)
 
 RegisterNetEvent("Client:GrapplerInstallForOutOfScope")
 AddEventHandler("Client:GrapplerInstallForOutOfScope", function(grapplerTable, vehicleNetId)
-    grapplers = grapplerTable
+    local incoming = grapplerTable[vehicleNetId]
+    if not incoming then return end
+    local existing = grapplers[vehicleNetId]
+    if existing then incoming.props = existing.props end
+    grapplers[vehicleNetId] = incoming
     Wait(3000)
     if grapplers[vehicleNetId] ~= nil then
         removeOldMode(vehicleNetId)
