@@ -83,6 +83,7 @@ Config.BlacklistedVehicles = {
     'shabudragon',
     'rmodmustang',
     'x3bearcat2',
+    'm5g60',
     'vf3',
     'vf8',
     'vf9'

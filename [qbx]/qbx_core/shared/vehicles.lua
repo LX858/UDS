@@ -1226,6 +1226,15 @@ return {
         type = 'automobile',
         hash = `caracara2`,
     },
+    gladiator20 = {
+        name = 'gladiator',
+        brand = 'Vapid',
+        model = 'gladiator20',
+        price = 64784,
+        category = 'offroad',
+        type = 'automobile',
+        hash = `gladiator20`,
+    },
     carbonizzare = {
         name = 'Carbonizzare',
         brand = 'Grotti',

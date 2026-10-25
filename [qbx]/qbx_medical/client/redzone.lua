@@ -25,20 +25,53 @@ local function getRedZoneWaitTime()
     return (currentRedZone and currentRedZone.waitHTime) or config.redZoneWaitHTime or 300
 end
 
+--- Closest point on the polygon boundary (2D) to the given position
+local function getNearestPolygonEdgePoint(points, px, py)
+    local bestX, bestY, bestDistSq = px, py, math.huge
+    for i = 1, #points do
+        local a = points[i]
+        local b = points[i % #points + 1]
+        local abx, aby = b.x - a.x, b.y - a.y
+        local lenSq = abx * abx + aby * aby
+        local t = 0.0
+        if lenSq > 0 then
+            t = math.max(0.0, math.min(1.0, ((px - a.x) * abx + (py - a.y) * aby) / lenSq))
+        end
+        local cx, cy = a.x + abx * t, a.y + aby * t
+        local dSq = (px - cx) ^ 2 + (py - cy) ^ 2
+        if dSq < bestDistSq then
+            bestX, bestY, bestDistSq = cx, cy, dSq
+        end
+    end
+    return bestX, bestY
+end
+
 --- Push player outside red zone boundary smoothly
 local function pushPlayerOutOfZone(redZone)
     if not redZone then return end
     local ped = cache.ped
     local pCoords = GetEntityCoords(ped)
-    local dir = vec3(pCoords.x - redZone.coords.x, pCoords.y - redZone.coords.y, 0.0)
-    
-    if #(dir) < 0.1 then
-        dir = vec3(1.0, 0.0, 0.0)
+    local pushCoords
+
+    if redZone.points then
+        local ex, ey = getNearestPolygonEdgePoint(redZone.points, pCoords.x, pCoords.y)
+        local dir = vec3(ex - pCoords.x, ey - pCoords.y, 0.0)
+        if #(dir) < 0.1 then
+            dir = vec3(1.0, 0.0, 0.0)
+        end
+        -- Push 6 meters past the nearest boundary edge
+        pushCoords = vec3(ex, ey, pCoords.z) + ((dir / #(dir)) * 6.0)
+    else
+        local dir = vec3(pCoords.x - redZone.coords.x, pCoords.y - redZone.coords.y, 0.0)
+
+        if #(dir) < 0.1 then
+            dir = vec3(1.0, 0.0, 0.0)
+        end
+
+        local normDir = dir / #(dir)
+        -- Push 6 meters outside the radius boundary
+        pushCoords = redZone.coords + (normDir * (redZone.radius + 6.0))
     end
-    
-    local normDir = dir / #(dir)
-    -- Push 6 meters outside the 20m radius boundary
-    local pushCoords = redZone.coords + (normDir * (redZone.radius + 6.0))
     local targetZ = pushCoords.z
     local success, groundZ = GetGroundZFor_3dCoord(pushCoords.x, pushCoords.y, pushCoords.z + 10.0, false)
     if success and groundZ > 0 then
@@ -111,9 +144,7 @@ CreateThread(function()
     if not config.redZones then return end
 
     for _, redZone in ipairs(config.redZones) do
-        lib.zones.sphere({
-            coords = redZone.coords,
-            radius = redZone.radius,
+        local zoneData = {
             debug = false,
             onEnter = function()
                 local currentTime = GetCloudTimeAsInt()
@@ -172,7 +203,23 @@ CreateThread(function()
                     end
                 end
             end
-        })
+        }
+
+        if redZone.points then
+            local minZ, maxZ = redZone.minZ or -100.0, redZone.maxZ or 300.0
+            local midZ = (minZ + maxZ) / 2
+            local points = {}
+            for i = 1, #redZone.points do
+                points[i] = vec3(redZone.points[i].x, redZone.points[i].y, midZ)
+            end
+            zoneData.points = points
+            zoneData.thickness = maxZ - minZ
+            lib.zones.poly(zoneData)
+        else
+            zoneData.coords = redZone.coords
+            zoneData.radius = redZone.radius
+            lib.zones.sphere(zoneData)
+        end
     end
 end)
 
@@ -190,6 +237,7 @@ CreateThread(function()
     while true do
         if redZoneDebugActive and config.redZones then
             for _, redZone in ipairs(config.redZones) do
+                if redZone.coords then
                 DrawMarker(
                     28,
                     redZone.coords.x, redZone.coords.y, redZone.coords.z,
@@ -199,6 +247,7 @@ CreateThread(function()
                     255, 0, 0, 80,
                     false, false, 2, false, nil, nil, false
                 )
+                end
             end
             Wait(0)
         else
