@@ -26,6 +26,8 @@ export type InviteState = {
 const Panel = styled.section`
   ${menuCardBase}
   flex: 1; min-height: 0; overflow: auto; padding: 14px; color: var(--text-main, #fff);
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
   font-family: 'Montserrat', sans-serif; font-size: 12px; line-height: 1.5;
   display: flex; flex-direction: column; gap: 14px;
   h3, p { margin: 0; }
