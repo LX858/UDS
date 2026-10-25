@@ -27,7 +27,7 @@ AddEventHandler('tipi-hud:reset', function()
 end)
 
 WS.RegisterEventHandler('tipi-hud:refreshPing', function(data)
-    local ping = data.pings[GetPlayerServerId(PlayerId())] or 0
+    local ping = data.ping or (data.pings and data.pings[GetPlayerServerId(PlayerId())]) or 0
 
     if ping then
         SendNUIMessage({

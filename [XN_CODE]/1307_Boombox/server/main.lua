@@ -91,39 +91,48 @@ local function IsAdmin(source)
         end
     end
 
-    -- 3. Kiểm tra qua QBCore.Functions.HasPermission nếu có QBCore
-    local QBCore = exports['qb-core'] and exports['qb-core']:GetCoreObject()
-    if QBCore and QBCore.Functions and QBCore.Functions.HasPermission then
-        for _, group in ipairs(Config.AdminGroups) do
-            local ok, has = pcall(function() return QBCore.Functions.HasPermission(source, group) end)
-            if ok and has then return true end
-        end
-    end
+    -- QBX HasPermission delegates to the ACE checks already performed above.
+    -- Do not serialize the entire compatibility core (including all players).
 
     return false
 end
 
+local function setAdminState(source, adm)
+    local state = Player(source).state
+    if state.isBoomboxAdmin ~= adm then state:set('isBoomboxAdmin', adm, true) end
+end
+
 lib.callback.register('1307_Boombox:server:checkIsAdmin', function(source)
     local adm = IsAdmin(source)
-    Player(source).state:set('isBoomboxAdmin', adm, true)
+    setAdminState(source, adm)
     return adm
 end)
 
 local function setupPlayerAdmin(source)
     if not source or source == 0 then return end
     local adm = IsAdmin(source)
-    Player(source).state:set('isBoomboxAdmin', adm, true)
+    setAdminState(source, adm)
     TriggerClientEvent('1307_Boombox:client:setAdminStatus', source, adm)
 end
 
-RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function()
-    local src = source
-    setupPlayerAdmin(src)
-end)
+local pendingAdminSync = {}
+local function queueAdminSync(src)
+    src = tonumber(src)
+    if not src or pendingAdminSync[src] then return end
+    local token = {}
+    pendingAdminSync[src] = token
+    SetTimeout(100, function()
+        if pendingAdminSync[src] ~= token then return end
+        pendingAdminSync[src] = nil
+        if GetPlayerName(src) then setupPlayerAdmin(src) end
+    end)
+end
+AddEventHandler('playerDropped', function() pendingAdminSync[tonumber(source)] = nil end)
+RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function() queueAdminSync(source) end)
 
 RegisterNetEvent('qbx_core:server:playerLoaded', function()
     local src = source
-    setupPlayerAdmin(src)
+    queueAdminSync(src)
 end)
 
 AddEventHandler('onResourceStart', function(resourceName)

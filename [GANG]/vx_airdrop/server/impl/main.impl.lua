@@ -227,7 +227,7 @@ function Impl:SyncPlayer(src)
     local member = round.members[src]
     TriggerClientEvent(prefix .. 'cl:matchSync', src, round.id, member.team, round.endsAt,
       round.scores, round.overtime, member.selecting, os.time())
-    TriggerClientEvent(prefix .. 'cl:uniforms', src, round.id, self:GetUniformRoster())
+    WS.TriggerClientEvent(prefix .. 'cl:uniforms', src, round.id, self:GetUniformRoster())
   else
     TriggerClientEvent(prefix .. 'cl:reset', src)
   end
@@ -299,7 +299,7 @@ function Impl:BroadcastUniforms()
   if not round or (round.phase ~= 'match' and round.phase ~= 'result') then return end
   local roster = self:GetUniformRoster()
   for src in pairs(round.members) do
-    TriggerClientEvent(prefix .. 'cl:uniforms', src, round.id, roster)
+    WS.TriggerClientEvent(prefix .. 'cl:uniforms', src, round.id, roster)
   end
 end
 

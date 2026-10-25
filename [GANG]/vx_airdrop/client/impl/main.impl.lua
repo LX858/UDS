@@ -183,7 +183,7 @@ function Impl:OnReady()
       if selecting then self:ShowWeapons() end
     end
   end)
-  self.eventHandlers[#self.eventHandlers + 1] = RegisterNetEvent(prefix .. 'cl:uniforms', function(roundId, roster)
+  WS.RegisterEventHandler(prefix .. 'cl:uniforms', function(roundId, roster)
     if self.phase ~= 'match' or self.roundId ~= roundId or type(roster) ~= 'table' then return end
     local uniforms = {}
     for _, entry in ipairs(roster) do

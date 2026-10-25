@@ -1,8 +1,7 @@
 -- Restart flag: dùng convar thay vì file JSON, tồn tại qua resource restart.
 local RESTART_CONVAR = 'tipi_hud_restarted'
 
-lib.callback.register('tipi-hud:getInformation', function()
-    local src = source
+lib.callback.register('tipi-hud:getInformation', function(src)
     local Player = getPlayer(src)
 
     if Player then
@@ -26,17 +25,15 @@ end)
 Citizen.CreateThread(function()
     Wait(10000)
     while true do
-        local data = {}
-        local players = getPlayers()
-
-        for k, v in pairs(players) do
-            data[v] = GetPlayerPing(v)
+        local players = GetPlayers()
+        local online = #players
+        for i, id in ipairs(players) do
+            local src = tonumber(id)
+            WS.TriggerClientEvent('tipi-hud:refreshPing', src, {
+                ping = GetPlayerPing(src), online = online
+            })
+            if i % 32 == 0 then Wait(0) end
         end
-
-        WS.TriggerClientEvent('tipi-hud:refreshPing', -1, {
-            pings = data,
-            online = GetNumPlayerIndices()
-        })
         Citizen.Wait(10000)
     end
 end)
@@ -50,20 +47,23 @@ local function setStress(src, newVal)
 
     -- Đồng bộ qua StateBag server
     local playerState = Player(src).state
-    if playerState then
+    if playerState and playerState.stress ~= newVal then
         playerState:set('stress', newVal, true)
     end
 
     -- Đồng bộ cho qbx_core
+    local updated = false
     if GetResourceState('qbx_core') == 'started' then
-        pcall(function()
+        updated = pcall(function()
             exports.qbx_core:SetPlayerMetadata(src, 'stress', newVal)
         end)
     end
 
-    local Player = getPlayer(src)
-    if Player and Player.Functions and Player.Functions.SetMetaData then
-        Player.Functions.SetMetaData('stress', newVal)
+    if not updated then
+        local player = getPlayer(src)
+        if player and player.Functions and player.Functions.SetMetaData then
+            player.Functions.SetMetaData('stress', newVal)
+        end
     end
 
     TriggerClientEvent('tipi-hud:updateStress', src, newVal)
@@ -71,7 +71,7 @@ end
 
 exports('setStress', setStress)
 
-local function getCurrentStress(src, Player)
+local function getCurrentStress(src, player)
     if GetResourceState('qbx_core') == 'started' then
         local success, qbxPlayer = pcall(function() return exports.qbx_core:GetPlayer(src) end)
         if success and qbxPlayer and qbxPlayer.PlayerData and qbxPlayer.PlayerData.metadata and qbxPlayer.PlayerData.metadata.stress ~= nil then
@@ -84,8 +84,8 @@ local function getCurrentStress(src, Player)
         return tonumber(playerState.stress) or 0
     end
 
-    if Player and Player.PlayerData and Player.PlayerData.metadata and Player.PlayerData.metadata.stress ~= nil then
-        return tonumber(Player.PlayerData.metadata.stress) or 0
+    if player and player.PlayerData and player.PlayerData.metadata and player.PlayerData.metadata.stress ~= nil then
+        return tonumber(player.PlayerData.metadata.stress) or 0
     end
 
     return 0

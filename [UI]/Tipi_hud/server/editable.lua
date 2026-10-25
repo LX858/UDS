@@ -29,11 +29,7 @@ function getJob(Player)
 end
 
 function getPlayers()
-    if frameworkName == "esx" then
-        return Framework.GetPlayers()
-    else
-        return Framework.Functions.GetPlayers()
-    end
+    return GetPlayers()
 end
 
 function RegisterItem(itemName, callback)
