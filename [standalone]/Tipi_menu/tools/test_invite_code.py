@@ -225,9 +225,12 @@ def run(config):
             'scalar': lua.table_from({'await': scalar}),
             'single': lua.table_from({'await': single}),
             'query': lua.table_from({'await': lambda sql,args=None: lua.table_from([lua.table_from(x) for x in query(sql,sql_args(args))])}),
+            'update': lua.table_from({'await': lambda sql,args=None: query(sql,sql_args(args))}),
         })
         lua.execute('testNow=1000; os.time=function() return testNow end; testPlayers={}; GetPlayerFromId=function(src) return testPlayers[src] end; GetPlayerIdentifiers=function(src) return {"license:"..testPlayers[src].identifier} end; GetNumPlayerTokens=function() return 2 end; GetPlayerToken=function(src,i) return testPlayers[src].identifier..i end')
-        runtime = lua.execute((ROOT/'server/impl/InviteCode.impl.lua').read_text(encoding='utf-8') + '\nreturn {attach=attach, flush=flush, endSource=endSource, awards=awards, state=state}')
+        lua.execute('testImpls={}; NewImpl=function(name) local impl={}; testImpls[name]=impl; return impl end; main={GetImpl=function(_,name) return testImpls[name] end}')
+        lua.execute((ROOT/'server/impl/playtime.impl.lua').read_text(encoding='utf-8'))
+        runtime = lua.execute((ROOT/'server/impl/InviteCode.impl.lua').read_text(encoding='utf-8') + '\nreturn {attach=attach, flush=flush, endSource=endSource, awards=awards, state=state, redeem=redeem}')
         account('lifecycle'); redeem('lifecycle','owner')
         lua.globals().testPlayers[7]=lua.table_from({'identifier':'lifecycle'})
         runtime.attach(7,1000,0)
@@ -259,6 +262,38 @@ def run(config):
         assert runtime.state('fraud-before')['blocked'] is True
         assert runtime.state('after-cap')['redemption']['status']=='exhausted'
         check('NUI state handles oxmysql boolean flags and paid/rejected/exhausted statuses')
+        playtime=lua.globals().testImpls['Playtime']
+        query("UPDATE tipi_invite_codes SET code='ABCDEFGH2345' WHERE citizenid='owner'")
+        for src,seconds in enumerate([17999,18000,18001],20):
+            cid=f'entry-{seconds}'
+            account(cid)
+            query('UPDATE players SET playtime=? WHERE citizenid=?',[seconds,cid])
+            lua.globals().testPlayers[src]=lua.table_from({'identifier':cid})
+            assert playtime.GetPlaytimeBySource(playtime,src)==seconds
+            result=runtime.redeem(src,cid,'ABCDEFGH2345')
+            assert result['ok'] is (seconds<=18000)
+            if seconds>18000:
+                assert result['code']=='invite_playtime_limit'
+                assert not query('SELECT id FROM tipi_invite_redemptions WHERE invitee=?',[cid])
+        account('entry-live')
+        query("UPDATE players SET playtime=18000 WHERE citizenid='entry-live'")
+        lua.globals().testPlayers[23]=lua.table_from({'identifier':'entry-live'})
+        assert playtime.GetPlaytimeBySource(playtime,23)==18000
+        assert runtime.state('entry-live')['canRedeem'] is True
+        lua.globals().testNow=lua.globals().testNow+1
+        assert runtime.redeem(23,'entry-live','ABCDEFGH2345')['ok'] is False
+        assert runtime.state('entry-live')['canRedeem'] is False
+        assert query("SELECT playtime FROM players WHERE citizenid='entry-live'")[0]['playtime']==18000
+        account('entry-vip')
+        lua.globals().testPlayers[24]=lua.table_from({'identifier':'entry-vip'})
+        playtime.AddPlaytime(playtime,24,18001)
+        assert runtime.redeem(24,'entry-vip','ABCDEFGH2345')['ok'] is False
+        assert runtime.state('entry-18000')['redemption']['status']=='pending'
+        assert row('entry-18000')['inviter']=='owner'
+        lua.globals().testImpls['Playtime']=None
+        assert runtime.redeem(23,'entry-live','ABCDEFGH2345')['ok'] is False
+        lua.globals().testImpls['Playtime']=playtime
+        check('Entry gate: <=5 hours allowed, >5 blocked, live unsaved seconds and VIP included, existing referrals retained, unavailable playtime fails closed')
         account('balance')
         lua.globals().MySQL['update']=lua.table_from({'await':lambda sql,args=None: query(sql,sql_args(args))})
         lua.execute('''exports={qbx_core={GetPlayer=function(_,src)
@@ -275,6 +310,38 @@ def run(config):
         assert wrapped.removeAccountMoney('coin',10000) is False and coin('balance')==140
         assert lua.globals().syncedCoin==140
         check('Actual Coin bridge preserves concurrent external credit, prevents overdraft and synchronizes committed balance')
+        lua.execute('''testCallbacks={}; testCommands={}; testThreads={};
+            NewImpl=function() startupImpl={}; return startupImpl end;
+            lib={callback={register=function(name,fn) testCallbacks[name]=fn end}};
+            RegisterCommand=function(name,fn) testCommands[name]=fn end;
+            CreateThread=function(fn) testThreads[#testThreads+1]=fn end;
+            GetPlayers=function() return {} end;
+            Wait=function(ms) coroutine.yield(ms) end;
+            startupConnectionFails=true;
+            MySQL.ready={await=function() if startupConnectionFails then error('test_connection_unavailable') end end}''')
+        startup=lua.execute((ROOT/'server/impl/InviteCode.impl.lua').read_text(encoding='utf-8')+
+                            '\nreturn {ready=function() return ready end, stage=function() return startupStage end}')
+        lua.execute('startupImpl:OnReady(); startupThread=coroutine.create(testThreads[#testThreads])')
+
+        def resume_startup():
+            lua.execute('local ok, delay=coroutine.resume(startupThread); assert(ok,delay); assert(delay==30000)')
+
+        unavailable=lua.globals().testCallbacks['Tipi_menu:sv:invite:getState']
+        resume_startup()
+        assert startup.ready() is False and startup.stage()=='database'
+        assert unavailable(99)['code']=='invite_not_ready'
+        lua.globals().startupConnectionFails=False
+        lua.globals().InviteCodeStore=None
+        resume_startup()
+        assert startup.ready() is False and startup.stage()=='store'
+        lua.globals().InviteCodeStore=store
+        query('DELETE FROM tipi_invite_guard WHERE id=1')
+        resume_startup()
+        assert startup.ready() is False and startup.stage()=='schema'
+        query('INSERT INTO tipi_invite_guard (id) VALUES (1)')
+        resume_startup()
+        assert startup.ready() is True and startup.stage()=='ready'
+        check('Actual OnReady retries connection/missing-store/missing-migration failures and becomes ready after recovery')
         print(f'{len(passed)} integration groups passed; isolated database only.')
     finally:
         db.close()

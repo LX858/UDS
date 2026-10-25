@@ -9,6 +9,10 @@ export type InviteState = {
   needsExhaustedConfirmation?: boolean
   code: string
   blocked: boolean
+  canRedeem: boolean
+  redeemBlockReason?: string
+  maxRedeemPlaytimeSeconds: number
+  playtimeSeconds?: number
   requiredSeconds: number
   maxRewarded: number
   inviteeCoin: number
@@ -138,17 +142,20 @@ export default function InviteCodePanel() {
       </Stats>
       <Row><small>Suất đã dùng: {state.counts.used}/{state.maxRewarded}</small><small>Đã nhận: {number(state.totalCoin)} Coin</small></Row>
       {state.blocked && <Notice>Tài khoản hiện không đủ điều kiện tham gia chương trình mã mời.</Notice>}
+      {!state.redemption && !state.blocked && state.canRedeem === false &&
+        <Notice>{state.redeemBlockReason || 'Bạn không đủ điều kiện nhập mã mời.'}</Notice>}
       {state.redemption ? <div>
         <small>Mã đã nhập — không thể thay đổi</small><p><b>{state.redemption.code}</b></p>
         <p>{statuses[state.redemption.status] || 'Chờ xử lý'}</p>
         <progress value={state.redemption.seconds} max={state.requiredSeconds} aria-label='Tiến độ giờ online' />
         <Row><small>{(state.redemption.seconds / 3600).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} / {state.requiredSeconds / 3600} giờ online</small>
           <small>Chủ mã đã dùng {state.redemption.ownerSlotsUsed}/{state.maxRewarded} suất</small></Row>
-      </div> : !state.blocked && <Form onSubmit={e => { e.preventDefault(); void submit() }}>
+      </div> : !state.blocked && state.canRedeem !== false && <Form onSubmit={e => { e.preventDefault(); void submit() }}>
         <label htmlFor='invite-code'>Nhập mã người đã mời bạn</label>
         <input id='invite-code' value={code} maxLength={12} autoComplete='off' spellCheck={false} disabled={busy}
           placeholder='Mã mời gồm 12 ký tự' onChange={e => { setCode(e.target.value.toUpperCase()); setExhaustedCode(null); setConfirmed(false) }} />
-        <Notice>Mã chỉ được nhập một lần và không thể thay đổi. Cần đủ 50 giờ online sau khi nhập mã và vượt qua kiểm tra.
+        <Notice>Chỉ được nhập mã khi tổng giờ chơi hiện tại không quá {(state.maxRedeemPlaytimeSeconds ?? 18000) / 3600} tiếng.
+          Mã chỉ được nhập một lần và không thể thay đổi. Cần đủ 50 giờ online sau khi nhập mã và vượt qua kiểm tra.
           Chỉ 50 người đủ điều kiện đầu tiên của chủ mã được thưởng; nhập mã không giữ suất.</Notice>
         <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
           <input type='checkbox' checked={confirmed} disabled={busy} style={{ width: 'auto', marginTop: 3 }} onChange={e => setConfirmed(e.target.checked)} />

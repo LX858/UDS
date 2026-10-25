@@ -3,6 +3,7 @@
 ## Rules
 
 - One persistent 12-character code per `citizenid`; one successful redemption, immutable.
+- New redemptions require current total Playtime <= 18,000 seconds (exactly 5 hours allowed), checked server-side including unsaved session time and VIP-added hours. Missing Playtime data blocks redemption until it can be checked. Existing redemptions remain intact; this entry limit is separate from the 50-hour qualification timer.
 - 180,000 online seconds after redemption, including AFK; no historical, offline or VIP-added playtime.
 - Matching license or at least two distinct player tokens rejects duplicate participation. No IP collection/check.
 - Missing current identity data defers eligibility; fingerprints are stored as SHA-256 hashes and retained across sessions.
@@ -20,9 +21,11 @@
 
 Command: `invitefraud <citizenid> <on|off> <reason>` (reason required, at most 512 bytes).
 
+Startup diagnostics: run `invitestatus` in the server console (in-game access requires `command.invitestatus`). It prints readiness, startup stage, actual resource path and the last initialization error. Initialization retries every 30 seconds and logs the specific failure when it changes. Stages are `database` (connection), `store` (missing Lua helper), `schema` (invite migration) and `coin` (Coin configuration/storage engine). Apply migration to the database used by the running server, which may differ from this workstation's configuration. Successful initialization logs `Ready: database checks passed.`
+
 The initial migration was applied on 2026-10-26. Backup: `X:\UDSFxServer\backups\tipi-invite-20261026-004704`. Seven empty invite tables were created; all 2,996 player Coin rows matched the pre-migration snapshot. FXServer/FiveM were not running, so live verification and resource startup remain pending.
 
-Validation on this checkout: production TypeScript/Vite build passed, 14 MariaDB/Lua integration groups passed, and browser tests against the built production assets passed at 1280×720, 1366×768 and 1920×1080. Build warnings were limited to the existing npm config, outdated Browserslist data and a bundle exceeding 500 kB. The source copies in `web/vendor` match all 55 originals by SHA-256.
+Validation on this checkout: production TypeScript/Vite build passed, 16 MariaDB/Lua integration groups passed (including actual OnReady failure/recovery), and browser tests against the built production assets passed at 1280×720, 1366×768 and 1920×1080. Build warnings were limited to the existing npm config, outdated Browserslist data and a bundle exceeding 500 kB. The source copies in `web/vendor` match all 55 originals by SHA-256.
 
 ## Interfaces and failure handling
 
@@ -46,7 +49,7 @@ SQL/runtime harness requires Python `pymysql` and `lupa`:
 python tools/test_invite_code.py --config X:/UDSFxServer/server.cfg
 ```
 
-The harness reads connection settings without printing credentials, creates a uniquely named `tipi_invite_test_*` database, executes the actual Lua-generated transactions, and drops only that test database. The connection needs permission to create/drop test databases. It tests concurrent duplicates, payout cap, rollback/retry, milestones, fraud reversal, identity readiness, oxmysql boolean compatibility, 50-hour boundary, VIP exclusion, source reuse, reconnect and resource-instance restart.
+The harness reads connection settings without printing credentials, creates a uniquely named `tipi_invite_test_*` database, executes the actual Lua-generated transactions, and drops only that test database. The connection needs permission to create/drop test databases. It tests concurrent duplicates, payout cap, rollback/retry, milestones, fraud reversal, identity readiness, oxmysql boolean compatibility, 5-hour entry boundary and live/VIP total playtime, 50-hour boundary, VIP exclusion from qualification, source reuse, reconnect and resource-instance restart.
 
 Browser checks require Playwright and Edge (or `BROWSER_EXECUTABLE`). Start Vite or Vite preview, set `INVITE_PREVIEW_URL` to its URL and run:
 
@@ -54,7 +57,7 @@ Browser checks require Playwright and Edge (or `BROWSER_EXECUTABLE`). Start Vite
 node tools/test_invite_browser.cjs
 ```
 
-`PLAYWRIGHT_MODULE` may specify an externally installed Playwright package; `INVITE_SCREENSHOTS` selects the screenshot folder (defaults to the system temporary folder). Tests use mocked NUI responses, not the game or production database. They cover three viewports, clipboard, acknowledgement, exhausted-cap confirmation, immutable redemption, status displays, milestone scrolling and browser errors.
+`PLAYWRIGHT_MODULE` may specify an externally installed Playwright package; `INVITE_SCREENSHOTS` selects the screenshot folder (defaults to the system temporary folder). Tests use mocked NUI responses, not the game or production database. They cover three viewports, clipboard, acknowledgement, exhausted-cap confirmation, immutable redemption, status displays, milestone scrolling, the above-5-hour entry lock and browser errors.
 
 ## Live acceptance still required
 

@@ -36,6 +36,7 @@ Config.EnableModules = {
 }
 Config.Debug = false
 Config.InviteCode = {
+    MaxRedeemPlaytimeSeconds = 5 * 60 * 60,
     RequiredSeconds = 50 * 60 * 60,
     CheckpointMs = 30000,
     MaxRewarded = 50,

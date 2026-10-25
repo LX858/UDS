@@ -48,7 +48,7 @@ server_script {
   "server/utils.lua",
   "server/bridge.lua",
   '@oxmysql/lib/MySQL.lua',
-  "server/classes/*",
+  "server/classes/InviteCodeStore.lua",
   "server/impl/*"
 }
 server_exports {
@@ -71,5 +71,6 @@ escrow_ignore {
   "client/playtime_items.lua",
   "server/utils.lua",
   "server/bridge.lua",
+  "server/classes/InviteCodeStore.lua",
   "server/impl/*",
 }

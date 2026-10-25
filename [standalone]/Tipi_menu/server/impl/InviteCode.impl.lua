@@ -2,6 +2,13 @@ local Impl = NewImpl('InviteCode')
 local S = InviteCodeStore
 local sessions, sourceEpoch, identities, retired, limits = {}, {}, {}, {}, {}
 local ready, busy, stopping = false, false, false
+local startupStage, startupError = 'database', nil
+local startupMessages = {
+    database = 'Đang kết nối cơ sở dữ liệu mã mời. Vui lòng thử lại sau ít giây.',
+    store = 'Thiếu thành phần xử lý mã mời trên server. Vui lòng báo quản trị viên.',
+    schema = 'Dữ liệu mã mời chưa sẵn sàng trên database của server. Vui lòng báo quản trị viên.',
+    coin = 'Chưa thể xác minh dữ liệu Coin trên server. Vui lòng báo quản trị viên.',
+}
 local reconcileOwners = {}
 local inactive = {}
 local alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -152,6 +159,24 @@ local function counts(cid)
     return r
 end
 
+local function redemptionEligibility(cid)
+    local playtime = main and main:GetImpl('Playtime')
+    if not playtime or type(playtime.GetPlaytimeByCitizenid) ~= 'function' then
+        return false, 'Chưa thể kiểm tra giờ chơi hiện tại. Vui lòng thử lại sau.'
+    end
+    -- Use the Playtime module so the current, unsaved session and VIP-added hours
+    -- count toward the entry limit. Invite qualification still uses its own timer.
+    local seconds = tonumber(playtime:GetPlaytimeByCitizenid(cid))
+    if not seconds or seconds ~= seconds or seconds < 0 then
+        return false, 'Chưa thể kiểm tra giờ chơi hiện tại. Vui lòng thử lại sau.'
+    end
+    local maximum = Config.InviteCode.MaxRedeemPlaytimeSeconds
+    if seconds > maximum then
+        return false, ('Bạn đã chơi trên %g tiếng nên không thể nhập mã mời nữa.'):format(maximum / 3600), seconds
+    end
+    return true, nil, seconds
+end
+
 local function state(cid)
     local own = MySQL.single.await('SELECT code, admin_fraud FROM tipi_invite_codes WHERE citizenid = ?', { cid })
     local c = counts(cid)
@@ -177,7 +202,11 @@ local function state(cid)
             received = m.coin > 0 and paid[('milestone:%s:%d'):format(cid, m.count)] == true,
             reached = c.valid >= m.count }
     end
+    local eligible, blockReason, playtimeSeconds = redemptionEligibility(cid)
     return { ok = true, code = own.code, blocked = flag(own.admin_fraud),
+        canRedeem = not redemption and not flag(own.admin_fraud) and eligible,
+        redeemBlockReason = not redemption and blockReason or nil,
+        playtimeSeconds = playtimeSeconds, maxRedeemPlaytimeSeconds = Config.InviteCode.MaxRedeemPlaytimeSeconds,
         requiredSeconds = Config.InviteCode.RequiredSeconds, maxRewarded = Config.InviteCode.MaxRewarded,
         inviteeCoin = Config.InviteCode.InviteeCoin, inviterCoin = Config.InviteCode.InviterCoin,
         counts = c, redemption = redemption, milestones = milestones, totalCoin = total }
@@ -194,6 +223,8 @@ local function redeem(src, cid, body)
     local owner = MySQL.single.await('SELECT citizenid, admin_fraud FROM tipi_invite_codes WHERE code = ?', { input })
     if not owner then return { ok = false, message = 'Mã mời không tồn tại.' } end
     if owner.citizenid == cid then return { ok = false, message = 'Không thể nhập mã mời của chính mình.' } end
+    local eligible, blockReason = redemptionEligibility(cid)
+    if not eligible then return { ok = false, code = 'invite_playtime_limit', message = blockReason } end
     local confirmed = type(body) == 'table' and body.confirmExhausted == true
     transaction(S.redeem(cid, owner.citizenid, confirmed))
     local saved = MySQL.single.await('SELECT inviter FROM tipi_invite_redemptions WHERE invitee = ?', { cid })
@@ -239,10 +270,39 @@ local function awards()
     for cid in pairs(refresh) do RefreshPlayerCoinByCitizenid(cid) end
 end
 
+local function initialize()
+    startupStage = 'database'
+    MySQL.ready.await()
+    startupStage = 'store'
+    S = InviteCodeStore
+    assert(type(S) == 'table' and type(S.coinTarget) == 'function',
+        'Missing server/classes/InviteCodeStore.lua; deploy the complete resource')
+    startupStage = 'schema'
+    assert(MySQL.scalar.await('SELECT id FROM tipi_invite_guard WHERE id = 1'),
+        'Invite migration missing in the active oxmysql database; import tools/invite_code.sql')
+    MySQL.query.await('SELECT reward_slot, qualified_at FROM tipi_invite_redemptions LIMIT 0')
+    MySQL.query.await([[SELECT c.identity_ready, f.fingerprint, s.seconds, l.batch, a.reason
+        FROM tipi_invite_codes c LEFT JOIN tipi_invite_fingerprints f ON f.citizenid = c.citizenid
+        LEFT JOIN tipi_invite_sessions s ON s.invitee = c.citizenid
+        LEFT JOIN tipi_invite_reward_log l ON l.citizenid = c.citizenid
+        LEFT JOIN tipi_invite_fraud_audit a ON a.citizenid = c.citizenid LIMIT 0]])
+    startupStage = 'coin'
+    local t, id, coin = S.coinTarget()
+    MySQL.query.await(('SELECT %s, %s FROM %s LIMIT 0'):format(id, coin, t))
+    local engine = MySQL.scalar.await([[SELECT ENGINE FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?]], { Config.QBX.coinColumn.table })
+    assert(type(engine) == 'string' and engine:upper() == 'INNODB', 'Coin table must use InnoDB')
+    startupStage, startupError = 'ready', nil
+end
+
 function Impl:OnReady()
     for _, action in ipairs({ 'getState', 'redeem' }) do
         lib.callback.register('Tipi_menu:sv:invite:' .. action, function(src, body)
-            if not ready or stopping then return { ok = false, message = 'Hệ thống mã mời chưa sẵn sàng.' } end
+            if not ready or stopping then
+                return { ok = false, code = 'invite_not_ready', retryAfter = 30,
+                    message = stopping and 'Hệ thống mã mời đang khởi động lại.'
+                        or startupMessages[startupStage] or 'Hệ thống mã mời đang khởi tạo.' }
+            end
             local now = os.time()
             limits[src] = limits[src] or {}
             if (limits[src][action] or 0) > now then return { ok = false, message = 'Vui lòng chờ một chút rồi thử lại.' } end
@@ -312,27 +372,32 @@ function Impl:OnReady()
         report(result.message)
     end, true)
 
+    RegisterCommand('invitestatus', function(src)
+        if src ~= 0 and not IsPlayerAceAllowed(src, 'command.invitestatus') then return end
+        local status = ('ready=%s stage=%s resource=%s'):format(tostring(ready), startupStage, GetResourcePath(GetCurrentResourceName()))
+        print('[Tipi_menu:InviteCode] ' .. status)
+        if startupError then print('[Tipi_menu:InviteCode] Last initialization error: ' .. startupError) end
+        if src ~= 0 then TriggerClientEvent('ox_lib:notify', src, {
+            description = ready and 'Mã mời đã sẵn sàng.' or startupMessages[startupStage], type = 'inform' }) end
+    end, true)
+
     CreateThread(function()
-        MySQL.ready.await()
-        local ok = pcall(function()
-            assert(MySQL.scalar.await('SELECT id FROM tipi_invite_guard WHERE id = 1'), 'Migration missing')
-            MySQL.query.await('SELECT reward_slot, qualified_at FROM tipi_invite_redemptions LIMIT 0')
-            MySQL.query.await([[SELECT c.identity_ready, f.fingerprint, s.seconds, l.batch, a.reason
-                FROM tipi_invite_codes c LEFT JOIN tipi_invite_fingerprints f ON f.citizenid = c.citizenid
-                LEFT JOIN tipi_invite_sessions s ON s.invitee = c.citizenid
-                LEFT JOIN tipi_invite_reward_log l ON l.citizenid = c.citizenid
-                LEFT JOIN tipi_invite_fraud_audit a ON a.citizenid = c.citizenid LIMIT 0]])
-            local t, id, coin = S.coinTarget()
-            MySQL.query.await(('SELECT %s, %s FROM %s LIMIT 0'):format(id, coin, t))
-            local engine = MySQL.scalar.await([[SELECT ENGINE FROM information_schema.TABLES
-                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?]], { Config.QBX.coinColumn.table })
-            assert(engine and engine:upper() == 'INNODB', 'Coin table must support transactions')
-        end)
-        if not ok then
-            print('[Tipi_menu:InviteCode] Disabled: apply tools/invite_code.sql and verify the configured Coin column, then restart Tipi_menu.')
-            return
+        local lastError
+        while not stopping and not ready do
+            local ok, err = pcall(initialize)
+            if ok then
+                ready = true
+                print('[Tipi_menu:InviteCode] Ready: database checks passed.')
+            else
+                startupError = tostring(err)
+                if startupError ~= lastError then
+                    print(('[Tipi_menu:InviteCode] Initialization failed at %s: %s. Retrying in 30 seconds.')
+                        :format(startupStage, startupError))
+                    lastError = startupError
+                end
+                Wait(30000)
+            end
         end
-        ready = true
         while not stopping do
             exclusive(function()
                 for _, value in ipairs(GetPlayers()) do
