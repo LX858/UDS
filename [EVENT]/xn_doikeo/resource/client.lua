@@ -167,7 +167,7 @@ local function nearby(self)
         lib.hideTextUI()
         textUI = false 
     end
-    if not knocking and self.currentDistance < config.interactDistance and IsControlJustPressed(0, 38) then
+    if not knocking and self.currentDistance < config.interactDistance and IsControlJustPressed(0, 38) and not IsPedInAnyVehicle(PlayerPedId(), false) then
         lib.hideTextUI()
         textUI = false 
         trickOrTreat(self.houseId)               

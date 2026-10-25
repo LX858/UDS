@@ -62,17 +62,7 @@ return {
             -- export = 'XNClothes.clothes'
         }
     },
-    ["cloth_decals"] = {
-        label = 'Họa tiết',
-        weight = 0,
-        stack = false,
-        close = false,
-        -- degrade = 720,
-        durability = 100,
-        client = {
-            -- export = 'XNClothes.clothes'
-        }
-    },
+
     ["cloth_ears"] = {
         label = "Khuyên tai",
         weight = 0.0,
@@ -8494,6 +8484,14 @@ return {
         stack = false,
         close = true,
         description = 'Chìa khóa xe BMW M8'
+    },
+
+    ['key_gladitor'] = {
+        label = 'Chìa khóa Gladitor',
+        weight = 1000,
+        stack = false,
+        close = true,
+        description = 'Chìa khóa xe Gladitor'
     },
 
     ['key_amggt'] = {

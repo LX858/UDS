@@ -192,6 +192,14 @@ Config = {
             camera = 'default',
             label = 'Áo thun'
         },
+        cloth_decals = {
+            component = 10,
+            prop = false,
+            itemname = 'cloth_decals',
+            clothesSlotID = 16,
+            camera = 'default',
+            label = 'Phụ kiện'
+        },
         cloth_torso = {
             component = 11,
             prop = false,

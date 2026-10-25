@@ -54,7 +54,7 @@
       <AIHandling>AVERAGE</AIHandling>
       <SubHandlingData>
         <Item type="CCarHandlingData">
-          <strAdvancedFlags>340F0000</strAdvancedFlags>
+          <strAdvancedFlags>0</strAdvancedFlags>
 		  <AdvancedData>
             <Item type="CAdvancedData">
               <Slot value="20"/>
