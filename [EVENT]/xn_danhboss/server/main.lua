@@ -370,33 +370,66 @@ local function scheduleRespawn()
     end)
 end
 
-local reviveWindowUntil = 0
+local reviveWindow
+local lastReviveAttempt = {}
+
+local function isDown(src)
+    local st = Player(src).state['qbx_medical:deathState']
+    return type(st) == 'number' and st > 1
+end
+
+local function isInReviveZone(src, bucket)
+    local ped = GetPlayerPed(src)
+    return ped ~= 0 and GetPlayerRoutingBucket(src) == bucket
+        and #(GetEntityCoords(ped) - zoneCenter) <= Config.Zone.radius
+end
+
+local function tryZoneRevive(src, bucket, reason)
+    if not Config.Zone.enabled or not isDown(src) or not isInReviveZone(src, bucket) then return end
+    local now = GetGameTimer()
+    if lastReviveAttempt[src] and now - lastReviveAttempt[src] < 3000 then return end
+    lastReviveAttempt[src] = now
+    debugPrint(('revive request: player=%s reason=%s'):format(src, reason))
+    exports.qbx_medical:Revive(src)
+end
+
+local function checkEndRevive(src)
+    local window = reviveWindow
+    if not window or GetGameTimer() > window.untilAt then return end
+    tryZoneRevive(src, window.bucket, 'boss-ended')
+end
 
 -- Revives every downed player inside the boss zone when the boss dies or is removed.
--- The server set covers tracked players; clients inside the zone also confirm (xn_danhboss:requestRevive)
--- so nobody stays down if the tracking missed them.
+-- Recheck for 15 seconds: medical death state can arrive after the boss death.
+-- Enumerate connected players so a missed client zone-enter cannot omit anyone.
 local function reviveZonePlayers()
     local Z = Config.Zone
     if not (Z.enabled and Z.reviveOnBossDeath) then return end
-    for src in pairs(zonePlayers) do
-        local st = Player(src).state['qbx_medical:deathState']
-        if st and st > 1 then
-            exports.qbx_medical:Revive(src)
+    local window = { untilAt = GetGameTimer() + 15000, bucket = GetEntityRoutingBucket(boss.ped) }
+    reviveWindow = window
+    local function sweep()
+        if reviveWindow ~= window then return end
+        for _, id in ipairs(GetPlayers()) do
+            checkEndRevive(tonumber(id))
+        end
+        if GetGameTimer() < window.untilAt then
+            SetTimeout(3000, sweep)
+        else
+            for _, id in ipairs(GetPlayers()) do
+                local src = tonumber(id)
+                if isDown(src) and isInReviveZone(src, window.bucket) then
+                    debugPrint(('revive still pending at end of window: player=%s'):format(src))
+                end
+            end
+            reviveWindow = nil
         end
     end
-    reviveWindowUntil = GetGameTimer() + 15000
+    sweep()
     TriggerClientEvent('xn_danhboss:reviveCheck', -1)
 end
 
 RegisterNetEvent('xn_danhboss:requestRevive', function()
-    local src = source
-    if GetGameTimer() > reviveWindowUntil then return end
-    local ped = GetPlayerPed(src)
-    if ped == 0 or #(GetEntityCoords(ped) - zoneCenter) > Config.Zone.radius + 15.0 then return end
-    local st = Player(src).state['qbx_medical:deathState']
-    if st and st > 1 then
-        exports.qbx_medical:Revive(src)
-    end
+    checkEndRevive(source)
 end)
 
 local function finishBoss()
@@ -437,6 +470,7 @@ end
 spawnBoss = function()
     if boss and not boss.dead then return false, 'Boss đang tồn tại.' end
     if boss then removeBoss() end
+    reviveWindow = nil
     clearRanking() -- the previous round's ranking ends when the next boss starts
 
     local B = Config.Boss
@@ -871,13 +905,16 @@ local function startZoneRevive(src)
     if not Z.enabled then return end
     if not (boss and not boss.dead) then return end
 
-    local ped = GetPlayerPed(src)
-    if ped == 0 or #(GetEntityCoords(ped) - zoneCenter) > Z.radius then return end
+    local round = boss
+    local bucket = GetEntityRoutingBucket(round.ped)
+    if not isInReviveZone(src, bucket) then return end
 
-    TriggerClientEvent('xn_danhboss:hideDeathScreen', src)
     if pendingRevive[src] then return end
+    TriggerClientEvent('xn_danhboss:hideDeathScreen', src)
 
-    pendingRevive[src] = true
+    -- A unique ticket prevents an older death/disconnect timer from consuming a new one.
+    local ticket = {}
+    pendingRevive[src] = ticket
     TriggerClientEvent('ox_lib:notify', src, {
         title = Config.Text.title,
         description = Config.Text.reviveSoon:format(Z.reviveDelay),
@@ -886,32 +923,38 @@ local function startZoneRevive(src)
         duration = 6000,
     })
 
-    SetTimeout(Z.reviveDelay * 1000, function()
-        if not pendingRevive[src] then return end
-        pendingRevive[src] = nil
-
-        -- Only revive if boss is still alive and active
-        if not (Config.Zone.enabled and boss and not boss.dead) then return end
-
-        local p = GetPlayerPed(src)
-        if p == 0 or #(GetEntityCoords(p) - zoneCenter) > Z.radius then return end
-
-        local st = Player(src).state['qbx_medical:deathState']
-        if st and st > 1 then
-            exports.qbx_medical:Revive(src)
+    local attempts = 0
+    local function attempt()
+        if pendingRevive[src] ~= ticket then return end
+        if not (Config.Zone.enabled and boss == round and not round.dead)
+            or not isDown(src) or not isInReviveZone(src, bucket) then
+            pendingRevive[src] = nil
+            TriggerClientEvent('xn_danhboss:restoreDeathScreen', src)
+            return
         end
-    end)
+        if attempts >= 5 then
+            pendingRevive[src] = nil
+            debugPrint(('revive not confirmed after retries: player=%s'):format(src))
+            TriggerClientEvent('xn_danhboss:restoreDeathScreen', src)
+            return
+        end
+        attempts = attempts + 1
+        tryZoneRevive(src, bucket, 'zone-delay')
+        SetTimeout(3000, attempt)
+    end
+    SetTimeout(Z.reviveDelay * 1000, attempt)
 end
 
 -- Instant reaction when qbx_medical flags the player as down.
 AddStateBagChangeHandler('qbx_medical:deathState', nil, function(bagName, _, value)
     local src = GetPlayerFromStateBagName(bagName)
     if not src or src == 0 then return end
-    if not value or value <= 1 then
+    if type(value) ~= 'number' or value <= 1 then
         pendingRevive[src] = nil
         return
     end
-    if not zonePlayers[src] then return end
+    -- The new value is not necessarily readable from the bag during this callback.
+    SetTimeout(0, function() checkEndRevive(src) end)
     startZoneRevive(src)
 end)
 
@@ -919,10 +962,10 @@ end)
 CreateThread(function()
     while true do
         Wait(5000)
-        if zoneCount > 0 and Config.Zone.enabled and boss and not boss.dead then
-            for src in pairs(zonePlayers) do
-                local deathState = Player(src).state['qbx_medical:deathState']
-                if deathState and deathState > 1 then startZoneRevive(src) end
+        if Config.Zone.enabled and boss and not boss.dead then
+            for _, id in ipairs(GetPlayers()) do
+                local src = tonumber(id)
+                if isDown(src) then startZoneRevive(src) end
             end
         end
     end
@@ -930,6 +973,7 @@ end)
 
 AddEventHandler('playerDropped', function()
     pendingRevive[source] = nil
+    lastReviveAttempt[source] = nil
 end)
 
 lib.addCommand('spawnboss', {

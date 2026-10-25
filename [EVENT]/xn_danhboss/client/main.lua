@@ -84,6 +84,7 @@ end)
 
 -- Zone Death Screen & Revive Handling
 local deathScreenHiddenByBoss = false
+local deathScreenGeneration = 0
 
 local function isInsideBossZone()
     local ped = cache.ped or PlayerPedId()
@@ -106,8 +107,11 @@ local function hideBossZoneDeathScreen(force)
     end
 
     deathScreenHiddenByBoss = true
+    deathScreenGeneration = deathScreenGeneration + 1
+    local generation = deathScreenGeneration
     CreateThread(function()
         for _ = 1, 5 do
+            if not deathScreenHiddenByBoss or generation ~= deathScreenGeneration then return end
             exports.qbx_medical:HideDeathScreen()
             Wait(200)
         end
@@ -132,6 +136,10 @@ RegisterNetEvent('xn_danhboss:hideDeathScreen', function()
 end)
 
 RegisterNetEvent('xn_danhboss:died', function()
+    restoreDeathScreenIfNeeded()
+end)
+
+RegisterNetEvent('xn_danhboss:restoreDeathScreen', function()
     restoreDeathScreenIfNeeded()
 end)
 
