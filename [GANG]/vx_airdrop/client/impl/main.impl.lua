@@ -194,7 +194,7 @@ function Impl:OnReady()
     self.uniformTeams = uniforms
     self.uniformTeams[GetPlayerServerId(PlayerId())] = self.team
   end)
-  self.eventHandlers[#self.eventHandlers + 1] = RegisterNetEvent(prefix .. 'cl:score', function(roundId, scores, endsAt, overtime, serverNow)
+  WS.RegisterEventHandler(prefix .. 'cl:score', function(roundId, scores, endsAt, overtime, serverNow)
     if self.phase == 'match' and roundId == self.roundId then self:UpdateScore(scores, endsAt, overtime, serverNow) end
   end)
   self.eventHandlers[#self.eventHandlers + 1] = RegisterNetEvent(prefix .. 'cl:weaponApproved', function(roundId, weaponName)

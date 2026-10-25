@@ -31,6 +31,7 @@ ui_page 'web/build/index.html'
 
 shared_scripts {
   '@ox_lib/init.lua',
+  '@lr_lib/ws_import.lua',
   "locales/L.lua",
   "locales/lang/*.lua",
   "utils/*.lua",

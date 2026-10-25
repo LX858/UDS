@@ -307,7 +307,7 @@ function Impl:BroadcastScore()
   local round = self.round
   if not round or round.phase ~= 'match' then return end
   for src in pairs(round.members) do
-    TriggerClientEvent(prefix .. 'cl:score', src, round.id, round.scores, round.endsAt, round.overtime, os.time())
+    WS.TriggerClientEvent(prefix .. 'cl:score', src, round.id, round.scores, round.endsAt, round.overtime, os.time())
   end
 end
 
