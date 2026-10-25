@@ -5,7 +5,7 @@ export default {
   content: [
     './index.html',
     './src/**/*.{js,ts,jsx,tsx}',
-    '../../Tipi_Rankings/web/src/**/*.{js,ts,jsx,tsx}',
+    './vendor/Tipi_Rankings/web/src/**/*.{js,ts,jsx,tsx}',
     './node_modules/@nextui-org/theme/dist/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {

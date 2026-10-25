@@ -3,8 +3,8 @@ import fs from 'fs'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const tipiRankingsSrc = path.resolve(__dirname, '../../Tipi_Rankings/web/src')
-const tipiDailyRewardsSrc = path.resolve(__dirname, '../../Tipi_Daily_Rewards/web/src')
+const tipiRankingsSrc = path.resolve(__dirname, './vendor/Tipi_Rankings/web/src')
+const tipiDailyRewardsSrc = path.resolve(__dirname, './vendor/Tipi_Daily_Rewards/web/src')
 const claimSoundSrc = path.resolve(
 	__dirname,
 	'../../Tipi_Daily_Rewards/web/public/sounds/effect.mp3',

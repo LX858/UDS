@@ -901,12 +901,6 @@ function Impl:RegisterEvents()
 		return mkSuccess(player, rewardMsg)
 	end)
 
-	lib.callback.register("Tipi_menu:cb:inviteCode:redeem", function(source, code)
-		local player = GetPlayerFromId(source)
-		if not player then return { status = false, message = 'Không tìm thấy người chơi' } end
-		return mkFail(player, 'Tính năng mã mời đang phát triển')
-	end)
-
 	lib.callback.register("Tipi_menu:cb:giftCode:getClothingComponents", function(source)
 		if not isGiftCodeAdmin(source) then
 			return { status = false, message = 'Bạn không có quyền', components = {} }

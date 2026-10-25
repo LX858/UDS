@@ -196,7 +196,7 @@ function Impl:OnReady()
     self.rosterRoundId, self.rosterVersion = roundId, version or 0
     self.uniformTeams[GetPlayerServerId(PlayerId())] = self.team
   end)
-  self.eventHandlers[#self.eventHandlers + 1] = RegisterNetEvent(prefix .. 'cl:uniformsDelta', function(roundId, version, removed)
+  WS.RegisterEventHandler(prefix .. 'cl:uniformsDelta', function(roundId, version, removed)
     if self.phase ~= 'match' or self.roundId ~= roundId or type(removed) ~= 'table' then return end
     if self.rosterRoundId ~= roundId or not self.rosterVersion or version > self.rosterVersion + 1 then
       TriggerServerEvent(prefix .. 'sv:ready')

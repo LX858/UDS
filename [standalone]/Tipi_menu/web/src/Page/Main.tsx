@@ -3,8 +3,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useSelector } from 'react-redux'
 import { RootState } from '../store'
+import InviteCodePanel from '../components/InviteCodePanel'
 import ProfileSidebar, { ProfilePanel, ProfileSlot } from '../components/ProfileSidebar'
-import DevelopingCardBlock, { DevelopingCardContent, developingCardStyles } from '../components/DevelopingCardBlock'
+import DevelopingCardBlock from '../components/DevelopingCardBlock'
 import MenuPageShell from '../components/MenuPageShell'
 import { motion } from 'framer-motion'
 import Button from '../components/Button'
@@ -30,7 +31,8 @@ const DonateCardSlot = styled(Box)`
 	min-height: 0;
 `
 
-const GiftCodeSection = styled(Box)`
+const GiftCodeSection = styled(Box)<{ $expanded?: boolean }>`
+	flex: ${(p) => p.$expanded ? 1 : 'initial'};
 	width: 100%;
 	flex-shrink: 0;
 	display: flex;
@@ -101,7 +103,7 @@ const InfoCard = styled(Box)`
 	${menuCardBase}
 `
 
-const GiftCodeCard = styled(InfoCard)<{ $developing?: boolean }>`
+const GiftCodeCard = styled(InfoCard)`
 	position: relative;
 	overflow: hidden;
 	width: 100%;
@@ -114,7 +116,6 @@ const GiftCodeCard = styled(InfoCard)<{ $developing?: boolean }>`
 	gap: 8px;
 	min-height: 0;
 	background-color: rgba(0, 8, 18, 0.35);
-	${(p) => p.$developing && developingCardStyles}
 `
 
 const GiftCodeBackground = styled(Box)`
@@ -572,7 +573,7 @@ function Main() {
 					</Box>
 
 					<Box flex={1} minWidth={0} height='100%' minHeight={0} display='flex' flexDirection='column' rGap={14}>
-						<GiftCodeSection>
+						<GiftCodeSection $expanded={codeTab === 'invite'}>
 							<CodeTabRail>
 								<CodeTabBtn
 									type='button'
@@ -588,11 +589,11 @@ function Main() {
 								</CodeTabBtn>
 							</CodeTabRail>
 
+							{codeTab === 'invite' ? <InviteCodePanel /> : (
 							<GiftCodeCardSlot>
-								<GiftCodeCard $developing={codeTab === 'invite'}>
+								<GiftCodeCard>
 									<GiftCodeBackground />
 									<GiftCodeContent>
-										{codeTab === 'gift' ? (
 											<CodeTabPanel>
 												<GiftCodeInputRow>
 													<GiftCodeInput
@@ -637,23 +638,17 @@ function Main() {
 													/>
 												</GiftCodeButtonRow>
 											</CodeTabPanel>
-										) : (
-											<DevelopingCardContent
-												compact
-												title={L('ui.main.developing_title')}
-												description={L('ui.main.invite_dev')}
-											/>
-										)}
 									</GiftCodeContent>
 								</GiftCodeCard>
 							</GiftCodeCardSlot>
+							)}
 						</GiftCodeSection>
 
-						<DevelopingCardBlock
+						{codeTab === 'gift' && <DevelopingCardBlock
 							fill
 							title={L('ui.main.developing_title')}
 							description={L('ui.main.developing_desc')}
-						/>
+						/>}
 					</Box>
 						</>
 					)}

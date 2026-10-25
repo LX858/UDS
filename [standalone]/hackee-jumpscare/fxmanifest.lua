@@ -3,6 +3,7 @@ game 'gta5'
 
 description 'Jumpscare utility for admins.'
 lua54 "yes"
+dependency 'qb-core'
 shared_script {
     '@ox_lib/init.lua',
     '@lr_lib/ws_import.lua'

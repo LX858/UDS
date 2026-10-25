@@ -2,7 +2,11 @@
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": false,
@@ -17,12 +21,28 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@tipi-rankings/*": ["../../Tipi_Rankings/web/src/*"],
-      "@uls-lb/*": ["../../Tipi_Rankings/web/src/*"],
-      "@/*": ["../../Tipi_Rankings/web/src/*"],
-      "@tipi-daily-rewards/*": ["../Tipi_Daily_Rewards/web/src/*"]
+      "@tipi-rankings/*": [
+        "./vendor/Tipi_Rankings/web/src/*"
+      ],
+      "@uls-lb/*": [
+        "./vendor/Tipi_Rankings/web/src/*"
+      ],
+      "@/*": [
+        "./vendor/Tipi_Rankings/web/src/*"
+      ],
+      "@tipi-daily-rewards/*": [
+        "./vendor/Tipi_Daily_Rewards/web/src/*"
+      ]
     }
   },
-  "include": ["src", "../../Tipi_Rankings/web/src", "../../Tipi_Daily_Rewards/web/src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": [
+    "src",
+    "vendor/Tipi_Rankings/web/src",
+    "vendor/Tipi_Daily_Rewards/web/src"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
 }

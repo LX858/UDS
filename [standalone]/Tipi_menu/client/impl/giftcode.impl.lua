@@ -39,13 +39,6 @@ function Impl:NUICallbacks()
 		lib.callback.await("Tipi_menu:cb:giftCode:redeem", false, body)
 	end)
 
-	RegisterNUICallback('inviteCode:redeem', function(body, cb)
-		cb(1)
-		if not body then return end
-		main:ImplCall('Main', 'ToggleNUI', false)
-		lib.callback.await("Tipi_menu:cb:inviteCode:redeem", false, body)
-	end)
-
 	RegisterNUICallback('giftCode:closeAdmin', function(body, cb)
 		cb(1)
 		local restoreMenuFocus = type(body) == 'table' and body.menuOpen == true

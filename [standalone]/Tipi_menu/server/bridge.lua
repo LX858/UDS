@@ -5,7 +5,7 @@ local META_ACCOUNTS = {
 	pumpkin = true,
 }
 
-local CoinCache = {}
+local CoinRefreshVersion = {}
 local SrcCitizenMap = {}
 
 local function getCoinColumnCfg()
@@ -20,9 +20,6 @@ end
 local function getDbCoin(citizenid)
 	local cfg = getCoinColumnCfg()
 	if not cfg or not citizenid then return 0 end
-	if CoinCache[citizenid] ~= nil then
-		return CoinCache[citizenid]
-	end
 	local ok, amount = pcall(function()
 		return tonumber(MySQL.scalar.await(
 			('SELECT %s FROM %s WHERE %s = ? LIMIT 1'):format(cfg.column, cfg.table, cfg.idColumn),
@@ -30,31 +27,43 @@ local function getDbCoin(citizenid)
 		)) or 0
 	end)
 	if ok and amount then
-		CoinCache[citizenid] = amount
 		return amount
 	end
 	return 0
 end
 
-local function setDbCoin(citizenid, amount, source)
-	local cfg = getCoinColumnCfg()
-	if not cfg or not citizenid then return end
-	amount = math.max(0, math.floor(tonumber(amount) or 0))
-	CoinCache[citizenid] = amount
-	MySQL.update(
-		('UPDATE %s SET %s = ? WHERE %s = ?'):format(cfg.table, cfg.column, cfg.idColumn),
-		{ amount, citizenid }
-	)
-	if source then
-		TriggerClientEvent('Tipi_menu:cl:syncPlayerCoin', source, amount)
+function RefreshPlayerCoinByCitizenid(citizenid)
+	local version = (CoinRefreshVersion[citizenid] or 0) + 1
+	CoinRefreshVersion[citizenid] = version
+	local amount = getDbCoin(citizenid)
+	if CoinRefreshVersion[citizenid] ~= version then return end
+	for src, cid in pairs(SrcCitizenMap) do
+		if cid == citizenid then
+			local current = QBX:GetPlayer(tonumber(src))
+			if current and current.PlayerData.citizenid == citizenid then
+				TriggerClientEvent('Tipi_menu:cl:syncPlayerCoin', src, amount)
+			end
+		end
 	end
+end
+
+local function changeDbCoin(citizenid, delta)
+	local cfg = getCoinColumnCfg()
+	if not cfg or not citizenid then return false end
+	delta = math.floor(tonumber(delta) or 0)
+	local changed = MySQL.update.await(
+		('UPDATE `%s` SET `%s` = COALESCE(`%s`, 0) + ? WHERE `%s` = ? AND COALESCE(`%s`, 0) + ? >= 0')
+			:format(cfg.table, cfg.column, cfg.column, cfg.idColumn, cfg.column),
+		{ delta, citizenid, delta }
+	)
+	if changed and changed > 0 then RefreshPlayerCoinByCitizenid(citizenid); return true end
+	return false
 end
 
 AddEventHandler('playerDropped', function()
 	local src = source
 	local cid = SrcCitizenMap[src]
 	if cid then
-		CoinCache[cid] = nil
 		SrcCitizenMap[src] = nil
 	end
 end)
@@ -147,9 +156,7 @@ local function wrapQbxPlayer(qbPlayer)
 		if amount <= 0 then return end
 
 		if isDbCoinAccount(account) then
-			local current = getDbCoin(pd.citizenid)
-			setDbCoin(pd.citizenid, current - amount, pd.source)
-			return
+			return changeDbCoin(pd.citizenid, -math.floor(amount))
 		end
 
 		if isMetaAccount(account) then
@@ -166,9 +173,7 @@ local function wrapQbxPlayer(qbPlayer)
 		if amount <= 0 then return end
 
 		if isDbCoinAccount(account) then
-			local current = getDbCoin(pd.citizenid)
-			setDbCoin(pd.citizenid, current + amount, pd.source)
-			return
+			return changeDbCoin(pd.citizenid, math.floor(amount))
 		end
 
 		if isMetaAccount(account) then

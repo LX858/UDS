@@ -309,7 +309,7 @@ function Impl:FlushMemberChanges(round)
   round.removedMembers = nil
   round.rosterVersion = (round.rosterVersion or 0) + 1
   for src in pairs(round.members) do
-    TriggerClientEvent(prefix .. 'cl:uniformsDelta', src, round.id, round.rosterVersion, removed)
+    WS.TriggerClientEvent(prefix .. 'cl:uniformsDelta', src, round.id, round.rosterVersion, removed)
   end
 end
 

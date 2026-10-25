@@ -12,6 +12,7 @@ end
 
 -- Dont touch this
 Config.EnableModules = {
+    ["InviteCode"] = { enabled = true, client = true, priority = 1 },
     ["Main"] = {
         enabled = true,
         client = true, -- enable client side
@@ -34,6 +35,16 @@ Config.EnableModules = {
     },
 }
 Config.Debug = false
+Config.InviteCode = {
+    RequiredSeconds = 50 * 60 * 60,
+    CheckpointMs = 30000,
+    MaxRewarded = 50,
+    InviteeCoin = 50,
+    InviterCoin = 100,
+    Milestones = { { count = 1, coin = 0 }, { count = 5, coin = 250 },
+        { count = 10, coin = 600 }, { count = 20, coin = 1500 },
+        { count = 30, coin = 2500 }, { count = 50, coin = 5000 } },
+}
 Config.Nui = false
 Config.Dev = false
 ---@type "qbx" | "qb" | "esx" | "ProjectStarboy" | "standalone" | "old_esx"
