@@ -211,7 +211,7 @@ function Impl:StartRound()
   self.round = {
     id = ('%d-%06d'):format(now, math.random(0, 999999)),
     phase = 'registration', registrationEnds = now + Config.Airdrop.RegistrationSeconds,
-    registered = {}, members = {}, killEvents = {}, scores = { A = 0, B = 0 },
+    registered = {}, registeredCount = 0, members = {}, killEvents = {}, scores = { A = 0, B = 0 },
   }
   TriggerClientEvent(prefix .. 'cl:registration', -1, self.round.id, self.round.registrationEnds, false, now)
   return true
@@ -221,7 +221,9 @@ function Impl:SyncPlayer(src)
   local round = self.round
   if not round then return TriggerClientEvent(prefix .. 'cl:reset', src) end
   if round.phase == 'registration' then
-    TriggerClientEvent(prefix .. 'cl:registration', src, round.id, round.registrationEnds, round.registered[src] == true, os.time())
+    local registeredCitizenId = round.registered[src]
+    TriggerClientEvent(prefix .. 'cl:registration', src, round.id, round.registrationEnds,
+      registeredCitizenId ~= nil and registeredCitizenId == citizenId(src), os.time())
   elseif round.phase == 'match' and round.members[src] then
     local member = round.members[src]
     TriggerClientEvent(prefix .. 'cl:matchSync', src, round.id, member.team, round.endsAt,
@@ -235,19 +237,31 @@ end
 function Impl:Join(src, roundId)
   local round = self.round
   if not round or round.phase ~= 'registration' or round.id ~= roundId or os.time() >= round.registrationEnds then return end
-  if not online(src) or not citizenId(src) or not onFoot(src) or not alive(src) then
+  local cid = online(src) and citizenId(src)
+  if not cid or not onFoot(src) or not alive(src) then
     return notify(src, 'Bạn phải vào nhân vật, còn sống và xuống xe để tham gia.', 'error')
   end
-  round.registered[src] = true
+  if round.registered[src] and round.registered[src] ~= cid then
+    round.registered[src] = nil
+    round.registeredCount = round.registeredCount - 1
+  end
+  if not round.registered[src] then
+    if round.registeredCount >= Config.Airdrop.MaxParticipants then
+      return notify(src, 'Airdrop đã đủ người tham gia.', 'error')
+    end
+    round.registered[src] = cid
+    round.registeredCount = round.registeredCount + 1
+  end
   TriggerClientEvent(prefix .. 'cl:joined', src, round.id)
+  if round.registeredCount >= Config.Airdrop.MaxParticipants then self:BeginMatch() end
 end
 
 function Impl:BeginMatch()
   local round = self.round
   if not round or round.phase ~= 'registration' then return end
   local players = {}
-  for src in pairs(round.registered) do
-    if online(src) and citizenId(src) and onFoot(src) and alive(src) then players[#players + 1] = src end
+  for src, cid in pairs(round.registered) do
+    if online(src) and citizenId(src) == cid and onFoot(src) and alive(src) then players[#players + 1] = src end
   end
   if #players <= 1 then return self:CancelRound('Airdrop bị hủy vì có dưới 2 người tham gia.') end
   for i = #players, 2, -1 do
@@ -279,6 +293,7 @@ function Impl:BeginMatch()
   end
   self:BroadcastUniforms()
   round.registered = {}
+  round.registeredCount = 0
   TriggerClientEvent(prefix .. 'cl:reset', -1, round.id)
   self:BroadcastScore()
 end
@@ -447,6 +462,7 @@ function Impl:RemovePlayer(src, reason, dropped, skipTeamCheck)
   if round.phase == 'registration' then
     if round.registered[src] then
       round.registered[src] = nil
+      round.registeredCount = round.registeredCount - 1
       if not dropped then TriggerClientEvent(prefix .. 'cl:unjoined', src, round.id, reason) end
     end
     return
@@ -599,8 +615,12 @@ function Impl:Tick()
   local round = self.round
   if not round then return end
   if round.phase == 'registration' then
-    for src in pairs(round.registered) do
-      if not online(src) or not onFoot(src) then self:RemovePlayer(src, 'Bạn đã lên xe nên bị gỡ khỏi airdrop.', not online(src)) end
+    for src, cid in pairs(round.registered) do
+      local isOnline = online(src)
+      local sameCitizen = isOnline and citizenId(src) == cid
+      if not isOnline or not sameCitizen or not onFoot(src) then
+        self:RemovePlayer(src, 'Bạn không còn đủ điều kiện tham gia airdrop.', not sameCitizen)
+      end
     end
     if now >= round.registrationEnds then self:BeginMatch() end
   elseif round.phase == 'match' then

@@ -18,6 +18,7 @@ Config.ClientLazyLoad = false
 Config.Airdrop = {
   Schedule = { '15:00', '21:00' },
   RegistrationSeconds = 60 * 3,
+  MaxParticipants = 100,
   MatchSeconds = 15 * 60,
   ScoreEverySeconds = 20,
   ScoreRadius = 30.0,

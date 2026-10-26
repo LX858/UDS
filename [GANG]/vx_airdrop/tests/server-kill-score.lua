@@ -230,8 +230,8 @@ assert(round.scores.A == 0 and round.scores.B == 0,
 
 round = newRound()
 local deltas = {}
-local originalSend = TriggerClientEvent
-TriggerClientEvent = function(name, target, id, version, removed)
+local originalSend = WS.TriggerClientEvent
+WS.TriggerClientEvent = function(name, target, id, version, removed)
   if name == 'vx_airdrop:cl:uniformsDelta' then
     deltas[#deltas + 1] = { target = target, version = version, removed = removed }
   end
@@ -244,5 +244,5 @@ advance(0)
 assert(#deltas == 2 and #deltas[1].removed == 2 and deltas[1].version == 1,
   'One delta version per burst, sent only to remaining participants')
 assert(round.members[3] and round.members[4] and not round.members[1])
-TriggerClientEvent = originalSend
+WS.TriggerClientEvent = originalSend
 print('server-kill-score: all scenarios including batched disconnects passed')
