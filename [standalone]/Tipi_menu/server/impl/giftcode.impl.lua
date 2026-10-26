@@ -812,11 +812,23 @@ function Impl:OnReady()
 	self:CommandHandler()
 end
 
+function Impl:CheckPlaytime(cid)
+	local playtime = main and main:GetImpl('Playtime')
+    if not playtime or type(playtime.GetPlaytimeByCitizenid) ~= 'function' then
+        return false, 'Chưa thể kiểm tra giờ chơi hiện tại. Vui lòng thử lại sau.'
+    end
+    local seconds = tonumber(playtime:GetPlaytimeByCitizenid(cid))
+
+	return seconds < Config.GiftCode.PlaytimeRequire
+end
+
 function Impl:RegisterEvents()
 	lib.callback.register("Tipi_menu:cb:giftCode:redeem", function(source, code)
 		local player = GetPlayerFromId(source)
 		if not player then return { status = false, message = 'Không tìm thấy người chơi' } end
-
+		if not self:CheckPlaytime(player.PlayerData.citizenid) then 
+			return mkFail(player, 'Tài khoản phải online đủ 24 tiếng mới có thể nhập gift code')
+		end
 		if type(code) ~= 'string' or code == '' then
 			return mkFail(player, 'Vui lòng nhập mã giftcode')
 		end
