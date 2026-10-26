@@ -19,7 +19,7 @@ Config.EnableModules = {
         priority = 2   -- 1 : init on start | 2 : init on player loaded
     },
     ["GiftCode"] = {
-        enabled = false,
+        enabled = true,
         client = true, -- enable client side
         priority = 2   -- 1 : init on start | 2 : init on player loaded
     },
@@ -310,6 +310,7 @@ Config.GiftCode = {
 	CooldownTime = 5000, 
 	MaxCodeLength = 100, 
 	MaxBundleItems = 20, 
+    PlaytimeRequire = 60 * 60 * 24,
 	EnableHWIDCheck = true,
 	UseFakeHWIDForLocalhost = true,
 	Webhooks = {
