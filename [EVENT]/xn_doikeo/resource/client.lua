@@ -146,6 +146,7 @@ local function doTrickOrTreat(houseId)
 end
 
 local function trickOrTreat(houseId)
+    if IsPedInAnyVehicle(PlayerPedId(), false) then return end
     if knocking then return end
     knocking = true
     local ok, err = pcall(doTrickOrTreat, houseId)
