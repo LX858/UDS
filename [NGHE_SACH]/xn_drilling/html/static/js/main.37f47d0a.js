@@ -1,7 +1,7 @@
 /*! For license information please see main.37f47d0a.js.LICENSE.txt */
 !function(){"use strict";var e={743:function(e,t,n){var r=n(791),l=n(164);function a(e,t,n){return t in e?Object.defineProperty(e,t,{value:n,enumerable:!0,configurable:!0,writable:!0}):e[t]=n,e}function o(e,t){var n=Object.keys(e);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(e);t&&(r=r.filter((function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable}))),n.push.apply(n,r)}return n}function i(e){for(var t=1;t<arguments.length;t++){var n=null!=arguments[t]?arguments[t]:{};t%2?o(Object(n),!0).forEach((function(t){a(e,t,n[t])})):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(n)):o(Object(n)).forEach((function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(n,t))}))}return e}function u(e,t){(null==t||t>e.length)&&(t=e.length);for(var n=0,r=new Array(t);n<t;n++)r[n]=e[n];return r}function s(e,t){return function(e){if(Array.isArray(e))return e}(e)||function(e,t){var n=null==e?null:"undefined"!==typeof Symbol&&e[Symbol.iterator]||e["@@iterator"];if(null!=n){var r,l,a=[],o=!0,i=!1;try{for(n=n.call(e);!(o=(r=n.next()).done)&&(a.push(r.value),!t||a.length!==t);o=!0);}catch(u){i=!0,l=u}finally{try{o||null==n.return||n.return()}finally{if(i)throw l}}return a}}(e,t)||function(e,t){if(e){if("string"===typeof e)return u(e,t);var n=Object.prototype.toString.call(e).slice(8,-1);return"Object"===n&&e.constructor&&(n=e.constructor.name),"Map"===n||"Set"===n?Array.from(e):"Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)?u(e,t):void 0}}(e,t)||function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}n.p;var c=function(e,t){return c=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(e,t){e.__proto__=t}||function(e,t){for(var n in t)t.hasOwnProperty(n)&&(e[n]=t[n])},c(e,t)};function f(e){var t=e.className,n=e.counterClockwise,l=e.dashRatio,a=e.pathRadius,o=e.strokeWidth,i=e.style;return(0,r.createElement)("path",{className:t,style:Object.assign({},i,p({pathRadius:a,dashRatio:l,counterClockwise:n})),d:d({pathRadius:a,counterClockwise:n}),strokeWidth:o,fillOpacity:0})}function d(e){var t=e.pathRadius,n=e.counterClockwise?1:0;return"\n      M 50,50\n      m 0,-"+t+"\n      a "+t+","+t+" "+n+" 1 1 0,"+2*t+"\n      a "+t+","+t+" "+n+" 1 1 0,-"+2*t+"\n    "}function p(e){var t=e.counterClockwise,n=e.dashRatio,r=e.pathRadius,l=2*Math.PI*r,a=(1-n)*l;return{strokeDasharray:l+"px "+l+"px",strokeDashoffset:(t?-a:a)+"px"}}var h=function(e){function t(){return null!==e&&e.apply(this,arguments)||this}return function(e,t){function n(){this.constructor=e}c(e,t),e.prototype=null===t?Object.create(t):(n.prototype=t.prototype,new n)}(t,e),t.prototype.getBackgroundPadding=function(){return this.props.background?this.props.backgroundPadding:0},t.prototype.getPathRadius=function(){return 50-this.props.strokeWidth/2-this.getBackgroundPadding()},t.prototype.getPathRatio=function(){var e=this.props,t=e.value,n=e.minValue,r=e.maxValue;return(Math.min(Math.max(t,n),r)-n)/(r-n)},t.prototype.render=function(){var e=this.props,t=e.circleRatio,n=e.className,l=e.classes,a=e.counterClockwise,o=e.styles,i=e.strokeWidth,u=e.text,s=this.getPathRadius(),c=this.getPathRatio();return(0,r.createElement)("svg",{className:l.root+" "+n,style:o.root,viewBox:"0 0 100 100","data-test-id":"CircularProgressbar"},this.props.background?(0,r.createElement)("circle",{className:l.background,style:o.background,cx:50,cy:50,r:50}):null,(0,r.createElement)(f,{className:l.trail,counterClockwise:a,dashRatio:t,pathRadius:s,strokeWidth:i,style:o.trail}),(0,r.createElement)(f,{className:l.path,counterClockwise:a,dashRatio:c*t,pathRadius:s,strokeWidth:i,style:o.path}),u?(0,r.createElement)("text",{className:l.text,style:o.text,x:50,y:50},u):null)},t.defaultProps={background:!1,backgroundPadding:0,circleRatio:1,classes:{root:"CircularProgressbar",trail:"CircularProgressbar-trail",path:"CircularProgressbar-path",text:"CircularProgressbar-text",background:"CircularProgressbar-background"},counterClockwise:!1,className:"",maxValue:100,minValue:0,strokeWidth:8,styles:{root:{},trail:{},path:{},text:{},background:{}},text:""},t}(r.Component);function m(e){var t=e.rotation,n=e.strokeLinecap,r=e.textColor,l=e.textSize,a=e.pathColor,o=e.pathTransition,i=e.pathTransitionDuration,u=e.trailColor,s=e.backgroundColor,c=null==t?void 0:"rotate("+t+"turn)",f=null==t?void 0:"center center";return{root:{},path:v({stroke:a,strokeLinecap:n,transform:c,transformOrigin:f,transition:o,transitionDuration:null==i?void 0:i+"s"}),trail:v({stroke:u,strokeLinecap:n,transform:c,transformOrigin:f}),text:v({fill:r,fontSize:l}),background:v({fill:s})}}function v(e){return Object.keys(e).forEach((function(t){null==e[t]&&delete e[t]})),e}var g=n(905),y=Locate,b=n(184);function w(e,t,n,r){var l=new XMLHttpRequest;l.onreadystatechange=function(){4===l.readyState&&r&&r(JSON.parse(l.response))},l.open(e,t,!0),l.send(JSON.stringify(n))}var k=function(e){var t=s((0,r.useState)(!1),2),n=t[0],l=t[1],a=s((0,r.useState)("kerosene"),2),o=a[0],u=a[1],c=s((0,r.useState)(null),2),f=c[0],d=c[1],p=s((0,r.useState)(null),2),h=p[0],m=(p[1],s((0,r.useState)(0),2)),v=m[0];return m[1],(0,r.useEffect)((function(){function e(e){"setShow"===e.data.event?l(e.data.data):"setData"===e.data.event&&d(e.data.data)}function t(e){"Escape"===e.key&&w("POST","https://xn_drilling/Close")}return window.addEventListener("message",e),window.addEventListener("keyup",t),function(){window.removeEventListener("message",e),window.removeEventListener("keyup",t)}}),[n]),n&&(0,b.jsxs)("div",{className:"App",children:[(0,b.jsx)(E,i({},f)),(0,b.jsx)(S,{top:"37vh"}),(0,b.jsx)(x,i({},f)),(0,b.jsx)(C,{}),(0,b.jsx)(_,i(i({curProduct:o},h),{},{timeOnline:v})),(0,b.jsx)(P,{curProduct:o,setCurProduct:u})]})};function S(e){return(0,b.jsx)("div",{className:"empty",style:{top:e.top}})}function E(e){var t=e.Quantity;return(0,b.jsxs)("div",{className:"status",children:[(0,b.jsx)("div",{className:"text-trans",children:y.qb}),(0,b.jsxs)("div",{style:{display:"flex",fontSize:"1vw",alignItems:"center"},children:[t>50?(0,b.jsx)("i",{className:"fas fa-circle",style:{color:"#B1E04A",margin:".3vw"}}):t<=50&&t>0?(0,b.jsx)("i",{className:"fas fa-circle",style:{color:"#ffbe0b",margin:".3vw"}}):(0,b.jsx)("i",{className:"fas fa-circle",style:{color:"#ff4242",margin:".3vw"}}),(0,b.jsxs)("div",{style:{margin:".3vw",textAlign:"right"},children:[t,"/1000"]})]})]})}function x(e){var t=e.Workers;return(0,b.jsxs)("div",{className:"workers",children:[t?t.length:0," ",y.Cc]})}function C(){return(0,b.jsxs)("div",{className:"title",children:[y.Gf," ",(0,b.jsx)("br",{})," ",y.GW]})}// One mouse hold owns one drill cell until a global mouseup.
 function _(e) {
-    var product = e.curProduct, oil = e.oil, timeOnline = e.timeOnline;
+    var product = e.curProduct;
     var progressState = s((0,r.useState)([0,0,0,0]),2);
     var progress = progressState[0], setProgress = progressState[1];
     var heldState = s((0,r.useState)(null),2);
@@ -23,7 +23,7 @@ function _(e) {
     function cancelPartial() {
         stopTimer();
         var cell = held.current;
-        if (cell !== null && values.current[cell] < 101) {
+        if (cell !== null && values.current[cell] < 100) {
             values.current[cell] = 0;
             publishProgress();
         }
@@ -57,21 +57,18 @@ function _(e) {
     function startCell(cell, event) {
         if (event.button !== 0) return;
         event.preventDefault();
-        if (held.current !== null || roundDone.current || values.current[cell] >= 101) return;
+        if (held.current !== null || roundDone.current || values.current[cell] >= 100) return;
         // Ref assignment is synchronous, so rapid events cannot acquire a second cell.
         held.current = cell;
         setHeldCell(cell);
-        var delay = 40;
-        if (oil != null && oil.level === 2) delay = 30;
-        else if (oil != null && oil.level >= 3) delay = 25;
-        if (timeOnline !== undefined && timeOnline >= 14400) delay -= 8;
+        var delay = 70; // 100 progress steps = 7 seconds per cell.
         timer.current = setInterval(function() {
             if (held.current !== cell) { stopTimer(); return; }
-            values.current[cell] = Math.min(101, values.current[cell] + 1);
+            values.current[cell] = Math.min(100, values.current[cell] + 1);
             publishProgress();
-            if (values.current[cell] >= 101) {
+            if (values.current[cell] >= 100) {
                 stopTimer();
-                if (!roundDone.current && values.current.every(function(value) { return value >= 101; })) {
+                if (!roundDone.current && values.current.every(function(value) { return value >= 100; })) {
                     roundDone.current = true;
                     w('POST','https://xn_drilling/Drill',{product:product});
                 }
@@ -84,7 +81,7 @@ function _(e) {
             (0,b.jsxs)('div',{className:'text-trans',style:{fontSize:'1vw',fontFamily:'OpenSansCondensed-Light'},children:[y.SG,(0,b.jsx)('br',{}),' ',y.i_]}),
             (0,b.jsx)('div',{style:{height:'20vh',display:'flex'},children:progress.map(function(value,cell) {
                 var locked = heldCell !== null && heldCell !== cell;
-                var complete = value >= 101;
+                var complete = value >= 100;
                 return (0,b.jsxs)('div',{className:'drill',style:{opacity:locked ? 0.4 : 1},children:[
                     (0,b.jsx)('img',{src:g,draggable:false,style:{opacity:complete ? '1' : '0.226'}}),
                     (0,b.jsx)('div',{
