@@ -1240,6 +1240,20 @@
     text-align: center;
 }
 
+.box-menu-admin-setting-menu-top-side-reward-select-box-input-count span {
+    display: flex;
+    min-width: 112px;
+    height: 32px;
+    padding: 0 8px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.07);
+    color: #FFF;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
 @keyframes animate {
     0% {
         transform: translateY(20px);

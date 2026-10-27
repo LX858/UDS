@@ -5,8 +5,8 @@ var Locate = {
     "GW":"Drilling",
     "PI":"Drill the road to the",
     "x9":"Down tower",
-    "SG":"Hold the left mouse",
-    "i_":"To Drill",
+    "SG":"Giữ chuột trái từng ô.",
+    "i_":"Nhả chuột để chọn ô khác.",
     "dF":"Gasonline",
     "by":"Kerosene"
 }

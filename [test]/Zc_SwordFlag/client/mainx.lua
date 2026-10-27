@@ -22,7 +22,8 @@ function LoadUI()
         DetailServer = Config.UISETTING.DetailServer,
         ButtonAcceptEvent = Config.UISETTING.ButtonAcceptEvent,
         ButtonDeniedEvent = Config.UISETTING.ButtonDeniedEvent,
-        DefaultColorStart = Config.UISETTING.DefaultColorUI
+        DefaultColorStart = Config.UISETTING.DefaultColorUI,
+        WinnerRewards = Config.Rewards.WinnerDefault
     })
 end
 
@@ -89,15 +90,8 @@ DataGame = { [1] = 'Select', [2] = 'Random' }
 RegisterNUICallback('StarGame', function(data, cb)
     cb("ok")
     if Config.TeamData[data.CountTeamToPlayer] then
-        if data.BoolStartGame then
-            TriggerServerEvent('yip:sv:startevent', DataGame[data.TypeGamePlay],
-                data.CountTeamToPlayer, data.TimeEvent,
-                data.DataItemSelectRewards, data.DataItemSelect)
-        else
-            TriggerServerEvent('yip:sv:startevent', DataGame[data.TypeGamePlay],
-                data.CountTeamToPlayer, data.TimeEvent,
-                data.DataItemSelectRewards, data.DataItemSelect)
-        end
+        TriggerServerEvent('yip:sv:startevent', DataGame[data.TypeGamePlay],
+            data.CountTeamToPlayer, data.TimeEvent, data.DataItemSelect)
 
         SendNUIMessage({ type = 'CloseMenuAdmin' })
         adminMenuOpen = false

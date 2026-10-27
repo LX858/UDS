@@ -15,8 +15,10 @@ client_scripts {
     "client/main.lua"
 }
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'config/config.serverfunction.lua',
     "config/config.lua",
+    'server/rewards.lua',
     "server/server.lua"
 }
 shared_scripts {
@@ -24,6 +26,7 @@ shared_scripts {
 }
 
 dependencies {
+    'oxmysql',
     'qbx_core',
     'qbx_medical',
     'ox_inventory',

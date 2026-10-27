@@ -29,6 +29,9 @@ Config.PassiveSeconds = 10
 Config.LockOutfit = true
 Config.OutfitCheckIntervalSeconds = 3
 Config.GameDurationMinutes = 10
+Config.Schedule = { '12:00', '23:00' } -- Bangkok (UTC+7), registration opens at these times
+Config.ScheduledMode = 'Random'
+Config.ScheduledTeamCount = 2
 Config.ScorePerSecondHoldingFlag = 5
 Config.PickupProgressSeconds = 3
 Config.FlagPickupProgressSeconds = 10
@@ -314,19 +317,13 @@ Config.TeamData = {
 -- ██║░░██║███████╗░░╚██╔╝░╚██╔╝░██║░░██║██║░░██║██████╔╝
 -- ╚═╝░░╚═╝╚══════╝░░░╚═╝░░░╚═╝░░╚═╝░░╚═╝╚═╝░░╚═╝╚═════╝░
 
------ Nếu không chọn qua UI sẽ nhận thưởng này
+----- Phần thưởng cố định cho mọi người thuộc đội thắng
 Config.Rewards = {}
 Config.Rewards.WinnerDefault = {
-    [1] = { name = 'test2', count = { 1, 10 } },
-    [2] = { name = 'test2', count = { 1, 10 } },
-    [3] = { name = 'test2', count = { 1, 10 } }
+    { name = 'gachabox2', count = 5 }
 }
 
-Config.Rewards.Consolation = {
-    [1] = { name = 'test1', count = { 1, 10 } },
-    [2] = { name = 'test1', count = { 1, 10 } },
-    [3] = { name = 'test1', count = { 1, 10 } }
-}
+Config.Rewards.Consolation = {}
 
 
 ------ ██╗░░░██╗██╗------

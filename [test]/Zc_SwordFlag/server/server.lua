@@ -1,5 +1,4 @@
 SVTeam = {}
-currentTeam = 0
 NumberofTeamx = 0
 TeamScoreSv = {}
 GetSword = {}
@@ -9,7 +8,6 @@ TimeBuff = {}
 MinusBuff = {}
 itemList = {}
 firsttime = false
-dataReward = {}
 dataAccpet = {}
 SW = false
 sudden = false
@@ -18,10 +16,12 @@ local PlayerEventTeam = {}
 local reviveEligibleUntil = {}
 local HoldFlagScoreThreadActive = {}
 local Joinx = 0
-autoeventxReward = false
-autoeventxAccpets = false
 local rewardIssued = false
+local rewardProcessing = false
 local roundStarted = false
+local currentRoundId
+local currentMode
+local roundSequence = 0
 
 local function IsAdmin(src)
     return src == 0 or IsPlayerAceAllowed(src, Config.AdminAce)
@@ -47,15 +47,12 @@ function CancleSV()
 
     Holdflag = {}
     SVTeam = {}
-    currentTeam = 0
     NumberofTeamx = 0
     TeamScoreSv = {}
     SwordCount = {}
     firsttime = false
     GlobalState.SwordTime = 0
-    SW = false
     SVTeam = {}
-    currentTeam = 0
     NumberofTeamx = 0
     TeamScoreSv = {}
     SwordCount = {}
@@ -66,7 +63,10 @@ function CancleSV()
     PlayerEventTeam = {}
     Joinx = 0
     rewardIssued = false
+    rewardProcessing = false
     roundStarted = false
+    currentRoundId = nil
+    currentMode = nil
     HoldFlagScoreThreadActive = {}
     firsttime = false
     oldSwordCoord = nil
@@ -78,167 +78,121 @@ function CancleSV()
         sudden = false
     end
     Wait(5000)
-    autoeventxReward = false
-    autoeventxAccpets = false
+    SW = false
 end
 
-RegisterCommand(
-    Config.Commands.startUI,
-    function(src, args)
-        local _source = src
-        if IsAdmin(_source) then
-            if SW then return end
-            if not SW then
-                SW = true
-                TriggerClientEvent("yip:cl:openmenuadmin", _source, itemList)
-            end
-        end
-    end)
-
-RegisterNetEvent('yip:sv:clear')
-AddEventHandler('yip:sv:clear', function()
-    if IsAdmin(source) then SW = false end
-end)
-
-RegisterCommand(Config.Commands.stop, function(src, args)
-    local _source = src
-    if IsAdmin(_source) then
-
-        if SW then
-            sudden = true
-
-            CancleSV()
-        end
+local function BeginEvent(mode, teamCount, duration, loserRewards, reservedByAdmin)
+    if not SwordRewards.ready or (SW and not reservedByAdmin) then return false end
+    if reservedByAdmin and (not SW or roundStarted or NumberofTeamx ~= 0) then return false end
+    teamCount, duration = tonumber(teamCount), tonumber(duration)
+    if (mode ~= 'Random' and mode ~= 'Select') or not teamCount or teamCount % 1 ~= 0
+        or teamCount < 2 or teamCount > #Config.TeamData
+        or not duration or duration <= 0 or type(loserRewards) ~= 'table' then
+        return false
     end
-end)
-
-RegisterCommand(
-    Config.Commands.startNoUI,
-    function(src, args)
-        local _source = src
-        if IsAdmin(_source) then
-            if not SW then
-                SW = true
-                args[2] = tonumber(args[2])
-                if args[2] == nil or args[2] <= 1 then
-                    NumberofTeamx = 2
-                elseif args[2] > #Config.TeamData then
-                    NumberofTeamx = #Config.TeamData
-                else
-                    NumberofTeamx = args[2]
-
-                end
-                local current_time = os.date('%H:%M')
-                local hour, minute = current_time:match("(%d+):(%d+)")
-                hour = tonumber(hour)
-
-                local period = "AM"
-                if hour >= 12 then period = "PM" end
-
-                if hour > 12 then hour = hour - 12 end
-
-                local formatted_time = string.format("%d:%s %s", hour, minute,
-                                                     period)
-                if args[1] == nil then
-                    TriggerClientEvent("zcSword_Register", -1, 'Random',
-                                       NumberofTeamx, formatted_time)
-                elseif args[1] == 'Random' then
-                    TriggerClientEvent("zcSword_Register", -1, 'Random',
-                                       NumberofTeamx, formatted_time)
-
-                elseif args[1] == 'Select' then
-                    TriggerClientEvent("zcSword_Register", -1, 'Select',
-                                       NumberofTeamx, formatted_time)
-                else
-                    TriggerClientEvent("zcSword_Register", -1, 'Random',
-                                       NumberofTeamx, formatted_time)
-                end
-                dataReward = Config.Rewards.WinnerDefault
-                dataAccpet = Config.Rewards.Consolation
-                autoeventxReward = true
-                autoeventxAccpets = true
-                TimeEvent = tonumber(args[3]) or Config.GameDurationMinutes
-                if TimeEvent <= 0 then TimeEvent = Config.GameDurationMinutes end
-                StartCountDownSV(Config.JoinWaitSeconds, TimeEvent)
-            end
-        end
-    end)
-
-AddEventHandler('zcSword_Auto', function(mode, team, Time)
-    team = tonumber(team)
-    Time = tonumber(Time)
-    if not team or team < 2 or team > #Config.TeamData or team % 1 ~= 0
-        or not Time or Time <= 0 then return end
-    if not SW then
-        SW = true
-        local current_time = os.date('%H:%M')
-        local hour, minute = current_time:match("(%d+):(%d+)")
-        hour = tonumber(hour)
-        local period = "AM"
-        if hour >= 12 then period = "PM" end
-        if hour > 12 then hour = hour - 12 end
-        local formatted_time = string.format("%d:%s %s", hour, minute, period)
-        --------
-        local TimeEvent = Time
-        NumberofTeamx = team
-        dataReward = Config.Rewards.WinnerDefault
-        dataAccpet = Config.Rewards.Consolation
-        autoeventxReward = true
-        autoeventxAccpets = true
-        TriggerClientEvent("zcSword_Register", -1, mode, team, formatted_time)
-        StartCountDownSV(Config.JoinWaitSeconds, TimeEvent)
+    for _, reward in ipairs(loserRewards) do
+        local count = tonumber(reward.count)
+        if type(reward.name) ~= 'string' or not count or count < 1 or count % 1 ~= 0
+            or not exports.ox_inventory:Items(reward.name) then return false end
     end
-end)
 
-RegisterServerEvent('yip:sv:startevent')
-AddEventHandler('yip:sv:startevent',
-                function(dataType, CountTeam, TimeEvent, dataRewards,
-                         dataAccpets)
-    if not IsAdmin(source) or not SW or roundStarted or NumberofTeamx > 0 then return end
-    CountTeam = tonumber(CountTeam)
-    TimeEvent = tonumber(TimeEvent)
-    if not CountTeam or CountTeam < 2 or CountTeam > #Config.TeamData or CountTeam % 1 ~= 0
-        or not TimeEvent or TimeEvent <= 0
-        or type(dataRewards) ~= 'table' or type(dataAccpets) ~= 'table' then
-        SW = false
-        AlertServer(source, 'Thông số sự kiện không hợp lệ.', 'error')
+    SW = true
+    sudden = false
+    NumberofTeamx = teamCount
+    currentMode = mode
+    dataAccpet = loserRewards
+    roundSequence = roundSequence + 1
+    currentRoundId = ('%d-%d-%d'):format(os.time(), GetGameTimer(), roundSequence)
+    local clock = os.date('!*t', os.time() + 7 * 3600)
+    local hour = clock.hour % 12
+    if hour == 0 then hour = 12 end
+    local formattedTime = ('%d:%02d %s'):format(hour, clock.min, clock.hour >= 12 and 'PM' or 'AM')
+    TriggerClientEvent('zcSword_Register', -1, mode, teamCount, formattedTime)
+    StartCountDownSV(Config.JoinWaitSeconds, duration)
+    return true
+end
+
+RegisterCommand(Config.Commands.startUI, function(src)
+    if not IsAdmin(src) or SW then return end
+    if not SwordRewards.ready then
+        if src > 0 then AlertServer(src, 'SwordFlag chưa kết nối cơ sở dữ liệu.', 'error') end
         return
     end
-    if #dataRewards == 0 then
-        dataRewards = Config.Rewards.WinnerDefault
-        autoeventxReward = true
+    SW = true
+    TriggerClientEvent('yip:cl:openmenuadmin', src, itemList)
+end)
+
+RegisterNetEvent('yip:sv:clear', function()
+    if IsAdmin(source) and SW and NumberofTeamx == 0 and not roundStarted then SW = false end
+end)
+
+RegisterCommand(Config.Commands.stop, function(src)
+    if not IsAdmin(src) or not SW or rewardProcessing then return end
+    sudden = true
+    CancleSV()
+end)
+
+RegisterCommand(Config.Commands.startNoUI, function(src, args)
+    if not IsAdmin(src) then return end
+    local teamCount = tonumber(args[2]) or 2
+    teamCount = math.max(2, math.min(#Config.TeamData, math.floor(teamCount)))
+    local duration = tonumber(args[3]) or Config.GameDurationMinutes
+    if duration <= 0 then duration = Config.GameDurationMinutes end
+    BeginEvent(args[1] == 'Select' and 'Select' or 'Random', teamCount,
+        duration, Config.Rewards.Consolation, false)
+end)
+
+AddEventHandler('zcSword_Auto', function(mode, team, duration)
+    BeginEvent(mode, team, duration, {}, false)
+end)
+
+RegisterNetEvent('yip:sv:startevent', function(mode, teamCount, duration, loserRewards)
+    if not IsAdmin(source) then return end
+    if not BeginEvent(mode, teamCount, duration, loserRewards or {}, true) then
+        if SW and NumberofTeamx == 0 then SW = false end
+        AlertServer(source, 'Thông số sự kiện không hợp lệ hoặc cơ sở dữ liệu chưa sẵn sàng.', 'error')
     end
-    if #dataAccpets == 0 then
-        dataAccpets = Config.Rewards.Consolation
-        autoeventxAccpets = true
+end)
+
+Citizen.CreateThread(function()
+    local checkedMinute
+    while true do
+        local bangkok = os.date('!*t', os.time() + 7 * 3600)
+        local minuteKey = ('%04d-%02d-%02d %02d:%02d'):format(
+            bangkok.year, bangkok.month, bangkok.day, bangkok.hour, bangkok.min)
+        if SwordRewards.ready and minuteKey ~= checkedMinute then
+            checkedMinute = minuteKey
+            local clockTime = ('%02d:%02d'):format(bangkok.hour, bangkok.min)
+            for _, scheduledTime in ipairs(Config.Schedule) do
+                if clockTime == scheduledTime then
+                    local reserved, reason = SwordRewards.ReserveSlot(minuteKey)
+                    if reason then
+                        print(('[Zc_SwordFlag] Scheduled slot %s skipped: %s'):format(minuteKey, reason))
+                    elseif reserved then
+                        if BeginEvent(Config.ScheduledMode, Config.ScheduledTeamCount,
+                            Config.GameDurationMinutes, {}, false) then
+                            print(('[Zc_SwordFlag] Scheduled registration opened at %s Bangkok'):format(minuteKey))
+                        else
+                            print(('[Zc_SwordFlag] Scheduled slot %s skipped: another event is active'):format(minuteKey))
+                        end
+                    end
+                end
+            end
+        end
+        Wait(1000)
     end
-    dataReward = dataRewards
-    dataAccpet = dataAccpets
-    NumberofTeamx = CountTeam
-    local current_time = os.date('%H:%M')
-    local hour, minute = current_time:match("(%d+):(%d+)")
-    hour = tonumber(hour)
-
-    local period = "AM"
-    if hour >= 12 then period = "PM" end
-
-    if hour > 12 then hour = hour - 12 end
-
-    local formatted_time = string.format("%d:%s %s", hour, minute, period)
-    TriggerClientEvent("zcSword_Register", -1, dataType, NumberofTeamx,
-                       formatted_time)
-    StartCountDownSV(Config.JoinWaitSeconds, TimeEvent)
-
 end)
 
 function StartCountDownSV(time, TimeEvent)
-
+    local roundId = currentRoundId
     Citizen.CreateThread(function()
         while true do
             Wait(1000)
+            if not SW or currentRoundId ~= roundId or sudden then break end
             time = time - 1
             if time <= 0 then
                 Wait(100)
+                if not SW or currentRoundId ~= roundId or sudden then break end
 
                 roundStarted = true
                 TriggerClientEvent('zcSword_Start', -1)
@@ -246,7 +200,9 @@ function StartCountDownSV(time, TimeEvent)
                 TriggerEvent('zcSword_CreateFirstProp')
                 Wait(
                     Config.Server.startDelayBeforeTimerSeconds * 1000)
-                TriggerEvent('zcSword_StartSV', TimeEvent)
+                if SW and currentRoundId == roundId and not sudden then
+                    TriggerEvent('zcSword_StartSV', TimeEvent)
+                end
 
                 break
             end
@@ -258,7 +214,7 @@ end
 RegisterNetEvent('zcSword_SelectTeam')
 AddEventHandler('zcSword_SelectTeam', function(meSelectTeam)
     local _source = source
-    if not SW or roundStarted or PlayerEventTeam[_source] or type(meSelectTeam) ~= 'number'
+    if not SW or currentMode ~= 'Select' or roundStarted or PlayerEventTeam[_source] or type(meSelectTeam) ~= 'number'
         or meSelectTeam % 1 ~= 0 or meSelectTeam < 1 or meSelectTeam > NumberofTeamx then return end
     if SVTeam[meSelectTeam] == nil then
         SVTeam[meSelectTeam] = {}
@@ -280,46 +236,32 @@ AddEventHandler('zcSword_SelectTeam', function(meSelectTeam)
 end)
 
 RegisterNetEvent('zcSword_SvRandomTeam')
-AddEventHandler('zcSword_SvRandomTeam', function(NumberofTeam)
-    local _source = source
-    if not SW or roundStarted or PlayerEventTeam[_source] or NumberofTeamx < 1 then return end
-    NumberofTeam = NumberofTeamx
-    local allTeamsFull = true
-    for teamIndex = 1, NumberofTeam do
-        if SVTeam[teamIndex] == nil or SVTeam[teamIndex] <
-            Config.MaxPlayersPerTeam then
-            allTeamsFull = false
-            break
+AddEventHandler('zcSword_SvRandomTeam', function()
+    local src = source
+    if not SW or currentMode ~= 'Random' or roundStarted or PlayerEventTeam[src] or NumberofTeamx < 2 then return end
+    local minimum = Config.MaxPlayersPerTeam
+    local available = {}
+    for team = 1, NumberofTeamx do
+        local count = SVTeam[team] or 0
+        if count < minimum then
+            minimum = count
+            available = { team }
+        elseif count == minimum and count < Config.MaxPlayersPerTeam then
+            available[#available + 1] = team
         end
     end
-
-    if allTeamsFull then
-        -- NotifySv('Đã đủ người, không thể tham gia')
-    else
-
-        while true do
-            currentTeam = currentTeam + 1
-            if currentTeam > NumberofTeam then currentTeam = 1 end
-            if SVTeam[currentTeam] == nil or SVTeam[currentTeam] <
-                Config.MaxPlayersPerTeam then
-                if SVTeam[currentTeam] == nil then
-                    SVTeam[currentTeam] = 1
-                else
-                    SVTeam[currentTeam] = SVTeam[currentTeam] + 1
-                end
-
-                PlayerEventTeam[_source] = currentTeam
-                reviveEligibleUntil[_source] = nil
-                Joinx = Joinx + 1
-                TriggerClientEvent('zcSword_AddTeamMember', _source, currentTeam)
-                Wait(50)
-                TriggerClientEvent('zcSword_AddTeamtoUI', -1, currentTeam)
-
-                break
-            end
-            if sudden then break end
-        end
+    if #available == 0 then
+        AlertServer(src, 'Các đội đã đủ người.', 'error')
+        return
     end
+    local team = available[math.random(#available)]
+    SVTeam[team] = (SVTeam[team] or 0) + 1
+    PlayerEventTeam[src] = team
+    reviveEligibleUntil[src] = nil
+    Joinx = Joinx + 1
+    TriggerClientEvent('zcSword_AddTeamMember', src, team)
+    Wait(50)
+    TriggerClientEvent('zcSword_AddTeamtoUI', -1, team)
 end)
 
 RegisterNetEvent('zcSword_SetDimension')
@@ -338,19 +280,21 @@ RegisterNetEvent('zcSword_RequestRevive', function()
 end)
 
 function StartActivityTimeSV(time)
+    local roundId = currentRoundId
     Citizen.CreateThread(function()
         while true do
             Wait(1000)
+            if not SW or currentRoundId ~= roundId or sudden then break end
             time = time - 1
             GlobalState.SwordTime = time
             if time <= 0 then
                 TriggerEvent('zcSword_EndSV')
+                while rewardProcessing do Wait(100) end
                 Wait(2000)
                 TriggerClientEvent('zcSword_End', -1)
                 CancleSV()
                 break
             end
-            if sudden then break end
             if Joinx <=
                 Config.CancelIfPlayersLessOrEqual then
                 print('Not Enough Player')
@@ -512,7 +456,6 @@ AddEventHandler('zcSword_HoldflagAddscore', function(MyTeam, Drop, Coords)
                         (GlobalState['Buff' .. team] or 1) *
                         GlobalState['holdflag' .. team])
             if GlobalState['holdflag' .. team] <= 0 then break end
-            if sudden then break end
         end
         HoldFlagScoreThreadActive[team] = false
     end)
@@ -694,51 +637,24 @@ function Xbuff(MyTeam, xteam, buffx, timex)
     end
 end
 
-local function GrantReward(src, rewards, useRanges)
-    local player = exports.qbx_core:GetPlayer(src)
-    if not player then return end
-
-    for _, reward in pairs(rewards or {}) do
-        local item = reward.name
-        local count = reward.count
-        if useRanges and type(count) == 'table' then
-            local minimum, maximum = tonumber(count[1]), tonumber(count[2])
-            if minimum and maximum and minimum >= 1 and maximum >= minimum then
-                count = math.random(math.floor(minimum), math.floor(maximum))
-            end
-        end
-        count = tonumber(count)
-        if type(item) == 'string' and count and count >= 1 and count % 1 == 0
-            and exports.ox_inventory:Items(item) then
-            local success, response = exports.ox_inventory:AddItem(src, item, count)
-            if success then
-                print(('[Zc_SwordFlag] Reward %s (%s): %s x%d'):format(
-                    GetPlayerName(src) or 'unknown', player.PlayerData.citizenid, item, count))
-            else
-                print(('[Zc_SwordFlag] Cannot give %s x%d to %s: %s'):format(
-                    item, count, src, tostring(response)))
-                exports.qbx_core:Notify(src, 'Không thể nhận phần thưởng ' .. item .. ' (kiểm tra túi đồ).', 'error', 5000)
-            end
-        else
-            print(('[Zc_SwordFlag] Invalid reward item/count: %s / %s'):format(
-                tostring(item), tostring(count)))
-        end
-    end
-end
-
 AddEventHandler('zcSword_EndSV', function()
-    if rewardIssued then return end
+    if not SW or not roundStarted or rewardIssued or not currentRoundId then return end
     rewardIssued = true
-    local TeamBestScore, BestScore = BestScore()
+    rewardProcessing = true
+    local roundId = currentRoundId
+    local winningTeam, winningScore = BestScore()
     for src, team in pairs(PlayerEventTeam) do
-        if team == TeamBestScore and TeamBestScore ~= 0 then
-            GrantReward(src, dataReward, autoeventxReward)
-        else
-            GrantReward(src, dataAccpet, autoeventxAccpets)
+        if team == winningTeam and winningTeam ~= 0 then
+            local ok, err = pcall(SwordRewards.Grant, src, roundId, Config.Rewards.WinnerDefault)
+            if not ok then print(('[Zc_SwordFlag] Winner payout failed: %s'):format(tostring(err))) end
+        elseif #dataAccpet > 0 then
+            local ok, err = pcall(SwordRewards.Grant, src, roundId, dataAccpet)
+            if not ok then print(('[Zc_SwordFlag] Loser payout failed: %s'):format(tostring(err))) end
         end
     end
-    TriggerClientEvent('zcSword_Reward', -1, TeamBestScore, BestScore,
-                       dataReward, dataAccpet)
+    TriggerClientEvent('zcSword_Reward', -1, winningTeam, winningScore,
+        Config.Rewards.WinnerDefault, dataAccpet)
+    rewardProcessing = false
 end)
 
 function BestScore()

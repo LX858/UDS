@@ -23,9 +23,9 @@ function App() {
         setButtonAcceptEvent(v.ButtonAcceptEvent)
         setDefaultColorStart(v.DefaultColorStart)
         setButtonDeniedEvent(v.ButtonDeniedEvent)
+        setWinnerRewards(v.WinnerRewards ?? [])
       } else if (v.type == 'OpenMenuAdmin') {
         setOpenMenuAdmin(true)
-        setDataItemHudRewards(v.DataItem)
         setDataItemHud(v.DataItem)
         setRewardsMenu(false)
       } else if (v.type == 'UpdateTime') {
@@ -71,14 +71,12 @@ function App() {
         setOpenVictory(false)
       } else if (v.type == 'CloseMenuAdmin') {
         setOpenMenuAdmin(false)
-        setOpenMenuDataItemRewards(false)
         setOpenMenuDataItem(false)
       } else if (v.type == 'OpenMenuSelectTeam') {
         setOpenMenuSelectTeam(true)
         setDataTeam(v.DataTeam)
       } else if (v.type == 'closeOpen') {
         setOpenMenuAdmin(false)
-        setOpenMenuDataItemRewards(false)
         setOpenMenuDataItem(false)
         setOpenMenuSelectTeam(false)
       } else if (v.type == 'SwordDead') {
@@ -97,7 +95,6 @@ function App() {
         if (data.which === 27) {
           $.post('https://Zc_SwordFlag/closex');
           setOpenMenuAdmin(false)
-          setOpenMenuDataItemRewards(false)
           setOpenMenuDataItem(false)
           setOpenMenuSelectTeam(false)
 
@@ -161,17 +158,12 @@ function App() {
   const [CountTeamToPlayer, setCountTeamToPlayer] = useState(2)
   const [searchText, setSearchText] = useState('');
 
-  const [DataItemHudRewards, setDataItemHudRewards] = useState([
-    // { name: 'https://cdn.discordapp.com/attachments/891381989050032228/1165666307937681440/metal-rusty.webp?ex=6550e8d8&is=653e73d8&hm=526f1f7ec762bc29c23eaa43ee64912dec1b363f015a1ae57bbe738579644b7c&' },
-    // { name: 'https://cdn.discordapp.com/attachments/989384587652239360/1169863758827491401/box-mine.webp?ex=6556f387&is=65447e87&hm=b27a092457eafa1341ea133510a458ec833512a08617f64114705e05d70ce9bb&' },
-  ])
   const [DataItemHud, setDataItemHud] = useState([
     // { name: 'https://cdn.discordapp.com/attachments/891381989050032228/1165666307937681440/metal-rusty.webp?ex=6550e8d8&is=653e73d8&hm=526f1f7ec762bc29c23eaa43ee64912dec1b363f015a1ae57bbe738579644b7c&' },
     // { name: 'https://cdn.discordapp.com/attachments/989384587652239360/1169863758827491401/box-mine.webp?ex=6556f387&is=65447e87&hm=b27a092457eafa1341ea133510a458ec833512a08617f64114705e05d70ce9bb&' },
   ])
-  const [DataItemSelectRewards, setDataItemSelectRewards] = useState([])
+  const [WinnerRewards, setWinnerRewards] = useState([])
   const [DataItemSelect, setDataItemSelect] = useState([])
-  const [OpenMenuDataItemRewards, setOpenMenuDataItemRewards] = useState(false)
   const [OpenMenuDataItem, setOpenMenuDataItem] = useState(false)
 
   //////////// SwordFlag Death UI ////////////
@@ -250,23 +242,6 @@ function App() {
       }));
     }
   }
-  function AddItemRewards(data) {
-    const newItem = {
-      name: data.name,
-      count: 1,
-    }
-    setDataItemSelectRewards([...DataItemSelectRewards, newItem]);
-    const updatedCart = DataItemHudRewards.filter((item) => item.name !== data.name);
-    setDataItemHudRewards(updatedCart);
-  }
-  function DeleteItemSelect(data) {
-    const newItem = {
-      name: data.name,
-    }
-    setDataItemHudRewards([...DataItemHudRewards, newItem]);
-    const updatedCart = DataItemSelectRewards.filter((item) => item.name !== data.name);
-    setDataItemSelectRewards(updatedCart);
-  }
   function AddItem(data) {
     const newItem = {
       name: data.name,
@@ -297,19 +272,6 @@ function App() {
     });
     setDataItemSelect(updatedCart);
   }
-  const AddCountItemRewards = (Count, data) => {
-    const newItem = {
-      name: data.name,
-      count: Count,
-    }
-    const updatedCart = DataItemSelectRewards.map((item) => {
-      if (item.name === data.name) {
-        return newItem;
-      }
-      return item;
-    });
-    setDataItemSelectRewards(updatedCart);
-  }
   var add = null;
   function PlaySound(typeRun, sound, volume) {
     if (add !== null) {
@@ -327,7 +289,6 @@ function App() {
       TimeEvent: InputTimeEvent,
       TimeStart: `${InputHour}:${InputMinute}`,
       DataItemSelect: DataItemSelect,
-      DataItemSelectRewards: DataItemSelectRewards,
       CountTeamToPlayer: CountTeamToPlayer,
       BoolStartGame: BoolStartGame,
     }));
@@ -337,7 +298,6 @@ function App() {
     setInputHour(23)
     setInputMinute(0)
     setDataItemSelect([])
-    setDataItemSelectRewards([])
     setCountTeamToPlayer(2)
   }
   return (
@@ -813,32 +773,25 @@ function App() {
                             </div>
                           </div>
                           :
-                          !OpenMenuDataItemRewards && !OpenMenuDataItem ?
+                          !OpenMenuDataItem ?
                             <div className="box-menu-admin-setting-menu">
                               <div className="box-menu-admin-setting-menu-top-side">
                                 <p>Phần thưởng của đội thắng cuộc :</p>
                                 <div className="box-menu-admin-setting-menu-top-side-reward-select-select-two">
                                   {
-                                    Object.values(DataItemSelectRewards).map((v, i) => {
+                                    Object.values(WinnerRewards).map((v, i) => {
                                       return (
                                         <div className="box-menu-admin-setting-menu-top-side-reward-select-box" key={v?.name ?? i} >
-                                          <div className="box-menu-admin-setting-menu-top-side-reward-select-box-img" onClick={() => DeleteItemSelect(v)}>
+                                          <div className="box-menu-admin-setting-menu-top-side-reward-select-box-img">
                                             <img src={getItemImageUrl(v.name, 'png')} onError={onItemImgError} alt="" />
                                           </div>
                                           <div className="box-menu-admin-setting-menu-top-side-reward-select-box-input-count">
-                                            <input type="number" placeholder='0' value={v.count} onChange={(e) => AddCountItemRewards(e.target.value, v)} />
+                                            <span>{v.name} x{v.count}</span>
                                           </div>
                                         </div>
                                       )
                                     })
                                   }
-                                  <div className="box-menu-admin-setting-menu-top-side-reward-select-box">
-                                    <div className="box-menu-admin-setting-menu-top-side-reward-select-box-img" onClick={() => setOpenMenuDataItemRewards(true)}>
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
-                                        <path d="M10 0C8.89543 0 8 0.895432 8 2V8H2C0.89543 8 0 8.89543 0 10C0 11.1046 0.895432 12 2 12H8V18C8 19.1046 8.89543 20 10 20C11.1046 20 12 19.1046 12 18V12H18C19.1046 12 20 11.1046 20 10C20 8.89543 19.1046 8 18 8H12V2C12 0.89543 11.1046 0 10 0Z" fill="#D9D9D9" fill-opacity="0.15" />
-                                      </svg>
-                                    </div>
-                                  </div>
                                 </div>
                               </div>
                               <div className="box-menu-admin-setting-menu-bottom-side-reward">
@@ -874,18 +827,7 @@ function App() {
                                 <p>All Item In System :</p>
                                 <div className="box-menu-admin-setting-menu-top-side-reward-select-select">
                                   {
-                                    OpenMenuDataItemRewards ?
-                                      Object.values(DataItemHudRewards).filter((v) => v.name.toLowerCase().includes(searchText.toLowerCase())).map((v, i) => {
-                                        return (
-                                          <div className="box-menu-admin-setting-menu-top-side-reward-select-box" key={v?.name ?? i} onClick={() => AddItemRewards(v)}>
-                                            <div className="box-menu-admin-setting-menu-top-side-reward-select-box-img">
-                                              <img src={getItemImageUrl(v.name, 'png')} onError={onItemImgError} alt="" />
-                                            </div>
-                                          </div>
-                                        )
-                                      })
-                                      :
-                                      Object.values(DataItemHud).filter((v) => v.name.toLowerCase().includes(searchText.toLowerCase())).map((v, i) => {
+                                    Object.values(DataItemHud).filter((v) => v.name.toLowerCase().includes(searchText.toLowerCase())).map((v, i) => {
                                         return (
                                           <div className="box-menu-admin-setting-menu-top-side-reward-select-box" key={v?.name ?? i} onClick={() => AddItem(v)}>
                                             <div className="box-menu-admin-setting-menu-top-side-reward-select-box-img">
@@ -908,15 +850,7 @@ function App() {
               </div>
               <div className="box-menu-admin-bottom-event-sword">
                 {
-                  OpenMenuDataItemRewards ?
-                    <>
-                      <button onClick={() => setOpenMenuDataItemRewards(false)}>Trở về</button>
-                      <input type="text"
-                        placeholder="Search"
-                        value={searchText}
-                        onChange={(e) => setSearchText(e.target.value)} />
-                    </>
-                    : OpenMenuDataItem ?
+                   OpenMenuDataItem ?
                       <>
                         <button onClick={() => setOpenMenuDataItem(false)}>Trở về</button>
                         <input type="text"
