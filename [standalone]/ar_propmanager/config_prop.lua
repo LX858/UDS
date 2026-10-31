@@ -194,5 +194,17 @@ return {
      'vw_vwint01_shop_counter',
      'ba_trad_pay_counter',
      'ba_glam_pay_counter',
+     'prop_rock_3_g',
+     'prop_rock_3_d',
+     'csx_rvrbldrmedc',
+     'csx_coastsmalrock04',
+     'prop_rub_carwreck_9',
+     'prop_rub_carwreck_8',
+     'prop_rub_carwreck_3',
+     'prop_rub_carwreck_5',
+     'prop_pallet_pile_03',
+     'prop_cons_cements01',
+     'prop_conc_blocks01c',
+     'prop_rub_railwreck_2',
      'sf_int1_kitchen_doors_mid'
 }

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oxlyn FPS Monitor</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     HUD FLUTUANTE  ·  sempre presente, escondido por defeito
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="hud" class="hud hud--hidden" data-pos="topright">
+  <div class="hud__glass">
+    <div class="hud__main">
+      <span id="hudFps" class="hud__fps">0</span>
+      <span class="hud__unit">FPS</span>
+    </div>
+    <canvas id="hudSpark" class="hud__spark" width="180" height="34"></canvas>
+    <div class="hud__rows">
+      <div class="hud__row" data-k="frametime"><span>MS</span><b id="hudFt">0.0</b></div>
+      <div class="hud__row" data-k="lows"><span>1% LOW</span><b id="hudLow">0</b></div>
+      <div class="hud__row" data-k="ping"><span>PING</span><b id="hudPing">0</b></div>
+      <div class="hud__row" data-k="entities"><span>ENT</span><b id="hudEnt">0</b></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     TOASTS
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="toasts" class="toasts"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     MODAL DE CONFIRMACAO  ·  substitui o confirm() nativo do browser
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="modal" class="modal modal--hidden">
+  <div class="modal__card glass">
+    <div class="modal__icon">
+      <svg viewBox="0 0 24 24"><path d="M12 9v5M12 17.5h.01"/><path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+    </div>
+    <h3 id="modalTitle">Confirmar</h3>
+    <p id="modalBody">—</p>
+    <!-- So aparece quando o modal e usado para pedir um nome (promptModal). -->
+    <input type="text" id="modalInput" class="modal__input" maxlength="28" hidden>
+    <div class="modal__actions">
+      <button class="btn btn--ghost"   id="modalNo">Cancelar</button>
+      <button class="btn btn--primary" id="modalYes">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     OVERLAY DE PREVIEW  ·  mostrado enquanto o benchmark corre
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="previewOverlay" class="preview-overlay preview-overlay--hidden">
+  <!-- Sem a classe `glass`: durante a medicao o cartao nao pode ter painel,
+       senao tapa o jogo que se esta precisamente a avaliar. -->
+  <div class="preview-card">
+    <div class="preview-card__head">
+      <i class="preview-card__live"></i>
+      <span class="preview-card__phase" id="pvPhase">A MEDIR</span>
+      <span class="preview-card__preset" id="pvPreset">—</span>
+    </div>
+    <div class="preview-card__row">
+      <div class="preview-card__fps"><span id="pvFps">0</span><small>FPS</small></div>
+      <div class="preview-card__count"><span id="pvSeconds">0</span>s</div>
+    </div>
+    <div class="preview-card__bar"><i id="pvBar" style="width:0%"></i></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     PAINEL PRINCIPAL
+     ══════════════════════════════════════════════════════════════════════ -->
+<div id="app" class="app app--hidden">
+  <div class="app__scrim"></div>
+
+  <div class="app__grid">
+
+    <!-- ─────────────────────────── SIDEBAR ─────────────────────────── -->
+    <aside class="sidebar glass">
+      <div class="sidebar__brand">
+        <div class="logo">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <defs>
+              <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%"  stop-color="var(--accent)"/>
+                <stop offset="100%" stop-color="var(--accent-2)"/>
+              </linearGradient>
+            </defs>
+            <path d="M16 3 L28 28 L21 28 L16 16 L11 28 L4 28 Z" fill="url(#lg)"/>
+          </svg>
+        </div>
+        <div class="sidebar__names">
+          <div class="sidebar__title" data-i18n="app_name">FPS MONITOR</div>
+          <div class="sidebar__sub"   data-i18n="app_sub">FIVEM</div>
+        </div>
+      </div>
+
+      <nav class="nav" id="nav">
+        <!-- Indicador de posicao: um so elemento, deslocado por JS para o item
+             activo. Ver moveNavMarker() em app.js. -->
+        <i class="nav__marker" id="navMarker" aria-hidden="true"></i>
+
+        <button class="nav__item is-active" data-view="overview">
+          <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 0-8 8h3a5 5 0 1 1 10 0h3a8 8 0 0 0-8-8Z"/><path d="m12 12 4-3"/></svg>
+          <span data-i18n="nav_overview">Overview</span>
+        </button>
+        <button class="nav__item" data-view="performance">
+          <svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="9" cy="18" r="2"/><path d="M8 7h8M4 12h12M3 18h4M11 18h9"/></svg>
+          <span data-i18n="nav_performance">Performance</span>
+        </button>
+        <button class="nav__item" data-view="graph">
+          <svg viewBox="0 0 24 24"><path d="m3 17 5-6 4 4 6-8 3 3"/></svg>
+          <span data-i18n="nav_graph">Graph</span>
+        </button>
+        <button class="nav__item" data-view="system">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>
+          <span data-i18n="nav_system">System</span>
+        </button>
+        <button class="nav__item" data-view="settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>
+          <span data-i18n="nav_settings">Settings</span>
+        </button>
+        <button class="nav__item" data-view="about">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          <span data-i18n="nav_about">About</span>
+        </button>
+      </nav>
+
+      <div class="sidebar__foot">
+        <!-- data-text alimenta a camada de brilho (.wordmark::after), que e uma
+             copia do texto recortada nas letras. Tem de coincidir com os spans. -->
+        <div class="wordmark" data-text="UNDER STAR" aria-label="UNDER STAR"><span class="ac">UNDER</span> <span>STAR</span></div>
+        <div class="wordmark__sub"><span>COMMUNITY</span></div>
+        <div class="build">Build <span id="buildVersion">1.0.0</span></div>
+      </div>
+    </aside>
+
+    <!-- ─────────────────────────── MAIN ─────────────────────────── -->
+    <main class="main glass">
+      <header class="head">
+        <div>
+          <!-- Titulo e subtitulo sao escritos por goto(), nao por data-i18n:
+               mudam com a vista activa, nao com uma chave fixa. -->
+          <h1 class="head__title">
+            <span id="viewTitle">RESUMO</span>
+            <i class="live" id="liveDot"></i>
+            <em class="live__label" data-i18n="ov_live">LIVE</em>
+          </h1>
+          <p class="head__sub" id="viewSub">Performance em tempo real</p>
+        </div>
+
+        <div class="serverpill">
+          <i class="dot dot--ok"></i>
+          <div>
+            <div class="serverpill__name" id="serverName">FiveM Server</div>
+            <div class="serverpill__meta">
+              <span data-i18n="ov_online">Online</span> ·
+              <span id="playerCount">0/0</span>
+            </div>
+          </div>
+          <button class="serverpill__btn" id="btnQuickSettings" title="Settings">
+            <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="views">
+
+        <!-- ══════════════ VIEW: OVERVIEW ══════════════ -->
+        <section class="view is-active" data-view="overview">
+
+          <div class="card card--fps">
+            <div class="card__left">
+              <div class="label" data-i18n="ov_current">CURRENT FPS</div>
+              <div class="bignum">
+                <span id="fpsBig">0</span><small>FPS</small>
+              </div>
+              <div class="delta" id="fpsDelta">
+                <svg viewBox="0 0 24 24" class="delta__arrow"><path d="m6 18 12-12M10 6h8v8"/></svg>
+                <b>0%</b> <span data-i18n="ov_vs_last">vs. last minute</span>
+              </div>
+
+              <div class="statgrid">
+                <div class="stat"><span data-i18n="ov_average">AVERAGE</span><b id="stAvg">0</b><i>FPS</i></div>
+                <div class="stat"><span data-i18n="ov_low1">1% LOW</span><b id="stLow1">0</b><i>FPS</i></div>
+                <div class="stat"><span data-i18n="ov_low01">0.1% LOW</span><b id="stLow01">0</b><i>FPS</i></div>
+                <div class="stat"><span data-i18n="ov_max">MAX FPS</span><b id="stMax">0</b><i>FPS</i></div>
+                <div class="stat"><span data-i18n="ov_min">MIN FPS</span><b id="stMin">0</b><i>FPS</i></div>
+                <div class="stat"><span data-i18n="ov_frametime">FRAMETIME</span><b id="stFt">0.0</b><i>ms</i></div>
+              </div>
+            </div>
+
+            <div class="card__right">
+              <div class="rangebar" id="rangeBar">
+                <button class="range is-active" data-range="1m">1M</button>
+                <button class="range" data-range="5m">5M</button>
+                <button class="range" data-range="15m">15M</button>
+                <button class="range" data-range="1h">1H</button>
+              </div>
+              <div class="chartwrap">
+                <canvas id="mainChart"></canvas>
+                <div class="chart__empty" id="chartEmpty" hidden data-i18n="gr_empty">Not enough data for this range yet.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card--gauges" id="gaugeRow">
+            <div class="gauge" data-metric="cpu">
+              <canvas class="gauge__ring" width="150" height="150"></canvas>
+              <div class="gauge__face">
+                <div class="gauge__icon">
+                  <svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3"/></svg>
+                  <span data-i18n="m_cpu">CPU</span>
+                </div>
+                <div class="gauge__val"><b id="gCpu">0</b><small>%</small></div>
+                <div class="gauge__tag est" data-i18n="m_est">EST</div>
+              </div>
+            </div>
+
+            <div class="gauge" data-metric="gpu">
+              <canvas class="gauge__ring" width="150" height="150"></canvas>
+              <div class="gauge__face">
+                <div class="gauge__icon">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="9" cy="12" r="2.2"/><path d="M15 10h3M15 14h3"/></svg>
+                  <span data-i18n="m_gpu">GPU</span>
+                </div>
+                <div class="gauge__val"><b id="gGpu">0</b><small>%</small></div>
+                <div class="gauge__tag est" data-i18n="m_est">EST</div>
+              </div>
+            </div>
+
+            <div class="gauge" data-metric="ram">
+              <canvas class="gauge__ring" width="150" height="150"></canvas>
+              <div class="gauge__face">
+                <div class="gauge__icon">
+                  <svg viewBox="0 0 24 24"><rect x="2" y="8" width="20" height="8" rx="1.5"/><path d="M6 16v3M10 16v3M14 16v3M18 16v3"/></svg>
+                  <span data-i18n="m_ram">RAM</span>
+                </div>
+                <div class="gauge__val"><b id="gRam">0</b><small>%</small></div>
+                <div class="gauge__tag est" data-i18n="m_est">EST</div>
+              </div>
+            </div>
+
+            <div class="gauge" data-metric="vram">
+              <canvas class="gauge__ring" width="150" height="150"></canvas>
+              <div class="gauge__face">
+                <div class="gauge__icon">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4M7 14h8"/></svg>
+                  <span data-i18n="m_vram">VRAM</span>
+                </div>
+                <div class="gauge__val"><b id="gVram">0</b><small>%</small></div>
+                <div class="gauge__tag est" data-i18n="m_est">EST</div>
+              </div>
+            </div>
+
+            <div class="gauge" data-metric="ping">
+              <canvas class="gauge__ring" width="150" height="150"></canvas>
+              <div class="gauge__face">
+                <div class="gauge__icon">
+                  <svg viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0"/><circle cx="12" cy="20" r="1"/></svg>
+                  <span data-i18n="m_ping">PING</span>
+                </div>
+                <div class="gauge__val"><b id="gPing">0</b></div>
+                <div class="gauge__tag" >ms</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Carga do mundo: contagens reais dos pools de entidades. E o que
+               melhor explica porque e que o centro da cidade corre pior que o
+               deserto — e sao dados lidos do jogo, nao estimativas. -->
+          <div class="card card--world">
+            <div class="section-title" data-i18n="ov_world">WORLD LOAD</div>
+            <div class="worldgrid" id="worldGrid"></div>
+          </div>
+        </section>
+
+        <!-- ══════════════ VIEW: PERFORMANCE ══════════════ -->
+        <section class="view" data-view="performance">
+          <div class="section-title" data-i18n="pf_presets">PRESETS</div>
+          <div class="presets" id="presetGrid"></div>
+
+          <div class="card card--result" id="previewResult" hidden>
+            <div class="result__head">
+              <span id="resultPreset">—</span>
+              <button class="iconbtn" id="resultClose" aria-label="Close">
+                <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="result__cols">
+              <div class="result__col">
+                <span data-i18n="pf_baseline">Before</span>
+                <b id="resBefore">0</b><i>FPS</i>
+                <em>1% low <span id="resBeforeLow">0</span></em>
+              </div>
+              <div class="result__arrow">
+                <svg viewBox="0 0 24 24"><path d="M4 12h16M14 6l6 6-6 6"/></svg>
+              </div>
+              <div class="result__col">
+                <span data-i18n="pf_result">After</span>
+                <b id="resAfter">0</b><i>FPS</i>
+                <em>1% low <span id="resAfterLow">0</span></em>
+              </div>
+              <div class="result__delta" id="resDelta">
+                <span data-i18n="pf_delta">Difference</span>
+                <b>+0</b>
+                <em>+0%</em>
+              </div>
+            </div>
+            <!-- Tres botoes, nunca os tres ao mesmo tempo: o renderPreviewResult
+                 mostra o par que faz sentido para o que foi testado. Um preset
+                 do config oferece Manter/Reverter; um rascunho oferece Guardar
+                 perfil/Agora nao, porque nao ha nada para reverter. -->
+            <div class="result__actions">
+              <button class="btn btn--primary" id="resSave" data-i18n="pf_save_profile" hidden>Save profile</button>
+              <button class="btn btn--primary" id="resKeep" data-i18n="pf_keep">Keep preset</button>
+              <button class="btn btn--ghost"   id="resRevert" data-i18n="pf_revert">Revert</button>
+              <button class="btn btn--ghost"   id="resLater" data-i18n="pf_not_now" hidden>Not now</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════════ VIEW: GRAPH ══════════════ -->
+        <section class="view" data-view="graph">
+          <div class="graph-toolbar">
+            <div class="segmented" id="seriesBar">
+              <button class="is-active" data-series="fps"       data-i18n="gr_fps">FPS</button>
+              <button data-series="frametime" data-i18n="gr_frametime">Frametime</button>
+              <button data-series="ping"      data-i18n="gr_ping">Ping</button>
+              <button data-series="entities"  data-i18n="gr_entities">Entities</button>
+            </div>
+            <div class="segmented" id="graphRangeBar">
+              <button class="is-active" data-range="1m">1M</button>
+              <button data-range="5m">5M</button>
+              <button data-range="15m">15M</button>
+              <button data-range="1h">1H</button>
+            </div>
+            <label class="switchline">
+              <input type="checkbox" id="chkSmooth" checked>
+              <i></i><span data-i18n="gr_smooth">Smooth</span>
+            </label>
+            <button class="btn btn--ghost btn--sm" id="btnExport" data-i18n="gr_export">Copy data (CSV)</button>
+          </div>
+
+          <div class="card card--bigchart">
+            <div class="chartwrap chartwrap--tall">
+              <canvas id="bigChart"></canvas>
+              <div class="chart__empty" id="bigChartEmpty" hidden data-i18n="gr_empty">Not enough data for this range yet.</div>
+            </div>
+          </div>
+
+          <div class="minirow" id="miniStats"></div>
+        </section>
+
+        <!-- ══════════════ VIEW: SYSTEM ══════════════ -->
+        <section class="view" data-view="system">
+          <div class="syscols">
+            <div class="card">
+              <div class="section-title section-title--ok" data-i18n="sy_real">REAL DATA</div>
+              <div class="kvlist" id="sysReal"></div>
+            </div>
+            <div class="card">
+              <div class="section-title section-title--warn" data-i18n="sy_estimated">ESTIMATED DATA</div>
+              <div class="kvlist" id="sysEst"></div>
+              <div class="notebox" id="estNote"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="section-title" data-i18n="sy_sessions">PREVIOUS SESSIONS</div>
+            <div class="sessions" id="sessionList"></div>
+          </div>
+        </section>
+
+        <!-- ══════════════ VIEW: SETTINGS ══════════════ -->
+        <section class="view" data-view="settings">
+          <div class="settings-toolbar">
+            <div class="search">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input type="text" id="settingSearch" placeholder="Search setting...">
+            </div>
+
+            <!-- Espacador: separa a pesquisa das accoes. Sem ele a caixa de
+                 pesquisa estica ate encostar aos botoes e o conjunto le-se
+                 como um so campo com botoes la dentro. -->
+            <div class="spacer"></div>
+
+            <button class="btn btn--ghost btn--sm" id="btnRunCleanup" data-i18n="se_run_cleanup">Clean now</button>
+            <button class="btn btn--ghost btn--sm" id="btnSaveCustom" data-i18n="se_save_custom">Save preset</button>
+            <button class="btn btn--danger btn--sm" id="btnResetAll" data-i18n="se_reset">Reset all</button>
+          </div>
+
+          <div class="settings-layout">
+            <div class="grouprail" id="groupRail"></div>
+            <div class="settings" id="settingsList"></div>
+          </div>
+        </section>
+
+        <!-- ══════════════ VIEW: ABOUT ══════════════ -->
+        <section class="view" data-view="about">
+          <div class="about">
+            <div class="about__hero glass">
+              <div class="logo logo--lg">
+                <svg viewBox="0 0 32 32"><path d="M16 3 L28 28 L21 28 L16 16 L11 28 L4 28 Z" fill="url(#lg)"/></svg>
+              </div>
+              <div>
+                <h2>oxlyn-fpsboost</h2>
+                <p id="aboutMeta">v1.0.0 · Oxlyn Software</p>
+              </div>
+            </div>
+
+            <div class="syscols">
+              <div class="card">
+                <div class="section-title" data-i18n="ab_commands">COMMANDS</div>
+                <div class="kvlist" id="aboutCommands"></div>
+              </div>
+              <div class="card">
+                <div class="section-title" data-i18n="ab_keys">KEYS</div>
+                <div class="kvlist" id="aboutKeys"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="section-title section-title--ok" data-i18n="ab_honesty">TRANSPARENCY NOTE</div>
+              <p class="notebox" id="honestyNote"></p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- ─────────────────────────── RIGHT RAIL ─────────────────────────── -->
+    <aside class="rail">
+      <div class="card card--status glass">
+        <div class="section-title" data-i18n="ov_status">FPS STATUS</div>
+        <div class="radial">
+          <canvas id="statusGauge" width="220" height="180"></canvas>
+          <div class="radial__face">
+            <b id="statusFps">0</b>
+            <small>FPS</small>
+          </div>
+        </div>
+        <div class="radial__verdict" id="statusVerdict">—</div>
+        <div class="radial__desc" id="statusDesc">—</div>
+      </div>
+
+      <div class="card card--tips glass">
+        <div class="section-title">
+          <svg viewBox="0 0 24 24" class="ti"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3Z"/></svg>
+          <span data-i18n="ov_tips">PERFORMANCE TIPS</span>
+        </div>
+        <ul class="tips" id="tipsList"></ul>
+      </div>
+    </aside>
+
+    <!-- ─────────────────────────── BOTTOM BAR ─────────────────────────── -->
+    <footer class="bottombar glass">
+      <div class="bb">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        <div><b id="bbClock">00:00</b><span id="bbDate">—</span></div>
+      </div>
+      <div class="bb">
+        <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M9 20h6"/></svg>
+        <div><span data-i18n="b_resolution">Resolution</span><b id="bbRes">—</b></div>
+      </div>
+      <div class="bb">
+        <svg viewBox="0 0 24 24"><path d="M12 4a8 8 0 0 0-8 8h3a5 5 0 1 1 10 0h3a8 8 0 0 0-8-8Z"/></svg>
+        <div><span data-i18n="b_preset">Active preset</span><b id="bbPreset">—</b></div>
+      </div>
+      <div class="bb">
+        <svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="M8 7V5h8v2"/></svg>
+        <div><span data-i18n="b_entities">Entities</span><b id="bbEnt">0</b></div>
+      </div>
+      <div class="bb">
+        <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 11h4M19 9v4"/></svg>
+        <div><span data-i18n="b_session">Session</span><b id="bbUptime">0m</b></div>
+      </div>
+      <button class="btn btn--primary btn--wide" id="btnOpenSettings">
+        <span data-i18n="b_open_settings">OPEN SETTINGS</span>
+        <svg viewBox="0 0 24 24"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"/><circle cx="16" cy="8" r="2"/><circle cx="10" cy="16" r="2"/></svg>
+      </button>
+    </footer>
+
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

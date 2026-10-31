@@ -24,6 +24,7 @@ server_scripts {
 	'@oxmysql/lib/MySQL.lua',
 	'server/framework.lua',
 	'server/farm_rental.lua',
+	'server/zone_capture.lua',
 	'server/server.lua',
 }
 

@@ -1,10 +1,10 @@
 {
     "license:a0bf7cb2-377c-4096-b105-204c313c1521": {
-        "ropeType": "day_thung",
-        "isTied": true
+        "isTied": true,
+        "ropeType": "day_thung"
     },
     "license:35e6e72ec48c6058cc580802cfa2685d2da95b2d": {
-        "ropeType": "day_cuoc",
-        "isTied": true
+        "isTied": true,
+        "ropeType": "day_cuoc"
     }
 }

@@ -18,6 +18,7 @@ function Impl:OnReady()
 end
 
 function Impl:WSEventHandlers()
+    AddTextEntry("BLIP_CAT_" .. 12, "GPS")  
     RegisterNetEvent("vinx-gps:client:create", function(globalName)
         self:LogInfo("GlobalPosition[%s] created", globalName)
         self.global = globalName

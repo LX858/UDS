@@ -1,4 +1,20 @@
 return {
+    ['the_da_quy'] = {
+        label = 'Thẻ Đá Quý',
+        weight = 100,
+        client = {},
+        stack = true,
+        close = true,
+        description = "Vật phẩm sự kiện"
+    },
+    ['the_can_thu'] = {
+        label = 'Thẻ Cần Thủ',
+        weight = 100,
+        client = {},
+        stack = true,
+        close = true,
+        description = "Vật phẩm sự kiện"
+    },
     ["cloth_outfit"] = {
         label = 'Trang phục',
         weight = 1,
@@ -8484,6 +8500,14 @@ return {
         stack = false,
         close = true,
         description = 'Chìa khóa xe BMW M8'
+    },
+
+    ['key_batti_hlw'] = {
+        label = 'Chìa khóa Skull Bike',
+        weight = 1000,
+        stack = false,
+        close = true,
+        description = 'Chìa khóa xe Skull Bike'
     },
 
     ['key_gladitor'] = {

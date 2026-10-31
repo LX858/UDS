@@ -623,10 +623,20 @@ end)
 local lastVehicleRamming = {}
 local trackedPedHealth = {}
 
+-- Tra cứu model xe bị bỏ qua bằng hash (tránh joaat + vòng lặp mỗi tick)
+local ignoredVehicleModels = {}
+for _, modelName in ipairs(Config.ReputationSystem.vehicleRammingDetection.ignoredVehicles or {}) do
+    ignoredVehicleModels[joaat(modelName)] = true
+end
+
 -- Thread kiểm tra collision với người chơi
+-- Khi không lái xe chạy chậm 500ms/tick và không tốn native nào tới danh sách người chơi
 CreateThread(function()
+    local nextWait = 500
     while true do
-        Wait(Config.ReputationSystem.vehicleRammingDetection.checkInterval)
+        Wait(nextWait)
+        nextWait = 500
+        local trackCoords = nil
         
         local playerPed = PlayerPedId()
         
@@ -635,18 +645,17 @@ CreateThread(function()
             
             -- Kiểm tra là tài xế
             if GetPedInVehicleSeat(vehicle, -1) == playerPed then
+                nextWait = Config.ReputationSystem.vehicleRammingDetection.checkInterval
+                
                 -- Bỏ qua xe nằm trong danh sách ignoredVehicles
-                local vehicleModel = GetEntityModel(vehicle)
-                local isIgnoredVehicle = false
-                for _, modelName in ipairs(Config.ReputationSystem.vehicleRammingDetection.ignoredVehicles) do
-                    if vehicleModel == joaat(modelName) then
-                        isIgnoredVehicle = true
-                        break
-                    end
-                end
-                if isIgnoredVehicle then goto skipRamming end
+                if ignoredVehicleModels[GetEntityModel(vehicle)] then goto skipRamming end
 
                 local vehicleSpeed = GetEntitySpeed(vehicle) * 3.6 -- km/h
+                
+                -- Chỉ theo dõi máu người xung quanh khi xe đã chạy đủ nhanh
+                if vehicleSpeed > Config.ReputationSystem.vehicleRammingDetection.minSpeed * 0.5 then
+                    trackCoords = GetEntityCoords(vehicle)
+                end
                 
                 -- Chỉ check khi tốc độ > config minSpeed
                 if vehicleSpeed > Config.ReputationSystem.vehicleRammingDetection.minSpeed then
@@ -679,6 +688,10 @@ CreateThread(function()
                                         if (currentTime - lastHitTime) > Config.ReputationSystem.vehicleRammingDetection.cooldownMs then
                                             -- Lấy lượng máu/giáp ban đầu trước khi va chạm từ cache tracking
                                             local initialData = trackedPedHealth[playerId]
+                                            -- Bỏ cache quá cũ để tránh tính dư sát thương
+                                            if initialData and (currentTime - initialData.t) > 1000 then
+                                                initialData = nil
+                                            end
                                             local initialHp = initialData and initialData.hp or GetEntityHealth(otherPed)
                                             local initialArmour = initialData and initialData.armour or GetPedArmour(otherPed)
                                             
@@ -694,36 +707,39 @@ CreateThread(function()
                                             
                                             local minDamage = Config.ReputationSystem.vehicleRammingDetection.minDamage or 15
                                             
-                                            -- CHỈ trừ uy tín khi gây sát thương > minDamage (trên 15 máu)
-                                            if totalDamage > minDamage then
-                                                local victimServerId = GetPlayerServerId(playerId)
+                                            local victimServerId = GetPlayerServerId(playerId)
+                                            local isPenalized = totalDamage > minDamage
+                                            
+                                            -- CHỈ trừ uy tín khi gây sát thương > minDamage
+                                            if isPenalized then
                                                 -- GỬI EVENT NGAY để trừ điểm và dừng xe
                                                 TriggerServerEvent('diemuytin:vehicleRamming', victimServerId)
-                                                
-                                                -- Chụp ảnh và gửi Discord A + gửi URL lên server sau
-                                                if Config.DiscordWebhook.enabled then
-                                                    CreateThread(function()
-                                                        Wait(100)
-                                                        
-                                                        if exports[Config.DiscordWebhook.screenshotResource] then
-                                                            exports[Config.DiscordWebhook.screenshotResource]:requestScreenshotUpload(Config.DiscordWebhook.combatScreenshotURL, 'files[]', {
-                                                                encoding = 'png',
-                                                                quality = 1.0
-                                                            }, function(data)
-                                                                local resp = json.decode(data)
-                                                                if resp and resp.attachments and resp.attachments[1] then
-                                                                    local screenshotUrl = resp.attachments[1].proxy_url or resp.attachments[1].url
-                                                                    -- GỬI URL LÊN SERVER (event riêng)
-                                                                    TriggerServerEvent('diemuytin:sendScreenshotUrl', screenshotUrl, victimServerId)
-                                                                end
-                                                            end)
-                                                        end
-                                                    end)
-                                                end
-                                                
-                                                lastVehicleRamming[PlayerId()] = currentTime
-                                                break
                                             end
+                                            
+                                            -- LUÔN chụp ảnh + gửi log CRM khi sát thương > logMinDamage, kể cả khi chưa đủ để bị trừ điểm
+                                            local logMinDamage = Config.ReputationSystem.vehicleRammingDetection.logMinDamage or 2
+                                            if Config.DiscordWebhook.enabled and totalDamage > logMinDamage then
+                                                CreateThread(function()
+                                                    Wait(100)
+                                                    
+                                                    if exports[Config.DiscordWebhook.screenshotResource] then
+                                                        exports[Config.DiscordWebhook.screenshotResource]:requestScreenshotUpload(Config.DiscordWebhook.combatScreenshotURL, 'files[]', {
+                                                            encoding = 'png',
+                                                            quality = 1.0
+                                                        }, function(data)
+                                                            local resp = json.decode(data)
+                                                            if resp and resp.attachments and resp.attachments[1] then
+                                                                local screenshotUrl = resp.attachments[1].proxy_url or resp.attachments[1].url
+                                                                -- GỬI URL LÊN SERVER (event riêng)
+                                                                TriggerServerEvent('diemuytin:sendScreenshotUrl', screenshotUrl, victimServerId, totalDamage)
+                                                            end
+                                                        end)
+                                                    end
+                                                end)
+                                            end
+                                            
+                                            lastVehicleRamming[PlayerId()] = currentTime
+                                            break
                                         end
                                     end
                                 end
@@ -736,17 +752,26 @@ CreateThread(function()
         end
         
         -- Cập nhật trackedPedHealth cho các player xung quanh khi bình thường
-        local players = GetActivePlayers()
-        for _, playerId in ipairs(players) do
-            if playerId ~= PlayerId() then
-                local otherPed = GetPlayerPed(playerId)
-                if DoesEntityExist(otherPed) then
-                    trackedPedHealth[playerId] = {
-                        hp = GetEntityHealth(otherPed),
-                        armour = GetPedArmour(otherPed)
-                    }
+        -- Chỉ lưu người trong bán kính 30m quanh xe; bảng được dựng lại mỗi tick nên không giữ người đã đi xa/thoát
+        if trackCoords then
+            local myId = PlayerId()
+            local fresh = {}
+            local now = GetGameTimer()
+            for _, playerId in ipairs(GetActivePlayers()) do
+                if playerId ~= myId then
+                    local otherPed = GetPlayerPed(playerId)
+                    if DoesEntityExist(otherPed) and #(GetEntityCoords(otherPed) - trackCoords) < 30.0 then
+                        fresh[playerId] = {
+                            hp = GetEntityHealth(otherPed),
+                            armour = GetPedArmour(otherPed),
+                            t = now
+                        }
+                    end
                 end
             end
+            trackedPedHealth = fresh
+        elseif next(trackedPedHealth) then
+            trackedPedHealth = {}
         end
     end
 end)
@@ -774,13 +799,9 @@ AddEventHandler('gameEventTriggered', function(name, args)
         local attacker = args[2]
         local weapon = args[7]
         
-        -- Debug entity types
-        if attacker == PlayerPedId() and victim ~= PlayerPedId() then
-            local isPedPlayer = IsPedAPlayer(victim)
-            local isPedHuman = IsPedHuman(victim)
-            local entityType = GetEntityType(victim)
-            --print('[DIEMUYTIN DEBUG] Damage detected - Victim: isPedPlayer=' .. tostring(isPedPlayer) .. ', isPedHuman=' .. tostring(isPedHuman) .. ', entityType=' .. entityType)
-        end
+        -- Event này bắn cho mọi sát thương trong tầm; bỏ qua ngay nếu không phải do chính mình gây ra
+        local playerPed = PlayerPedId()
+        if attacker ~= playerPed then return end
         
         -- CASE 1: Kiểm tra nếu attacker là người chơi hiện tại và victim là người chơi khác
         if attacker == PlayerPedId() and IsPedAPlayer(victim) and victim ~= PlayerPedId() then

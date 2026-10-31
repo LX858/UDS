@@ -256,6 +256,25 @@ return {
             },
         },
     },
+    ['giadinhvqh'] = {
+        label = 'GĐ VQH Leon',
+        grades = {
+            [0] = {
+                name = 'Đàn em'
+            },
+            [1] = {
+                name = 'Đanh Anh'
+            },
+            [2] = {
+                name = 'Trưởng lão'
+            },
+            [3] = {
+                name = 'Lão Đại',
+                isboss = true,
+                bankAuth = true
+            },
+        },
+    },
     ['tdgang'] = {
         label = 'TD Gang',
         grades = {

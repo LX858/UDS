@@ -460,6 +460,24 @@ RegisterCommand('adminclothes', function(source, args, rawCommand)
     TriggerClientEvent('XNClothes:adminOpenClothes', source)
 end, false)
 
+-- =====================================================
+-- SHOWROOM COMMAND: Mở NUI chỉ xem đồ hiếm trong SQL (Không thể mua)
+-- =====================================================
+RegisterCommand('viewdohiem', function(source, args, rawCommand)
+    if source == 0 then return end
+    TriggerClientEvent('XNClothes:openRarityViewShop', source)
+end, false)
+
+RegisterCommand('showroom', function(source, args, rawCommand)
+    if source == 0 then return end
+    TriggerClientEvent('XNClothes:openRarityViewShop', source)
+end, false)
+
+exports('OpenRarityViewShop', function(targetSrc, title)
+    if not targetSrc then return end
+    TriggerClientEvent('XNClothes:openRarityViewShop', targetSrc, title)
+end)
+
 -- Function để lấy cấp độ (level) của balo dựa trên drawable
 function GetBagLevelByDrawable(sexs, drawable)
     if not Config.TuiDo or not Config.TuiDo[sexs] then 

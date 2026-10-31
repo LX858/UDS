@@ -124,6 +124,11 @@ return {
                 radius = 60.0,
             },
             {
+                name = "Bãi hoa LV1",
+                coords = vector3(1350.3269, -1022.3098, 40.0573),
+                radius = 70.0,
+            },
+            {
                 name = "Đảo đầu lâu",
                 coords = vector3(4840.571, -5174.425, 2.0),
                 radius = 1500.0,

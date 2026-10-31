@@ -584,35 +584,35 @@ return {
         grades = {
             [0] = {
                 name = 'Phụ bàn',
-                payment = 200
+                payment = 1000
             },
 
             [1] = {
                 name = 'bartender',
-                payment = 250
+                payment = 2000
             },
 
             [2] = {
                 name = 'DJ',
-                payment = 350
+                payment = 2500
             },
 
             [3] = {
                 name = 'Quản lý',
-                payment = 350
+                payment = 2700
             },
 
             [4] = {
                 name = 'Phó giám đốc',
                 isboss = true,
-                payment = 400
+                payment = 3000
             },
 
             [5] = {
                 name = 'Giám đốc',
                 isboss = true,
                 bankAuth = true,
-                payment = 500
+                payment = 3500
             },
         },
     },

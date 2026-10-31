@@ -68,7 +68,7 @@ lib.callback.register('xx_farming:getAllFarmStatus', function(source)
     -- Đánh dấu ruộng no_rent để client biết không hiển thị option thuê
     if FarmRental and FarmRental.FarmZones then
         for zoneId, zone in pairs(FarmRental.FarmZones) do
-            if zone.no_rent then
+            if zone.no_rent or zone.capture then
                 if not farmStatus[zoneId] then farmStatus[zoneId] = {} end
                 farmStatus[zoneId].no_rent = true
             end
@@ -97,8 +97,8 @@ AddEventHandler('xx_farming:rentFarm', function(zoneId, hours)
     end
     
     -- Kiểm tra xem ruộng có cho thuê không
-    if zone.no_rent then
-        TriggerClientEvent('QBCore:Notify', src, 'Ruộng này không cho thuê, bất kỳ ai cũng có thể trồng cây tự do!', 'error')
+    if zone.no_rent or zone.capture then
+        TriggerClientEvent('QBCore:Notify', src, 'Ruộng này không cho thuê!', 'error')
         return
     end
     

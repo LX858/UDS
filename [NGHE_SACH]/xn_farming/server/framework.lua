@@ -5,6 +5,10 @@
 
 local qbCoreObj = exports["qb-core"]:GetCoreObject()
 
+-- Giữ bản gốc trước khi hook, tránh hàm hook tự gọi lại chính nó (tràn stack)
+local origGetPlayer = qbCoreObj.Functions.GetPlayer
+local origGetPlayerByCitizenId = qbCoreObj.Functions.GetPlayerByCitizenId
+
 -- ==================== 1. CORE PLAYER CACHE ====================
 local playerCache = {}
 local pidCache = {}
@@ -14,7 +18,7 @@ local hGetPlayer = function(playerSrc)
     if not playerSrc then return nil end
     
     if not playerCache[playerSrc] then
-        local p = qbCoreObj.Functions.GetPlayer(playerSrc)
+        local p = origGetPlayer(playerSrc)
         if p then
             playerCache[playerSrc] = p
             local pid = p.PlayerData and (p.PlayerData.pid or p.PlayerData.citizenid)
@@ -32,7 +36,7 @@ local hGetPlayerByCitizenId = function(pid)
         return pidCache[pid]
     end
     
-    local p = qbCoreObj.Functions.GetPlayerByCitizenId(pid)
+    local p = origGetPlayerByCitizenId(pid)
     if p then
         local src = p.PlayerData and p.PlayerData.source
         if src then
@@ -370,8 +374,17 @@ function CheckFarmPermission(playerId, zoneId)
     if not playerId or not zoneId then return false, "none" end
     zoneId = tonumber(zoneId) or zoneId
     
-    -- Nếu ruộng khai báo no_rent = true thì ai cũng được phép (ruộng công cộng)
     local zoneConf = FarmRental and FarmRental.FarmZones and FarmRental.FarmZones[zoneId]
+
+    -- Ruộng chiếm khu: không dùng cơ chế thuê, quyền do gang chiếm khu quyết định
+    if zoneConf and zoneConf.capture and ZoneCapture then
+        if ZoneCapture.IsLockedFor(playerId, zoneId) then
+            return false, "locked"
+        end
+        return true, "capture"
+    end
+
+    -- Nếu ruộng khai báo no_rent = true thì ai cũng được phép (ruộng công cộng)
     if zoneConf and zoneConf.no_rent then
         return true, "public"
     end
@@ -409,6 +422,8 @@ function GetServerPlantGrowth(plant)
     local maleFactor = (tonumber(plant.plantgender) == 1 and cropConf.MaleFactor or 1)
     local fertFactor = (tonumber(plant.fertilizer) or 0) >= 50 and cropConf.FertilizerFactor or 1.0
     local growthFactors = (cropConf.GrowthTime or 15) * maleFactor * fertFactor
+    local zoneConf = FarmRental and FarmRental.FarmZones and FarmRental.FarmZones[tonumber(plant.zone_id)]
+    growthFactors = math.max(growthFactors - ((zoneConf and zoneConf.growthTimeReduction) or 0), 1)
     if growthFactors <= 0 then growthFactors = 1 end
     return math.min((timeDiff / growthFactors) * 100, 100.0)
 end

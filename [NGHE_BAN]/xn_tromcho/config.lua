@@ -92,7 +92,7 @@ Config.PhuongTien.VatPham = "thonglong" -- VẬT PHẨM CẦN DÙNG KHI BẮT B�
 
 --[[ XE CHO PHÉP KHI VÁC CHÓ ]]--
 Config.AllowedVehicles = {
-    "exciter", "z1000", "ponycarv1", "zx10rr", "airblade150", "sh350", "yaz",
+    "dc_skullbike", "exciter", "z1000", "ponycarv1", "zx10rr", "airblade150", "sh350", "yaz",
     "akuma", "avarus", "bagger", "bati", "bati2", "bf400", "carbonrs", "chimera", 
     "cliffhanger", "daemon", "daemon2", "deathbike", "deathbike2", "deathbike3", 
     "diabolus", "diabolus2", "double", "enduro", "esskey", "faggio", "faggio2", 

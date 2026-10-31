@@ -1,5 +1,11 @@
 local cachedAccounts = {}
 local cachedPlayers = {}
+local MAX_TRANSACTIONS = Config.maxTransactions or 50
+
+local function trimTransactions(list)
+    for i = #list, MAX_TRANSACTIONS + 1, -1 do list[i] = nil end
+    return list
+end
 
 CreateThread(function()
     Wait(500)
@@ -18,7 +24,7 @@ CreateThread(function()
                 name = GetSocietyLabel(job),
                 frozen = v.isFrozen == 1,
                 amount = v.amount,
-                transactions = json.decode(v.transactions),
+                transactions = trimTransactions(json.decode(v.transactions) or {}),
                 auth = {},
                 creator = v.creator
             }
@@ -67,7 +73,7 @@ function UpdatePlayerAccount(cid)
         MySQL.query("SELECT * FROM bank_accounts_new WHERE auth LIKE ? ", {query}, function(shared)
             cachedPlayers[cid] = {
                 isFrozen = 0,
-                transactions = #account > 0 and json.decode(account[1].transactions) or {},
+                transactions = #account > 0 and trimTransactions(json.decode(account[1].transactions) or {}) or {},
                 accounts = {}
             }
 
@@ -152,22 +158,6 @@ local function sanitizeMessage(message)
 end
 
 local Type = type
-local ledgerProfile = { calls = 0, maxRows = 0, maxBytes = 0, totalEncodeMs = 0, maxEncodeMs = 0 }
-local function encodeLedger(rows)
-    local started = GetGameTimer()
-    local encoded = json.encode(rows)
-    local elapsed = GetGameTimer() - started
-    ledgerProfile.calls = ledgerProfile.calls + 1
-    ledgerProfile.maxRows = math.max(ledgerProfile.maxRows, #rows)
-    ledgerProfile.maxBytes = math.max(ledgerProfile.maxBytes, #encoded)
-    ledgerProfile.totalEncodeMs = ledgerProfile.totalEncodeMs + elapsed
-    ledgerProfile.maxEncodeMs = math.max(ledgerProfile.maxEncodeMs, elapsed)
-    if GetConvarInt('qbx:profilePaychecks', 0) == 1 and elapsed >= 20 then
-        print(('[Renewed-Banking] ledger encode %d ms, %d rows, %d bytes'):format(elapsed, #rows, #encoded))
-    end
-    return encoded
-end
-exports('GetLedgerProfile', function() return ledgerProfile end)
 local function handleTransaction(account, title, amount, message, issuer, receiver, transType, transID)
     if not account or Type(account) ~= 'string' then return print(locale("err_trans_account", account)) end
     if not title or Type(title) ~= 'string' then return print(locale("err_trans_title", title)) end
@@ -189,14 +179,18 @@ local function handleTransaction(account, title, amount, message, issuer, receiv
         time = os.time()
     }
     if cachedAccounts[account] then
-        table.insert(cachedAccounts[account].transactions, 1, transaction)
-        local transactions = encodeLedger(cachedAccounts[account].transactions)
+        local list = cachedAccounts[account].transactions
+        table.insert(list, 1, transaction)
+        trimTransactions(list)
+        local transactions = json.encode(list)
         MySQL.prepare("INSERT INTO bank_accounts_new (id, transactions) VALUES (?, ?) ON DUPLICATE KEY UPDATE transactions = ?",{
             account, transactions, transactions
         })
     elseif cachedPlayers[account] then
-        table.insert(cachedPlayers[account].transactions, 1, transaction)
-        local transactions = encodeLedger(cachedPlayers[account].transactions)
+        local list = cachedPlayers[account].transactions
+        table.insert(list, 1, transaction)
+        trimTransactions(list)
+        local transactions = json.encode(list)
         MySQL.prepare("INSERT INTO player_transactions (id, transactions) VALUES (?, ?) ON DUPLICATE KEY UPDATE transactions = ?", {
             account, transactions, transactions
         })

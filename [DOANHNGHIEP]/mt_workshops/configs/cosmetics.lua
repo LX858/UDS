@@ -2,7 +2,7 @@ Config = Config or {}
 
 Config.cosmetics = { -- Chỉ xóa hoặc đổi giá trị, không thêm mới và không đổi key!
     { label = 'Sơn', value = 'paints', item = 'mechspray', money = 10000 },
-    { label = 'Sơn Chameleon', value = 'paints_chameleon', item = 'chameleon_spray', money = 100000 },
+    { label = 'Sơn Chameleon', value = 'paints_chameleon', item = 'chameleon_spray', count = 1, money = 100000 },
     { label = 'Mâm xe', value = 23, modsId = 'modFrontWheels', item = 'car_wheel', money = 20000 },
     { label = 'Mâm sau', value = 24, modsId = 'modBackWheels', item = 'car_wheel', money = 20000 },
     { label = 'Cánh gió', value = 0, modsId = 'modSpoilers', item = 'spoiler', money = 15000 },

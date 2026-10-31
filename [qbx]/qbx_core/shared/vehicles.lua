@@ -497,6 +497,15 @@ return {
         type = 'bike',
         hash = `bati2`,
     },
+    dc_skullbike = {
+        name = 'Skull Bike',
+        brand = 'Skull',
+        model = 'dc_skullbike',
+        price = 48000,
+        category = 'motorcycles',
+        type = 'bike',
+        hash = `dc_skullbike`,
+    },
     benson = {
         name = 'Benson',
         brand = 'Vapid',

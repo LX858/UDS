@@ -1,0 +1,1997 @@
+?/* ==========================================================================
+   oxlyn-fpsboost  ·  liquid glass UI
+   --------------------------------------------------------------------------
+   Notas de design
+   ---------------
+   · O painel flutua por cima do jogo. Todo o vidro tem de ter contraste
+     suficiente para o texto se ler tanto de dia como de noite no GTA — dai o
+     scrim escuro por tras do grid, e nao apenas blur.
+   · A cor de destaque vem do Lua (Definicoes > Interface) e e injectada em
+     --accent. Tudo o resto e derivado dela com color-mix, para uma unica
+     variavel mudar o painel inteiro de forma coerente.
+   · Numeros usam tabular-nums em todo o lado. Sem isso, um contador a 10Hz
+     abana horizontalmente cada vez que um digito muda de largura.
+   ========================================================================== */
+
+/* ---------------------------------------------------------------- reset -- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', Inter, system-ui,
+               -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+svg { width: 100%; height: 100%; fill: none; stroke: currentColor;
+      stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+ul { margin: 0; padding: 0; list-style: none; }
+h1, h2, h3, p { margin: 0; }
+
+/* O `display: none` que o browser da a [hidden] vem da folha de estilo dele,
+   e QUALQUER regra de autor com display o anula — basta um `.classe { display:
+   grid }` para o atributo hidden deixar de ter efeito, sem aviso nenhum.
+   Esta linha e a unica forma fiavel de o atributo hidden funcionar sempre. */
+[hidden] { display: none !important; }
+
+/* --------------------------------------------------------------- tokens -- */
+:root {
+  --accent:   #22C7E8;
+  --accent-2: #5BE3F5;
+
+  /* Derivados da cor de destaque.
+     Sao calculados em JS (applyUiConfig) e injectados aqui, em vez de usar
+     color-mix(): o CEF do FiveM nem sempre e recente o suficiente para o
+     suportar, e um color-mix nao reconhecido deixaria metade da UI sem cor.
+     Os valores abaixo sao apenas o estado inicial, antes do primeiro tick. */
+  --accent-soft:  rgba(34,199,232,.16);
+  --accent-soft2: rgba(34,199,232,.30);
+  --accent-line:  rgba(34,199,232,.42);
+  --accent-glow:  rgba(34,199,232,.45);
+  --accent-text:  #6fdcf0;
+
+  /* Paragens intermedias para degrades suaves.
+     Terminar um degrade em `transparent` NAO e o mesmo que terminar na propria
+     cor com alfa 0: `transparent` e rgba(0,0,0,0), por isso a interpolacao
+     passa por escurecer e deixa uma faixa cinzenta visivel onde devia haver
+     apenas desvanecimento. --accent-w0 e a mesma cor com alfa zero, que e o
+     que faz o degrade acabar em nada em vez de acabar em sombra. */
+  /* Versao escura da cor de destaque, usada como aresta lateral do simbolo
+     em relevo. Injectada pelo JS junto com as restantes derivadas. */
+  --accent-deep: #0b5463;
+
+  --accent-w1: rgba(34,199,232,.22);
+  --accent-w2: rgba(34,199,232,.12);
+  --accent-w3: rgba(34,199,232,.05);
+  --accent-w0: rgba(34,199,232,0);
+
+  --ok-glow:   rgba(52,224,138,.45);
+  --warn-glow: rgba(255,197,49,.45);
+
+  --ok:   #34E08A;
+  --warn: #FFC531;
+  --bad:  #FF4B57;
+
+  --text:      #E9EFF7;
+  --text-dim:  #93A0B4;
+  --text-faint:#6B7789;
+
+  /* DISCIPLINA DE LINHAS
+     Uma unica escala de bordas em todo o painel. Antes havia sete alphas
+     diferentes espalhados pelo ficheiro; e disso que vem a sensacao de
+     "montado a pressa" mesmo quando cada componente esta bem desenhado. */
+  --line:      rgba(255,255,255,.065);
+  --line-mid:  rgba(255,255,255,.09);
+  --line-hi:   rgba(255,255,255,.14);
+
+  /* DISCIPLINA DE SOMBRAS
+     Duas camadas: uma justa que assenta o elemento na superficie, outra larga
+     e suave que da profundidade. Uma sombra unica e enorme le-se sempre como
+     um efeito, nunca como um objecto pousado. */
+  --sh-1: 0 1px 2px rgba(0,0,0,.30);
+  --sh-2: 0 1px 2px rgba(0,0,0,.28), 0 10px 28px -12px rgba(0,0,0,.55);
+  --sh-3: 0 1px 3px rgba(0,0,0,.32), 0 26px 60px -22px rgba(0,0,0,.62);
+
+  /* IMPORTANTE: nao existe backdrop-filter neste ficheiro, de proposito.
+     No CEF que o FiveM embute, um backdrop-filter sobre um body transparente
+     forca a criacao de um "backdrop root" que e composto a PRETO em vez de
+     transparente — o painel inteiro fica com fundo preto e o jogo desaparece.
+     Alem disso nunca desfocaria o jogo: o GTA e composto por baixo da NUI,
+     fora da arvore de render do browser.
+
+     O desfoque do fundo e feito pelo proprio jogo (TriggerScreenblurFadeIn,
+     em client/main.lua) e o vidro e conseguido so com cor semi-transparente.
+     E assim que se obtem o efeito da imagem de referencia. */
+  --glass-bg:     rgba(22,28,41,.55);
+  --glass-bg-2:   rgba(12,17,27,.66);
+  --glass-border: rgba(255,255,255,.085);
+  --glass-hi:     rgba(255,255,255,.13);
+
+  /* Quanto o jogo e escurecido por tras do painel (0 = jogo totalmente
+     visivel). Injectado pelo JS a partir da definicao "Escurecer o fundo". */
+  --backdrop: .32;
+
+  --r-xl: 26px;
+  --r-lg: 20px;
+  --r-md: 14px;
+  --r-sm: 10px;
+
+  /* ESCALA DA INTERFACE
+     Calculada em JS (UiScale, em html/js/util.js) a partir da resolucao do
+     ecra e da definicao do jogador, e aplicada com a propriedade zoom aos
+     poucos elementos de topo listados mais abaixo. Fica em 1 enquanto o JS
+     nao correr, por isso o painel nunca depende dela para aparecer.
+
+     Porque zoom e nao transform: scale() — o zoom entra no LAYOUT, por isso
+     a caixa passa mesmo a medir mais e o centramento do pai continua a bater
+     certo, tal como as posicoes fixed dos menus. Um transform mudava so a
+     pintura e deixava o painel descentrado.
+
+     Nao escalar aqui: o .app__scrim, que cobre o ecra inteiro. Uma caixa
+     maior do que o ecra so esticaria a vinheta para fora dele. */
+  --ui-zoom: 1;
+
+  --ease: cubic-bezier(.22,.61,.36,1);
+  /* Saida rapida e chegada lenta: e a curva certa para algo que ENTRA em
+     cena. Comeca com velocidade e assenta devagar, em vez de arrancar
+     devagar e chegar a bater. */
+  --ease-out: cubic-bezier(.19,.92,.28,1);
+  /* Chegada com encaixe: a peca aproxima-se depressa, passa uns milimetros
+     alem do lugar e recua. E esse excesso minimo que se le como "encaixou"
+     em vez de "parou". */
+  --ease-snap: cubic-bezier(.16,.84,.28,1.045);
+  --dur: .28s;
+}
+
+/* Com o vidro liquido desligado o jogo tambem deixa de ser desfocado, por isso
+   as superficies passam a quase opacas — senao o texto ficaria ilegivel por
+   cima de uma cena de dia. */
+body.no-blur {
+  --glass-bg:   rgba(19,25,37,.95);
+  --glass-bg-2: rgba(12,16,25,.96);
+}
+body.no-anim * { transition: none !important; animation: none !important; }
+
+/* ---------------------------------------------------------------- glass -- */
+.glass {
+  position: relative;
+  background: linear-gradient(158deg, var(--glass-bg), var(--glass-bg-2));
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--sh-3);
+}
+/* Brilho especular no topo — o que torna o vidro "liquido" e nao so translucido.
+   A lavagem de cor de destaque no canto e deliberadamente fraca: quando se ve
+   de forma obvia, o painel deixa de parecer vidro e passa a parecer um filtro
+   por cima. Deve notar-se so quando se procura por ela. */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(130% 66% at 14% -12%, rgba(255,255,255,.10), rgba(255,255,255,0) 56%),
+    radial-gradient(80% 46% at 94% 2%, var(--accent-soft), var(--accent-w0) 62%);
+  opacity: .55;
+}
+
+/* ==========================================================================
+   HUD FLUTUANTE
+   ========================================================================== */
+.hud {
+  zoom: var(--ui-zoom, 1);
+  position: fixed;
+  z-index: 40;
+  transform-origin: top right;
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.hud--hidden { opacity: 0; pointer-events: none; transform: scale(.94); }
+
+.hud[data-pos="topleft"]     { top: 22px; left: 22px;  transform-origin: top left; }
+.hud[data-pos="topright"]    { top: 22px; right: 22px; transform-origin: top right; }
+.hud[data-pos="bottomleft"]  { bottom: 22px; left: 22px;  transform-origin: bottom left; }
+.hud[data-pos="bottomright"] { bottom: 22px; right: 22px; transform-origin: bottom right; }
+
+/* A escala do utilizador vive no vidro interior, para nao competir com o
+   transform de entrada/saida aplicado ao contentor. */
+.hud[data-pos="topleft"]     .hud__glass { transform-origin: top left; }
+.hud[data-pos="topright"]    .hud__glass { transform-origin: top right; }
+.hud[data-pos="bottomleft"]  .hud__glass { transform-origin: bottom left; }
+.hud[data-pos="bottomright"] .hud__glass { transform-origin: bottom right; }
+
+.hud__glass {
+  min-width: 156px;
+  padding: 13px 16px 12px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(158deg, rgba(20,26,39,.62), rgba(11,15,24,.72));
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 16px 44px rgba(0,0,0,.45);
+}
+body.no-blur .hud__glass { background: rgba(14,19,28,.94); }
+
+.hud__main { display: flex; align-items: baseline; gap: 6px; line-height: 1; }
+.hud__fps {
+  font-size: 34px; font-weight: 800; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--hud-color, var(--text));
+  text-shadow: 0 0 22px var(--hud-glow, transparent);
+  transition: color .3s var(--ease);
+}
+.hud__unit { font-size: 11px; font-weight: 700; color: var(--text-faint); letter-spacing: .08em; }
+
+.hud__spark { display: block; width: 100%; height: 34px; margin: 6px 0 2px; }
+.hud__spark[hidden] { display: none; }
+
+.hud__rows { display: grid; gap: 3px; margin-top: 6px; }
+.hud__row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 10.5px; letter-spacing: .07em;
+}
+.hud__row[hidden] { display: none; }
+.hud__row span { color: var(--text-faint); font-weight: 600; }
+.hud__row b { color: var(--text-dim); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ==========================================================================
+   TOASTS
+   ========================================================================== */
+.toasts {
+  zoom: var(--ui-zoom, 1);
+  position: fixed; z-index: 60; top: 22px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 9px;
+  pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 17px 11px 13px;
+  border-radius: var(--r-md);
+  background: linear-gradient(150deg, rgba(24,31,45,.88), rgba(14,19,29,.92));
+  border: 1px solid var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-hi), 0 14px 38px rgba(0,0,0,.5);
+  font-size: 13px; font-weight: 500;
+  max-width: 460px;
+  animation: toastIn .34s var(--ease);
+}
+body.no-blur .toast { background: rgba(16,21,31,.96); }
+.toast--out { animation: toastOut .26s var(--ease) forwards; }
+.toast__bar { width: 3px; align-self: stretch; border-radius: 3px; background: var(--accent); }
+.toast--success .toast__bar { background: var(--ok); }
+.toast--warn    .toast__bar { background: var(--warn); }
+.toast--error   .toast__bar { background: var(--bad); }
+.toast__title { font-size: 9.5px; letter-spacing: .16em; color: var(--text-faint); font-weight: 800; }
+
+@keyframes toastIn  { from { opacity:0; transform: translateY(-14px) scale(.96);} to {opacity:1;transform:none;} }
+@keyframes toastOut { to   { opacity:0; transform: translateY(-10px) scale(.97);} }
+
+/* ==========================================================================
+   MODAL DE CONFIRMACAO
+   ========================================================================== */
+.modal {
+  position: fixed; inset: 0; z-index: 70;
+  display: grid; place-items: center;
+  background: rgba(4,7,12,.78);
+  animation: fadeIn .2s var(--ease);
+}
+.modal--hidden { display: none; }
+
+/* Um modal NAO e vidro.
+   ---------------------
+   Herdava os tokens --glass-bg do resto do painel, e esses sao translucidos de
+   proposito: o painel esta sobre o JOGO e ve-lo por tras e o efeito que se quer.
+   Um modal esta sobre o PAINEL — e o que se via por tras eram as linhas de
+   definicoes, com texto a passar atraves do texto do modal. Duas camadas de
+   texto sobrepostas nao sao um efeito, sao um erro de leitura.
+
+   Por isso este cartao tem fundo proprio, quase opaco, em vez dos tokens
+   partilhados. E a unica superficie do painel que interrompe o que esta por
+   baixo — e tem de interromper, porque exige uma resposta antes de continuar. */
+.modal__card {
+  zoom: var(--ui-zoom, 1);
+  width: 400px; padding: 28px 30px 24px;
+  border-radius: var(--r-xl);
+  text-align: center;
+  animation: panelIn .3s var(--ease);
+  background: linear-gradient(158deg, rgba(25,32,46,.985), rgba(13,18,28,.99));
+  border-color: var(--line-mid);
+}
+/* O realce especular do vidro tambem baixa: sobre uma superficie opaca le-se
+   como um borrao claro, nao como luz. */
+.modal__card.glass::before { opacity: .3; }
+.modal__icon {
+  width: 46px; height: 46px; margin: 0 auto 16px; padding: 11px;
+  border-radius: 50%;
+  background: rgba(255,197,49,.11);
+  border: 1px solid rgba(255,197,49,.24);
+  color: var(--warn);
+}
+.modal__card h3 { font-size: 17px; font-weight: 800; letter-spacing: -.005em; }
+.modal__card p {
+  font-size: 12.5px; line-height: 1.6; color: var(--text-dim);
+  margin-top: 9px;
+}
+.modal__actions { display: flex; gap: 10px; margin-top: 24px; }
+.modal__actions .btn { flex: 1; }
+
+/* Campo de texto do modal (promptModal). Segue o mesmo vidro do resto: um
+   input com o estilo de origem do Chromium seria a unica caixa branca do
+   painel inteiro. */
+.modal__input {
+  width: 100%; margin-top: 18px;
+  padding: 11px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-mid);
+  background: rgba(0,0,0,.28);
+  color: var(--text);
+  font: inherit; font-size: 13px; font-weight: 600;
+  outline: none;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.modal__input::placeholder { color: var(--text-faint); font-weight: 500; }
+.modal__input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-w2);
+}
+
+/* ==========================================================================
+   OVERLAY DE PREVIEW
+   ========================================================================== */
+.preview-overlay {
+  position: fixed; inset: 0; z-index: 55;
+  display: grid; place-items: end center;
+  padding-bottom: 8vh;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+.preview-overlay--hidden { opacity: 0; pointer-events: none; }
+/* Cartao de preview: vidro, como o resto do painel, com a cor de destaque a
+   entrar pelo canto superior direito e a desvanecer antes do centro.
+
+   Sao duas camadas de background na mesma declaracao — a ordem importa, em CSS
+   a PRIMEIRA fica por cima:
+     1. o degrade da cor, do canto superior direito para dentro
+     2. o vidro escuro, com os mesmos tokens dos outros paineis
+
+   O vidro da opacidade suficiente para o texto se ler sobre qualquer cenario,
+   e continua translucido — o jogo ve-se por tras, que e o que interessa
+   durante uma medicao. */
+.preview-card {
+  zoom: var(--ui-zoom, 1);
+  pointer-events: auto;
+  position: relative;
+  /* A barra de progresso encosta as arestas de baixo; o overflow corta-a pelo
+     raio do cartao, para ela seguir a curva em vez de a atravessar. */
+  overflow: hidden;
+  width: 244px; padding: 14px 16px 17px;
+  border-radius: var(--r-lg);
+  text-align: left;
+  background:
+    /* `circle` e nao uma elipse em percentagens: uma elipse esticada por uma
+       caixa que nao e quadrada deforma-se, e o lado mais comprido chega a
+       borda ainda com cor — e essa cor cortada a direito que se lia como um
+       canto quadrado.
+
+       O raio acompanha o tamanho do cartao: acaba sensivelmente a meio dele,
+       por isso a cor morre ANTES das bordas em vez de bater nelas. As paragens
+       intermedias fazem a queda ser progressiva, e a ultima e a propria cor
+       com alfa 0. */
+    radial-gradient(circle 200px at 100% 0%,
+      var(--accent-w1)      0%,
+      var(--accent-w2)     28%,
+      var(--accent-w3)     52%,
+      var(--accent-w0)    100%),
+    linear-gradient(158deg, var(--glass-bg), var(--glass-bg-2));
+
+  /* Sem contorno e sem realce interior.
+     Um contorno claro por cima de um canto com cor le-se como uma moldura
+     colorida: e a linha que estava a marcar a aresta, nao o degrade. Aqui a
+     forma do cartao vem so da sombra e do proprio fundo — que chega, porque o
+     cartao esta sempre sobre o jogo e nunca sobre outra superficie clara.
+     O primeiro stop tambem baixou: com a cor forte a nascer exactamente no
+     canto, o corte do cartao deixava sempre uma aresta acesa. */
+  border: 0;
+  /* Sombra neutra apenas. A cor vive TODA no degrade do fundo, dentro do
+     cartao — uma box-shadow com a cor de destaque projectava-a para fora e
+     desenhava um halo colorido a volta da caixa, que era precisamente o
+     contorno que se estava a tentar eliminar. */
+  box-shadow: var(--sh-3);
+}
+
+/* Com o vidro por tras, a sombra do texto so precisa de assentar as letras.
+   A sombra pesada que existia era para compensar a falta de painel; mantida
+   aqui, sujava o texto em vez de o ajudar. */
+.preview-card__phase,
+.preview-card__preset,
+.preview-card__fps,
+.preview-card__count { text-shadow: 0 1px 3px rgba(0,0,0,.45); }
+
+/* Cabecalho numa linha so: ponto vivo + fase a esquerda, preset encostado a
+   direita. Empilhados, fase e preset gastavam duas linhas para dizer duas
+   palavras — e a altura do cartao vinha quase toda dai. */
+.preview-card__head {
+  display: flex; align-items: center; gap: 7px;
+}
+/* O ponto a pulsar diz "isto esta a correr agora" sem gastar uma palavra.
+   E o unico elemento animado do cartao: durante uma medicao de FPS, o overlay
+   nao pode ser ele proprio uma fonte de trabalho de composicao. */
+.preview-card__live {
+  width: 5px; height: 5px; flex: none; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  animation: pvPulse 1.5s var(--ease) infinite;
+}
+@keyframes pvPulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: .35; transform: scale(.65); }
+}
+.preview-card__phase {
+  font-size: 9px; letter-spacing: .18em; font-weight: 800;
+  color: var(--accent-text);
+}
+.preview-card__preset {
+  margin-left: auto;
+  font-size: 11px; font-weight: 700; color: var(--text);
+  letter-spacing: .01em;
+  /* Um preset com nome longo encolhe em vez de empurrar a fase para fora. */
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Numero e contagem partilham a mesma linha de base — o segundo valor cabe no
+   espaco morto a direita do numero grande, em vez de pedir uma linha sua. */
+.preview-card__row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px; margin-top: 7px;
+}
+.preview-card__fps {
+  line-height: 1;
+  font-size: 38px; font-weight: 800; letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.preview-card__fps small {
+  font-size: 11px; font-weight: 700; color: rgba(255,255,255,.6);
+  margin-left: 5px; letter-spacing: .06em;
+}
+.preview-card__count {
+  font-size: 12px; font-weight: 700; color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Encostada as arestas de baixo, sem margens: a barra passa a ser o rebordo do
+   cartao a encher-se, e nao mais um elemento a ocupar altura. */
+.preview-card__bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: rgba(0,0,0,.34);
+}
+.preview-card__bar i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 10px var(--accent-glow);
+  transition: width .2s linear;
+}
+
+/* ==========================================================================
+   SHELL DO PAINEL
+   ========================================================================== */
+/* O painel nao ocupa o ecra todo: fica numa caixa centrada com um tecto de
+   tamanho. Em 2K/4K, esticar ate as bordas faria os cartoes enormes e vazios;
+   em 1080p a caixa toca praticamente nos limites de qualquer forma. */
+.app { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; }
+.app--hidden { display: none; }
+
+/* O scrim escurece o jogo o suficiente para o texto se ler, mas NAO o tapa —
+   o painel e vidro, e vidro deixa ver o que esta atras. */
+.app__scrim {
+  position: absolute; inset: 0;
+  background: rgba(6,10,18, var(--backdrop));
+  animation: fadeIn .3s var(--ease);
+}
+/* Vinheta: escurece so as margens, que e onde vivem a sidebar e a rail e onde
+   o contraste costuma falhar. O centro do ecra fica limpo, com o jogo a
+   aparecer por tras do vidro tal como na referencia. */
+.app__scrim::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(118% 100% at 50% 45%, transparent 28%, rgba(3,6,11,.62) 100%);
+}
+.app__grid {
+  zoom: var(--ui-zoom, 1);
+  position: relative;
+  /* Estas quatro linhas sao as unicas que controlam onde o painel fica no
+     ecra. As margens em vw/vh afastam a sidebar do canto superior esquerdo e
+     fazem o painel ler-se como um cartao a flutuar sobre o jogo, e nao como
+     um overlay colado a moldura.
+       · baixar os vw/vh  -> painel mais pequeno, mais para o centro
+       · subir os vw/vh   -> painel mais encostado as bordas
+     Os valores em px sao o tecto: em 2K/4K o painel para de crescer para os
+     cartoes nao ficarem enormes e vazios. */
+  width:  min(82vw, 1300px);
+  height: min(82vh, 780px);
+
+  /* A perspectiva vive AQUI, no contentor, e nao em cada painel.
+     Se cada painel usasse `perspective()` no seu proprio transform, cada um
+     ganhava o seu ponto de fuga e a cena nao fechava — os dois lados
+     pareciam inclinados ao acaso em vez de olharem para o mesmo sitio.
+     Declarada no pai, os filhos partilham o mesmo observador, que e o que
+     faz isto ler-se como uma bancada e nao como dois efeitos soltos. */
+  /* Quanto MENOR o valor, mais forte a perspectiva: representa a distancia do
+     observador ao ecra. 1500px era um olhar quase de longe, com pouca fuga;
+     950px poe o observador mais perto e exagera a profundidade. */
+  perspective: 950px;
+  perspective-origin: 50% 50%;
+  display: grid;
+  grid-template-columns: 228px minmax(0, 1fr) 240px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 14px;
+
+  /* Duas animacoes no mesmo elemento, e ambas mexem em `transform`.
+     O atraso de .42s na segunda nao e decorativo: e o que impede a flutuacao
+     de atropelar a animacao de entrada. Sem ele as duas disputavam a mesma
+     propriedade desde o primeiro frame e a entrada desaparecia. */
+  /* will-change cria a camada UMA vez, logo no inicio. Sem ele o Chromium
+     promove e despromove o painel a camada composta ao longo da animacao, e
+     cada troca re-rasteriza tudo — e isso que se ve como um estalido. */
+  will-change: transform;
+  /* O contentor ja NAO tem animacao de entrada. Cada peca entra por si — se o
+     grelha inteira tambem se movesse, o movimento somava-se ao de cada peca e
+     o conjunto deslizava em bloco em vez de se montar. */
+  animation: floatY 5s cubic-bezier(.37, 0, .63, 1) .8s infinite;
+}
+@keyframes fadeIn  { from { opacity: 0 } }
+@keyframes panelIn { from { opacity: 0; transform: translate3d(0, 22px, 0) scale(.975); } }
+
+/* ==========================================================================
+   ABERTURA: AS PECAS ENCAIXAM
+   --------------------------------------------------------------------------
+   Cada painel e uma peca que vem de FORA do ecra e assenta no seu lugar. O
+   centro chega primeiro — e o tabuleiro —, depois os lados, depois a barra
+   inferior, e por fim os items de navegacao preenchem a sidebar ja montada.
+
+   Tres regras que isto tem de respeitar, e que sao a diferenca entre montar
+   e tremer:
+
+   1. `backwards` no fill-mode, obrigatorio em tudo o que tem atraso. Sem ele
+      a peca fica no destino durante a espera e so depois salta para fora —
+      um estalido visivel em cada abertura.
+
+   2. A lista de funcoes do `from` tem de ser IGUAL a do transform de repouso,
+      pela mesma ordem. Se as listas diferirem, o browser desiste de
+      interpolar componente a componente e interpola matrizes: a peca deixa de
+      viajar em linha e descreve um arco estranho.
+      E por isso que os paineis laterais tem `translateX(0)` no repouso —
+      existe so para o `from` ter para onde interpolar.
+
+   3. O ultimo keyframe tem de ser exactamente o transform de repouso, senao
+      ha um salto quando a animacao acaba e o valor base retoma.
+   ========================================================================== */
+
+/* Lateral esquerda: entra de fora do ecra, mais aberta e mais recuada. */
+@keyframes puzzleLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-62vw) rotateY(52deg) translateZ(-300px);
+  }
+}
+@keyframes puzzleRight {
+  from {
+    opacity: 0;
+    transform: translateX(62vw) rotateY(-52deg) translateZ(-300px);
+  }
+}
+/* Painel central: desce de cima, inclinado, e endireita-se ao assentar. */
+@keyframes puzzleTop {
+  from { opacity: 0; transform: translate3d(0, -46vh, -260px) rotateX(-16deg); }
+}
+/* Barra inferior: sobe de baixo do ecra. */
+@keyframes puzzleBottom {
+  from { opacity: 0; transform: translate3d(0, 42vh, -200px) rotateX(18deg); }
+}
+@keyframes slideIn { from { opacity: 0; transform: translate3d(-10px, 0, 0); } }
+
+/* FLUTUACAO DO PAINEL
+   -------------------
+   Movimento continuo, nao aos degraus. Ja se tentou animar so por pixeis
+   inteiros com `step-end` para o texto nunca ser reamostrado: o texto ficava
+   nitido, mas um salto de 1px de meio em meio segundo le-se como estalido, e
+   um painel que estala e pior do que um painel ligeiramente suave.
+
+   `cubic-bezier(.37, 0, .63, 1)` aproxima uma sinusoide: a velocidade e
+   maxima a meio e cai suavemente nos extremos, que e como um objecto
+   suspenso se move mesmo. `ease-in-out` inverte mais bruscamente e da a
+   sensacao de bater num limite.
+
+   `translate3d` em vez de `translateY` mantem o painel no mesmo caminho de
+   composicao 3D dos filhos rodados, em vez de misturar 2D e 3D na mesma
+   arvore.
+
+   5px de amplitude: suficiente para o painel parecer suspenso e pequeno o
+   bastante para a suavizacao durante o movimento nao se notar. */
+@keyframes floatY {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -5px, 0); }
+}
+
+/* Definicoes > Interface > Menu flutuante. Desligado, fica so a entrada. */
+body.no-float .app__grid { animation: panelIn .5s var(--ease-out); }
+
+/* ------------------------------------------------------------ fecho -------
+   O fecho e mais rapido do que a abertura, e de proposito: quem abre quer ver
+   o painel a montar-se, quem fecha ja decidiu sair e qualquer demora sabe a
+   atraso. Sem sequencia nenhuma — tudo sai junto. */
+.app.is-closing .app__grid {
+  animation: panelOut .18s cubic-bezier(.4, 0, 1, 1) forwards;
+}
+.app.is-closing .app__scrim { animation: fadeOut .18s linear forwards; }
+.app.is-closing .sidebar,
+.app.is-closing .rail,
+.app.is-closing .bottombar,
+.app.is-closing .nav__item,
+.app.is-closing .nav__marker { animation: none; }
+
+@keyframes panelOut { to { opacity: 0; transform: translate3d(0, 10px, 0) scale(.985); } }
+@keyframes fadeOut  { to { opacity: 0; } }
+
+/* ------------------------------------------------------------- sidebar -- */
+/* Painel esquerdo inclinado a olhar para o centro.
+   `rotateY` positivo traz a aresta ESQUERDA para a frente e empurra a direita
+   para tras — e o painel passa a estar virado para quem esta ao meio.
+   A dobradica fica na aresta interior (`transform-origin: right`), para o
+   painel rodar encostado ao centro em vez de abrir um vao ao lado do conteudo
+   principal. */
+.sidebar {
+  /* Linha 1 apenas. Antes ocupava as duas linhas da grelha (1 / 3), o que a
+     fazia descer ao lado da barra inferior e ficar visivelmente mais alta do
+     que o painel central e do que a coluna direita. Com as tres colunas na
+     mesma linha, os tres paineis passam a ter exactamente a mesma altura —
+     e a barra inferior fica livre para atravessar a largura toda. */
+  grid-row: 1;
+  border-radius: var(--r-xl);
+  padding: 20px 15px 17px;
+  display: flex; flex-direction: column;
+  min-height: 0;
+  transform-origin: right center;
+  /* rotateY faz o painel virar-se para o centro; o rotateX pequeno inclina-o
+     ligeiramente para tras e e o que acrescenta a componente diagonal — so
+     com rotateY o painel roda num plano e le-se como uma porta, nao como uma
+     peca no espaco. O translateZ afasta-o do observador, para os laterais
+     ficarem visivelmente atras do painel central. */
+  /* SO rotateY, e com a dobradica na aresta interior.
+     Os pontos que estao SOBRE o eixo de rotacao nao se movem — e a aresta
+     direita inteira esta sobre esse eixo. Por isso ela mantem-se exactamente
+     onde o layout a poe, alinhada ao milimetro com o topo e a base do painel
+     central. So a aresta exterior recua.
+
+     O rotateX(2deg) e o translateZ(-30px) que aqui estavam quebravam isso: o
+     primeiro inclinava o painel na vertical, o segundo afastava-o e a
+     perspectiva encolhia-o. Os dois juntos faziam o canto superior interior
+     descer em relacao ao painel central. O angulo subiu de 15 para 18 graus
+     para compensar a profundidade que se perdeu.
+
+     O translateX(0) e o translateZ(0) nao sao supurfluos: existem para a
+     animacao de entrada ter os mesmos componentes e poder interpolar um a um.
+     Ver a regra 2 em "ABERTURA: AS PECAS ENCAIXAM". */
+  transform: translateX(0) rotateY(18deg) translateZ(0);
+  transition: transform .5s var(--ease);
+  animation: puzzleLeft .66s var(--ease-snap) .1s backwards;
+}
+.sidebar__brand { display: flex; align-items: center; gap: 11px; padding: 0 5px 18px; }
+/* SIMBOLO EM RELEVO
+   -----------------
+   Duas camadas com funcoes separadas:
+
+     .logo      -> o brilho e o pisca-pisca (a "lampada")
+     .logo svg  -> a espessura e a inclinacao (a "peca")
+
+   Separa-las e o que permite as duas animacoes coexistirem. Se ambas
+   estivessem no mesmo elemento, o pisca-pisca precisa de animar `filter` e a
+   espessura TAMBEM vive num `filter` — a segunda animacao apagava a primeira
+   e o simbolo perdia o relevo cada vez que piscasse. */
+.logo {
+  width: 27px; height: 27px; flex: none;
+  perspective: 240px;
+  filter: drop-shadow(0 0 9px var(--accent-glow));   /* estado em repouso */
+  animation: logoFlicker 4.8s linear -1.1s infinite;
+}
+.logo svg {
+  stroke: none;
+  /* Espessura. Cada drop-shadow encadeado actua sobre o RESULTADO do anterior,
+     por isso quatro deslocamentos de 1px acumulam-se numa aresta solida que
+     segue exactamente o contorno do simbolo. Uma box-shadow ficaria
+     rectangular; o drop-shadow segue o canal alfa. */
+  filter:
+    drop-shadow(.8px 1px 0 var(--accent-deep))
+    drop-shadow(.8px 1px 0 var(--accent-deep))
+    drop-shadow(.8px 1px 0 var(--accent-deep))
+    drop-shadow(.8px 1px 0 var(--accent-deep));
+  animation: logoTilt 7s ease-in-out infinite;
+}
+/* A oscilacao e o que torna a espessura perceptivel: uma peca com relevo
+   parada continua a ler-se como um desenho. */
+@keyframes logoTilt {
+  0%, 100% { transform: rotateY(-13deg) rotateX(5deg); }
+  50%      { transform: rotateY(13deg)  rotateX(-3deg); }
+}
+/* Mesma cadencia do wordmark: e a mesma instalacao electrica. */
+@keyframes logoFlicker {
+  0%, 33%   { opacity: 1;   filter: drop-shadow(0 0 9px var(--accent-glow)); }
+  34%       { opacity: .30; filter: none; }
+  35%       { opacity: 1;   filter: drop-shadow(0 0 9px var(--accent-glow)); }
+  37%       { opacity: .45; filter: drop-shadow(0 0 3px var(--accent-glow)); }
+  38%       { opacity: 1;   filter: drop-shadow(0 0 9px var(--accent-glow)); }
+  67%       { opacity: 1;   filter: drop-shadow(0 0 9px var(--accent-glow)); }
+  68%       { opacity: .24; filter: none; }
+  70%       { opacity: .88; filter: drop-shadow(0 0 5px var(--accent-glow)); }
+  71%, 100% { opacity: 1;   filter: drop-shadow(0 0 9px var(--accent-glow)); }
+}
+
+.logo--lg { width: 52px; height: 52px; perspective: 460px; }
+/* No simbolo grande a espessura tem de crescer na mesma proporcao, senao o
+   relevo desaparece a olho. */
+.logo--lg svg {
+  filter:
+    drop-shadow(1.5px 1.9px 0 var(--accent-deep))
+    drop-shadow(1.5px 1.9px 0 var(--accent-deep))
+    drop-shadow(1.5px 1.9px 0 var(--accent-deep))
+    drop-shadow(1.5px 1.9px 0 var(--accent-deep));
+}
+.sidebar__title { font-size: 14px; font-weight: 800; letter-spacing: .01em; }
+.sidebar__sub   { font-size: 9px; font-weight: 700; letter-spacing: .36em; color: var(--text-faint); margin-top: 2px; }
+
+/* `overflow: visible` e obrigatorio aqui, nao e uma preferencia.
+   Com `overflow-y: auto` o CSS forca `overflow-x` a deixar de ser visivel
+   tambem — nao existe scroll so num eixo — e o indicador de posicao, que vive
+   a esquerda dos items, era recortado. Era por isso que a barra do item activo
+   nao aparecia. Os sete items cabem sempre, nunca houve scroll a serio. */
+.nav {
+  position: relative;
+  display: flex; flex-direction: column; gap: 4px;
+  overflow: visible;
+}
+
+/* Indicador de posicao. E UM elemento que desliza entre items, em vez de um
+   ::after que aparece e desaparece em cada um. A diferenca nao e estetica: o
+   movimento continuo diz de onde vieste e para onde foste, um corte seco nao
+   diz nada. */
+.nav__marker {
+  position: absolute;
+  left: -15px; top: 0;
+  width: 2.5px; height: 20px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  opacity: 0;
+  transition: transform .34s var(--ease), opacity .2s var(--ease);
+  pointer-events: none;
+}
+.nav__item {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 13px;
+  border-radius: var(--r-md);
+  color: var(--text-dim);
+  font-size: 12.5px; font-weight: 600;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.nav__item svg { width: 17px; height: 17px; flex: none; opacity: .9; }
+/* Camada de destaque do hover. Vive num ::before para poder ter opacidade
+   propria e entrar/sair suavemente, sem competir com o fundo do item activo. */
+.nav__item::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(95deg, var(--accent-soft), var(--accent-w0) 72%);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+  pointer-events: none;
+}
+.nav__item:hover::before { opacity: .75; }
+.nav__item.is-active::before { opacity: 0; }
+
+.nav__item:hover { color: var(--text); }
+.nav__item:hover svg { color: var(--accent); }
+/* O texto avanca 2px para o cursor. E um gesto pequeno de mais para se notar
+   conscientemente, e o suficiente para o item parecer responder ao toque. */
+.nav__item span { transition: transform var(--dur) var(--ease); }
+.nav__item:hover span { transform: translateX(2px); }
+
+/* Pilula activa com contorno a cor de destaque, como na referencia. O que
+   mudou foi a dosagem: o glow exterior era de 26px e engolia o contorno, o
+   que fazia o item parecer desfocado. Agora o contorno le-se nitido e o glow
+   fica so como halo. */
+.nav__item.is-active {
+  color: #fff;
+  background: linear-gradient(100deg, var(--accent-soft), var(--accent-w0) 86%);
+  border: 1px solid var(--accent-line);
+  padding: 9px 12px;
+  box-shadow: 0 0 16px -8px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,.09);
+}
+.nav__item.is-active svg { color: var(--accent); opacity: 1; }
+.nav__item--admin svg { color: var(--warn); }
+.nav__item:focus-visible { outline: 1px solid var(--accent-line); outline-offset: 1px; }
+
+/* Entrada escalonada dos items. O incremento e de 40ms: junto o suficiente
+   para se ler como UM movimento a percorrer a lista, e nao como sete
+   animacoes separadas. O primeiro item so arranca depois de a sidebar ja
+   estar quase no lugar. */
+.nav__item { animation: slideIn .34s var(--ease-out) backwards; }
+.nav__item:nth-child(2) { animation-delay: .30s; }
+.nav__item:nth-child(3) { animation-delay: .34s; }
+.nav__item:nth-child(4) { animation-delay: .38s; }
+.nav__item:nth-child(5) { animation-delay: .42s; }
+.nav__item:nth-child(6) { animation-delay: .46s; }
+.nav__item:nth-child(7) { animation-delay: .50s; }
+.nav__item:nth-child(8) { animation-delay: .54s; }
+
+/* O indicador de posicao so aparece depois de a lista estar montada — a
+   deslizar para um item que ainda esta a chegar nao faz sentido nenhum. */
+.nav__marker { animation: fadeIn .3s var(--ease) .58s backwards; }
+
+.sidebar__foot { margin-top: auto; padding-top: 16px; text-align: center; }
+.sidebar__foot::before {
+  content: ''; display: block; height: 1px; margin: 0 -4px 14px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.11), transparent);
+}
+/* WORDMARK DA MARCA
+   -----------------
+   Duas camadas sobrepostas, e e essa separacao que faz o efeito funcionar:
+
+     base    -> letras solidas e nitidas (branco + destaque nas centrais)
+     ::after -> copia do texto recortada nas letras, so com um brilho, que
+                atravessa o logotipo de tempos a tempos
+
+   Pintar o degrade directamente no texto base serrilharia as hastes das
+   letras. Numa camada de brilho por cima isso e invisivel, porque so estamos
+   a somar luz — a nitidez continua a vir da camada de baixo. */
+.wordmark {
+  position: relative;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-indent: .14em;            /* recentra: o tracking sobra a direita */
+  line-height: 1;
+  color: rgba(242,246,252,.95);
+  text-shadow: 0 1px 3px rgba(0,0,0,.5);
+}
+/* As letras a destaque piscam como uma lampada com mau contacto: ficam
+   acesas e estaveis a maior parte do tempo e falham em rajadas curtas.
+
+   E a irregularidade que faz isto ler-se como uma lampada. Uma pulsacao
+   regular de opacidade le-se como um elemento a desvanecer, nao como luz —
+   uma lampada nunca escurece devagar, ou esta acesa ou nao esta.
+
+   O halo apaga-se JUNTO com a letra em cada falha. Sem isso ficava um brilho
+   vermelho suspenso a volta de uma letra apagada, que denuncia logo o truque. */
+.wordmark .ac {
+  color: var(--accent);
+  text-shadow: 0 0 16px var(--accent-glow), 0 1px 3px rgba(0,0,0,.5);
+  animation: lampFlicker 4.8s linear infinite;
+}
+/* A segunda letra arranca a meio do ciclo, para as duas nao falharem sempre
+   em unissono — duas lampadas iguais nunca falham exactamente ao mesmo tempo.
+   `.ac + .ac` apanha o L por ser o .ac imediatamente a seguir ao X; nth-of-type
+   nao servia porque conta todos os <span>, incluindo os que nao tem a classe. */
+.wordmark .ac + .ac { animation-delay: -2.15s; }
+
+@keyframes lampFlicker {
+  /* longo periodo aceso */
+  0%, 33%  { opacity: 1;   text-shadow: 0 0 16px var(--accent-glow), 0 1px 3px rgba(0,0,0,.5); }
+  /* primeira rajada: falha, volta, tremeluz */
+  34%      { opacity: .26; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  35%      { opacity: 1;   text-shadow: 0 0 16px var(--accent-glow), 0 1px 3px rgba(0,0,0,.5); }
+  37%      { opacity: .40; text-shadow: 0 0 5px var(--accent-glow), 0 1px 3px rgba(0,0,0,.5); }
+  38%      { opacity: 1;   text-shadow: 0 0 16px var(--accent-glow), 0 1px 3px rgba(0,0,0,.5); }
+  /* aceso outra vez */
+  67%      { opacity: 1;   text-shadow: 0 0 16px var(--accent-glow), 0 1px 3px rgba(0,0,0,.5); }
+  /* segunda rajada, mais curta */
+  68%      { opacity: .22; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  70%      { opacity: .85; text-shadow: 0 0 8px var(--accent-glow), 0 1px 3px rgba(0,0,0,.5); }
+  71%, 100%{ opacity: 1;   text-shadow: 0 0 16px var(--accent-glow), 0 1px 3px rgba(0,0,0,.5); }
+}
+.wordmark::after {
+  content: attr(data-text);
+  position: absolute; inset: 0;
+  letter-spacing: inherit;
+  text-indent: inherit;
+  line-height: inherit;
+  pointer-events: none;
+  background: linear-gradient(100deg,
+              transparent 42%, rgba(255,255,255,.92) 50%, transparent 58%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: sheen 5.5s var(--ease) infinite;
+}
+/* O brilho passa uma vez e depois fica parado fora do logotipo ate ao ciclo
+   seguinte. Um brilho continuo cansa e chama mais atencao que os dados. */
+@keyframes sheen {
+  0%        { background-position: -55% 0; }
+  42%, 100% { background-position: 155% 0; }
+}
+/* Filetes a flanquear "SOFTWARE": assentam o wordmark e dao-lhe largura sem
+   precisar de mais cor. */
+.wordmark__sub {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  margin-top: 7px;
+}
+.wordmark__sub span {
+  font-size: 7.5px; letter-spacing: .34em; text-indent: .34em;
+  color: var(--text-faint); font-weight: 700;
+}
+.wordmark__sub::before,
+.wordmark__sub::after {
+  content: ''; height: 1px; width: 20px; flex: none;
+  background: linear-gradient(90deg, transparent, var(--line-hi));
+}
+.wordmark__sub::after { transform: scaleX(-1); }
+.build { font-size: 9.5px; color: var(--text-faint); margin-top: 10px; }
+
+/* ---------------------------------------------------------------- main -- */
+.main {
+  border-radius: var(--r-xl);
+  padding: 19px 21px 17px;
+  display: flex; flex-direction: column;
+  min-height: 0; min-width: 0;
+  /* A primeira peca a assentar: e o tabuleiro onde as outras encaixam. */
+  animation: puzzleTop .6s var(--ease-snap) backwards;
+}
+
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+.head__title {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 20px; font-weight: 800; letter-spacing: .005em;
+}
+.head__sub { font-size: 11.5px; color: var(--text-dim); margin-top: 3px; }
+.live {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 9px var(--accent-glow);
+  animation: pulse 2.6s var(--ease) infinite;
+}
+.live__label { font-size: 9.5px; font-weight: 700; letter-spacing: .14em; color: var(--accent-text); font-style: normal; }
+/* Pulsacao lenta e sem mudanca de tamanho: um ponto que salta chama mais
+   atencao do que o numero que esta a anunciar. */
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+.serverpill {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 9px 9px 15px;
+  border-radius: var(--r-md);
+  background: rgba(255,255,255,.045);
+  border: 1px solid var(--glass-border);
+  flex: none;
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.dot--ok { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+.serverpill__name { font-size: 13px; font-weight: 700; max-width: 190px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.serverpill__meta { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+.serverpill__btn {
+  width: 32px; height: 32px; border-radius: var(--r-sm);
+  background: rgba(255,255,255,.06); color: var(--text-dim);
+  display: grid; place-items: center; padding: 8px;
+  transition: all var(--dur) var(--ease);
+}
+.serverpill__btn:hover { background: var(--accent-soft); color: var(--accent-text); }
+
+/* --------------------------------------------------------------- views -- */
+/* A perspectiva vive no contentor das vistas, nao em cada vista. Assim todas
+   entram com o mesmo ponto de fuga, tal como os paineis laterais partilham o
+   do .app__grid. Com `perspective()` dentro do transform de cada uma, cada
+   separador teria o seu observador e a rotacao mudava conforme a vista. */
+.views {
+  flex: 1; min-height: 0; position: relative;
+  perspective: 1100px;
+  perspective-origin: 50% 45%;
+}
+.view {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column; gap: 16px;
+  overflow-y: auto; overflow-x: hidden;
+  padding-right: 4px;
+}
+/* A vista entra a rodar, vinda de tras e da direita — como uma folha que se
+   vira para a frente do jogador. */
+.view.is-active { display: flex; animation: viewIn .38s var(--ease-out); }
+@keyframes viewIn {
+  from { opacity: 0; transform: rotateY(-9deg) translate3d(34px, 0, -120px); }
+}
+
+/* Os cartoes dentro da vista sobem logo a seguir, escalonados. O incremento
+   de 45ms mantem o conjunto abaixo de meio segundo: um separador tem de
+   responder de imediato, nao pode ter a mesma cerimonia da abertura do
+   painel — abre-se uma vez, trocam-se separadores dezenas de vezes. */
+.view.is-active > * { animation: viewChildIn .34s var(--ease-out) backwards; }
+.view.is-active > *:nth-child(1) { animation-delay: .06s; }
+.view.is-active > *:nth-child(2) { animation-delay: .11s; }
+.view.is-active > *:nth-child(3) { animation-delay: .16s; }
+.view.is-active > *:nth-child(4) { animation-delay: .21s; }
+.view.is-active > *:nth-child(n+5) { animation-delay: .26s; }
+@keyframes viewChildIn { from { opacity: 0; transform: translate3d(0, 16px, 0); } }
+
+/* ---------------------------------------------------------- entrada de item
+   Classe generica para conteudo construido em JS: linhas de definicoes,
+   cartoes de preset, linhas da tabela de admin, mosaicos do sistema.
+
+   O atraso de cada item e escrito inline pelo helper stagger() em vez de
+   nth-child no CSS. As listas tem comprimento variavel — a de definicoes
+   muda com o grupo e com a pesquisa — e escrever dezenas de regras nth-child
+   para cobrir todos os casos seria adivinhar. O JS ja sabe o indice. */
+.anim-in { animation: itemIn .3s var(--ease-out) backwards; }
+@keyframes itemIn { from { opacity: 0; transform: translate3d(0, 10px, 0); } }
+
+/* Scrollbars discretas — a barra branca do Chromium destrui o vidro. */
+.view::-webkit-scrollbar, .settings::-webkit-scrollbar,
+.nav::-webkit-scrollbar, .grouprail::-webkit-scrollbar,
+.selmenu::-webkit-scrollbar, .card--tips::-webkit-scrollbar { width: 6px; }
+.view::-webkit-scrollbar-thumb, .settings::-webkit-scrollbar-thumb,
+.nav::-webkit-scrollbar-thumb, .grouprail::-webkit-scrollbar-thumb,
+.selmenu::-webkit-scrollbar-thumb, .card--tips::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.11); border-radius: 6px;
+}
+.selmenu::-webkit-scrollbar-track { background: transparent; }
+.view::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.2); }
+.view::-webkit-scrollbar-track { background: transparent; }
+
+/* --------------------------------------------------------------- cards -- */
+.card {
+  position: relative;
+  border-radius: var(--r-lg);
+  background: linear-gradient(160deg, rgba(255,255,255,.042), rgba(255,255,255,.016));
+  border: 1px solid var(--line);
+  /* Sombra justa: e o que faz o cartao pousar sobre o vidro em vez de estar
+     desenhado nele. Sem ela, cartao e painel leem-se como a mesma camada. */
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), var(--sh-1);
+  padding: 17px 19px;
+}
+body.no-blur .card { background: rgba(20,25,36,.7); }
+
+/* COLISAO DE ESPECIFICIDADE — ler antes de mexer
+   ----------------------------------------------
+   Os cartoes da coluna direita usam `card` E `glass` ao mesmo tempo. As duas
+   regras definem `background` e ambas tem a mesma especificidade (0,1,0), por
+   isso ganha a que aparecer mais abaixo no ficheiro — e `.card` esta depois
+   de `.glass`. Resultado: aqueles cartoes perdiam o vidro escuro e ficavam
+   so com o veu branco de 4%, praticamente transparentes por cima do jogo.
+
+   Esta regra tem especificidade (0,2,0) e resolve a combinacao de forma
+   explicita, em vez de a deixar depender da ordem das linhas. */
+.card.glass {
+  background: linear-gradient(158deg, var(--glass-bg), var(--glass-bg-2));
+}
+body.no-blur .card.glass {
+  background: linear-gradient(158deg, var(--glass-bg), var(--glass-bg-2));
+}
+
+/* Etiqueta de seccao: caixa alta, pequena, muito espacada. E o unico sitio do
+   painel onde se usa tracking largo — quando aparece tambem em botoes e em
+   valores, o texto todo perde ritmo e nada se destaca. */
+.section-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: .15em;
+  color: var(--text-faint);
+  margin-bottom: 13px;
+}
+.section-title .ti { width: 14px; height: 14px; color: var(--accent); }
+.section-title--ok::before,
+.section-title--warn::before,
+.section-title--bad::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+}
+.section-title--ok::before   { background: var(--ok);   box-shadow: 0 0 9px var(--ok); }
+.section-title--warn::before { background: var(--warn); box-shadow: 0 0 9px var(--warn); }
+.section-title--bad::before  { background: var(--bad);  box-shadow: 0 0 9px var(--bad); }
+
+/* ------------------------------------------------------ card: FPS + chart */
+/* O cartao do grafico CRESCE para ocupar a altura livre da vista, em vez de
+   ficar com um tamanho fixo e deixar um vazio por baixo. Nao e so para encher
+   espaco: um grafico mais alto tem mais resolucao vertical, e as variacoes de
+   FPS leem-se com muito mais detalhe. */
+.card--fps {
+  display: grid; grid-template-columns: 214px minmax(0,1fr);
+  gap: 20px;
+
+  /* SEM `min-height` fixo, e isso e deliberado.
+     Um item flex tem por defeito `min-height: auto`, que o CSS resolve para o
+     tamanho do CONTEUDO — e o que impede o flex-shrink de o comprimir abaixo
+     do que os filhos precisam. Ao escrever `min-height: 250px` aqui, esse
+     minimo automatico era substituido por um numero: a partir dai o cartao
+     podia encolher ate 250px mesmo que o conteudo exigisse 280, e os numeros
+     e os rotulos do eixo transbordavam para fora do cartao.
+
+     O piso passa a vir de baixo, do `min-height` da area do grafico. Se o
+     painel ficar curto, a vista rola — que e melhor do que ver texto a sair
+     pelas bordas. */
+  flex: 1 1 auto;
+}
+/* A coluna esquerda acompanha: numero grande em cima, estatisticas encostadas
+   ao fundo. Sem isto, a altura extra acumulava-se toda por baixo dos numeros. */
+.card__left { min-width: 0; display: flex; flex-direction: column; }
+.card__left .statgrid { margin-top: auto; }
+.card__right { min-width: 0; display: flex; flex-direction: column; }
+
+.label { font-size: 10.5px; font-weight: 800; letter-spacing: .16em; color: var(--text-dim); }
+.bignum { display: flex; align-items: baseline; gap: 9px; margin: 5px 0 7px; line-height: .95; }
+/* Numero solido, sem gradiente recortado no texto. O background-clip da uma
+   aparencia "efeito" e, em texto grande e fino, chega a serrilhar. Num
+   dashboard, o numero principal deve ser so um numero, muito bem desenhado. */
+.bignum span {
+  font-size: 56px; font-weight: 800; letter-spacing: -.045em;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.bignum small {
+  font-size: 18px; font-weight: 700; letter-spacing: -.01em;
+  color: var(--accent);
+}
+
+.delta { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim); }
+.delta b { color: var(--ok); font-weight: 700; font-variant-numeric: tabular-nums; }
+.delta__arrow { width: 13px; height: 13px; color: var(--ok); flex: none; }
+.delta--down b, .delta--down .delta__arrow { color: var(--bad); }
+.delta--down .delta__arrow { transform: scaleY(-1); }
+.delta--flat b, .delta--flat .delta__arrow { color: var(--text-faint); }
+
+.statgrid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 13px 10px; margin-top: 18px;
+}
+.stat { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.stat span { font-size: 9px; font-weight: 700; letter-spacing: .1em; color: var(--text-faint); }
+.stat b {
+  font-size: 18px; font-weight: 800; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.stat i { font-size: 9px; font-style: normal; color: var(--text-faint); font-weight: 700; letter-spacing: .08em; }
+
+/* --------------------------------------------------------------- chart -- */
+.rangebar { display: flex; gap: 6px; justify-content: flex-end; margin-bottom: 12px; }
+.range {
+  padding: 7px 15px; border-radius: var(--r-sm);
+  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  color: var(--text-dim);
+  background: rgba(255,255,255,.045);
+  border: 1px solid transparent;
+  transition: all var(--dur) var(--ease);
+}
+.range:hover { color: var(--text); background: rgba(255,255,255,.08); }
+.range.is-active {
+  color: #fff;
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+
+.chartwrap { position: relative; flex: 1; min-height: 150px; }
+.chartwrap--tall { min-height: 260px; }
+.chartwrap canvas { display: block; width: 100%; height: 100%; }
+.chart__empty {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 12px; color: var(--text-faint);
+}
+
+/* -------------------------------------------------------------- gauges -- */
+.card--gauges {
+  display: flex; justify-content: space-around; gap: 12px;
+  padding: 18px 16px; flex: none;
+}
+.card--gauges[hidden] { display: none; }
+.gauge { position: relative; width: 118px; height: 118px; flex: none; }
+/* O canvas e MAIOR que o anel de proposito: o inset negativo da ao shadowBlur
+   espaco para se esbater. Encolhe-lo faria reaparecer a aresta quadrada. */
+.gauge__ring { position: absolute; inset: -14px; width: 146px; height: 146px; }
+.gauge__face {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px;
+}
+.gauge__icon { display: flex; align-items: center; gap: 5px; color: var(--text-dim); }
+.gauge__icon svg { width: 12px; height: 12px; }
+.gauge__icon span { font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.gauge__val { display: flex; align-items: baseline; }
+.gauge__val b {
+  font-size: 23px; font-weight: 800; letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums;
+}
+.gauge__val small { font-size: 12.5px; font-weight: 700; color: var(--text-dim); }
+.gauge__tag {
+  font-size: 8.5px; font-weight: 800; letter-spacing: .12em;
+  color: var(--text-faint);
+}
+/* O selo EST informa, nao alerta. Em amarelo forte lia-se como aviso e puxava
+   o olhar antes do proprio valor — que e o oposto do que interessa. */
+.gauge__tag.est {
+  padding: 1.5px 6px; border-radius: 5px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--line-mid);
+  color: var(--text-faint);
+  cursor: help;
+}
+.gauge__tag.est[hidden] { display: none; }
+
+/* ------------------------------------------------------- carga do mundo -- */
+.card--world { flex: none; padding: 15px 19px 16px; }
+.worldgrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px 22px;
+}
+.wtile { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.wtile span {
+  font-size: 9px; font-weight: 700; letter-spacing: .1em;
+  color: var(--text-faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.wtile b {
+  font-size: 17px; font-weight: 800; letter-spacing: -.02em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+/* A barra e uma leitura relativa a um tecto tipico, nao uma percentagem de
+   nada — serve para se ver de relance qual das categorias esta a pesar. */
+.wtile .wbar {
+  height: 3px; border-radius: 3px; margin-top: 2px;
+  background: rgba(255,255,255,.07);
+  overflow: hidden;
+}
+.wtile .wbar i {
+  display: block; height: 100%; border-radius: 3px;
+  background: var(--accent);
+  transition: width .4s var(--ease), background var(--dur) var(--ease);
+}
+.wtile .wbar i.is-high { background: var(--warn); }
+
+/* ==========================================================================
+   RAIL DIREITA
+   ========================================================================== */
+/* Coluna direita: o espelho da esquerda. Angulo negativo e dobradica na
+   aresta esquerda, para tambem ela olhar para o centro. */
+.rail {
+  display: flex; flex-direction: column; gap: 14px; min-height: 0;
+  /* Espelho da esquerda: dobradica na aresta esquerda, que fica fixa e
+     alinhada com o painel central. */
+  transform-origin: left center;
+  transform: translateX(0) rotateY(-18deg) translateZ(0);
+  transition: transform .5s var(--ease);
+  animation: puzzleRight .66s var(--ease-snap) .17s backwards;
+}
+
+/* ---------------------------------------------------- 3D desligado --------
+   Texto dentro de um elemento com transformacao 3D e rasterizado pela GPU e
+   pode perder nitidez, sobretudo em ecras sem HiDPI. Dai a definicao
+   "Paineis laterais em 3D".
+
+   Desligada, TUDO fica plano e alinhado — inclusive as animacoes de entrada.
+   Nao basta anular o transform de repouso: se as pecas continuassem a entrar
+   a rodar, o painel contradizia a propria definicao durante meio segundo
+   antes de assentar direito.
+
+   As pecas continuam a vir de fora, que e o efeito que se quis; so deixam de
+   rodar. */
+body.no-3d .sidebar,
+body.no-3d .rail { transform: none; }
+
+body.no-3d .sidebar        { animation: slideFromLeft  .6s  var(--ease-snap) .1s  backwards; }
+body.no-3d .rail           { animation: slideFromRight .6s  var(--ease-snap) .17s backwards; }
+body.no-3d .main           { animation: dropFlat       .58s var(--ease-snap)      backwards; }
+body.no-3d .bottombar      { animation: riseFlat       .6s  var(--ease-snap) .26s backwards; }
+body.no-3d .view.is-active { animation: viewInFlat     .34s var(--ease-out); }
+
+@keyframes slideFromLeft  { from { opacity: 0; transform: translateX(-46vw); } }
+@keyframes slideFromRight { from { opacity: 0; transform: translateX(46vw); } }
+@keyframes dropFlat       { from { opacity: 0; transform: translateY(-34vh); } }
+@keyframes riseFlat       { from { opacity: 0; transform: translateY(30vh); } }
+@keyframes viewInFlat     { from { opacity: 0; transform: translateX(28px); } }
+.card--status { border-radius: var(--r-xl); padding: 17px 17px 18px; text-align: center; flex: none; }
+.card--status .section-title { justify-content: center; margin-bottom: 4px; }
+
+/* Tal como nos aneis, o canvas e mais alto do que a area util para o glow do
+   arco caber. O .radial recorta visualmente com uma altura menor. */
+.radial { position: relative; height: 122px; margin: 0 auto; width: 196px; }
+.radial canvas { position: absolute; inset: 0; width: 196px; height: 162px; }
+.radial__face {
+  position: absolute; left: 0; right: 0; top: 38px;
+  display: flex; flex-direction: column; align-items: center; line-height: 1;
+}
+.radial__face b {
+  font-size: 36px; font-weight: 800; letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+}
+.radial__face small { font-size: 10px; font-weight: 700; color: var(--text-faint); letter-spacing: .1em; margin-top: 4px; }
+.radial__verdict { font-size: 13px; font-weight: 800; letter-spacing: .07em; color: var(--ok); }
+.radial__desc { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+
+.card--tips { border-radius: var(--r-xl); padding: 17px; flex: 1; min-height: 0; overflow-y: auto; }
+.tips { display: flex; flex-direction: column; gap: 11px; }
+.tips li {
+  position: relative; padding-left: 15px;
+  font-size: 12px; line-height: 1.5; color: var(--text-dim);
+}
+.tips li::before {
+  content: ''; position: absolute; left: 0; top: 7px;
+  width: 5px; height: 5px; border-radius: 50%; background: var(--text-faint);
+}
+.tips li.is-good::before { background: var(--ok);   box-shadow: 0 0 8px var(--ok); }
+.tips li.is-warn::before { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+.tips li.is-bad::before  { background: var(--bad);  box-shadow: 0 0 8px var(--bad); }
+
+/* ==========================================================================
+   BARRA INFERIOR
+   ========================================================================== */
+.bottombar {
+  /* Atravessa as tres colunas, agora que a sidebar deixou de ocupar a linha
+     de baixo. E o que permite estar centrada com o PAINEL inteiro e nao so
+     com a parte central.
+
+     A largura fixa evita que estique de ponta a ponta: assim, o espaco vazio
+     entre a sessao e o botao deixa de ser maior do que qualquer um dos blocos
+     de informacao, que era o que fazia a barra ler-se como meia vazia. */
+  grid-column: 1 / 4;
+  width: min(100%, 820px);
+  justify-self: center;
+  border-radius: var(--r-xl);
+  padding: 10px 11px 10px 18px;
+  display: flex; align-items: center; gap: 18px;
+  animation: puzzleBottom .62s var(--ease-snap) .26s backwards;
+}
+.bb { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.bb > svg { width: 17px; height: 17px; color: var(--text-faint); flex: none; }
+.bb > div { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
+.bb span { font-size: 11px; color: var(--text-faint); white-space: nowrap; }
+.bb b {
+  font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.btn--wide { margin-left: auto; flex: none; }
+
+/* ==========================================================================
+   BOTOES E CONTROLOS
+   ========================================================================== */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 10px 18px;
+  border-radius: var(--r-md);
+  font-size: 11.5px; font-weight: 700; letter-spacing: .06em;
+  transition: background var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              color var(--dur) var(--ease),
+              transform .09s var(--ease);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.btn svg { width: 15px; height: 15px; }
+.btn--sm { padding: 8px 13px; font-size: 10.5px; letter-spacing: .05em; }
+
+/* Os botoes nao saltam ao passar o rato. Um deslocamento no hover le-se como
+   brinquedo; o feedback de premir pertence ao :active, que e quando o
+   utilizador esta mesmo a agir. */
+.btn--primary {
+  color: #fff;
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+}
+.btn--primary:hover { background: var(--accent-soft2); border-color: var(--accent); }
+.btn--ghost {
+  color: var(--text-dim);
+  background: rgba(255,255,255,.04);
+  border-color: var(--line-mid);
+}
+.btn--ghost:hover { color: var(--text); background: rgba(255,255,255,.08); border-color: var(--line-hi); }
+.btn--danger { color: var(--bad); background: rgba(255,75,87,.08); border-color: rgba(255,75,87,.20); }
+.btn--danger:hover { background: rgba(255,75,87,.15); border-color: rgba(255,75,87,.34); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .4; pointer-events: none; }
+.btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+.iconbtn {
+  width: 30px; height: 30px; padding: 8px; border-radius: var(--r-sm);
+  color: var(--text-faint); background: rgba(255,255,255,.05);
+  display: grid; place-items: center;
+  transition: all var(--dur) var(--ease);
+}
+.iconbtn:hover { color: var(--text); background: rgba(255,255,255,.1); }
+
+.segmented {
+  display: flex; gap: 3px; padding: 3px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.segmented button {
+  padding: 7px 14px; border-radius: 9px;
+  font-size: 11px; font-weight: 700; color: var(--text-dim);
+  transition: all var(--dur) var(--ease);
+}
+.segmented button:hover { color: var(--text); }
+.segmented button.is-active {
+  color: #fff; background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+/* -------------------------------------------------------------- dropdown --
+   Ver o comentario em settings.js: a lista de um <select> nativo e desenhada
+   pelo sistema operativo e nenhuma regra daqui lhe chega. Estes estilos sao
+   para o substituto proprio. */
+.sel {
+  display: inline-flex; align-items: center; justify-content: space-between;
+  gap: 10px; min-width: 156px;
+  padding: 9px 12px; border-radius: var(--r-sm);
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--line-mid);
+  font-size: 12px; font-weight: 600; color: var(--text);
+  text-align: left;
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.sel:hover { background: rgba(255,255,255,.08); border-color: var(--line-hi); }
+.sel.is-open { background: var(--accent-soft); border-color: var(--accent-line); }
+.sel:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.sel__val { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel svg {
+  width: 13px; height: 13px; flex: none; color: var(--text-faint);
+  transition: transform var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.sel.is-open svg { transform: rotate(180deg); color: var(--accent); }
+
+/* O menu vive em <body>, por isso nao herda nada do painel: define aqui o seu
+   proprio vidro. Quase opaco de proposito — uma lista de opcoes por cima do
+   jogo tem de se ler a primeira, nao e uma superficie decorativa. */
+.selmenu {
+  zoom: var(--ui-zoom, 1);
+  position: fixed; z-index: 80;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 5px;
+  border-radius: var(--r-md);
+  background: linear-gradient(158deg, rgba(27,34,49,.985), rgba(15,20,31,.99));
+  border: 1px solid var(--line-hi);
+  box-shadow: var(--sh-3);
+  /* Com doze idiomas a lista nao cabe toda no ecra. 320px mostra cerca de
+     nove opcoes; o resto alcanca-se com scroll dentro do proprio menu. */
+  max-height: 320px; overflow-y: auto;
+  animation: selIn .16s var(--ease);
+}
+@keyframes selIn { from { opacity: 0; transform: translateY(-5px); } }
+.selmenu__opt {
+  display: block; width: 100%; text-align: left; white-space: nowrap;
+  padding: 8px 12px; border-radius: 8px;
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.selmenu__opt:hover { background: rgba(255,255,255,.07); color: var(--text); }
+.selmenu__opt.is-active {
+  background: var(--accent-soft); color: #fff;
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+.switchline { display: flex; align-items: center; gap: 9px; font-size: 12px; color: var(--text-dim); cursor: pointer; }
+.switchline input { display: none; }
+.switchline i {
+  width: 34px; height: 19px; border-radius: 19px; flex: none;
+  background: rgba(255,255,255,.1);
+  border: 1px solid var(--line-mid);
+  position: relative; transition: all var(--dur) var(--ease);
+}
+.switchline i::after {
+  content: ''; position: absolute; left: 2px; top: 2px;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--text-dim);
+  transition: all var(--dur) var(--ease);
+}
+.switchline input:checked + i { background: var(--accent-soft); border-color: var(--accent-line); }
+.switchline input:checked + i::after {
+  left: 17px; background: var(--accent);
+  box-shadow: var(--sh-1);
+}
+
+.search { position: relative; flex: 1; min-width: 0; }
+.search svg {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  width: 15px; height: 15px; color: var(--text-faint); pointer-events: none;
+}
+.search input {
+  width: 100%; padding: 11px 14px 11px 38px;
+  border-radius: var(--r-md);
+  background: rgba(255,255,255,.045);
+  border: 1px solid var(--line-mid);
+  font-size: 12.5px; outline: none;
+  transition: all var(--dur) var(--ease);
+}
+.search input::placeholder { color: var(--text-faint); }
+.search input:focus { border-color: var(--accent-line); background: rgba(255,255,255,.07); }
+
+/* ==========================================================================
+   PRESETS
+   ========================================================================== */
+.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+
+.preset {
+  position: relative; overflow: hidden;
+  border-radius: var(--r-lg);
+  padding: 18px 18px 16px;
+  background: linear-gradient(160deg, rgba(255,255,255,.045), rgba(255,255,255,.016));
+  border: 1px solid var(--line);
+  transition: all var(--dur) var(--ease);
+  text-align: left;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.preset:hover { border-color: var(--line-hi); transform: translateY(-1px); box-shadow: var(--sh-2); }
+.preset.is-active {
+  border-color: var(--accent-line);
+  background: linear-gradient(160deg, var(--accent-soft), rgba(255,255,255,.02));
+  box-shadow: 0 0 22px -14px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,.09);
+}
+.preset.is-locked { opacity: .45; pointer-events: none; }
+
+.preset__top { display: flex; align-items: center; gap: 11px; }
+.preset__icon {
+  width: 34px; height: 34px; flex: none; padding: 8px;
+  border-radius: var(--r-sm);
+  background: rgba(255,255,255,.06);
+  color: var(--text-dim);
+  display: grid; place-items: center;
+}
+.preset.is-active .preset__icon { background: var(--accent-soft); color: var(--accent-text); }
+.preset__name { font-size: 14px; font-weight: 800; }
+.preset__badge {
+  margin-left: auto; flex: none;
+  font-size: 9px; font-weight: 800; letter-spacing: .1em;
+  padding: 3px 8px; border-radius: 6px;
+  background: var(--accent-soft); color: var(--accent-text);
+  border: 1px solid var(--accent-line);
+}
+.preset__desc { font-size: 11.5px; line-height: 1.5; color: var(--text-dim); min-height: 34px; }
+
+.bars { display: flex; flex-direction: column; gap: 7px; margin-top: 2px; }
+.barline { display: flex; align-items: center; gap: 9px; }
+.barline span { font-size: 9.5px; font-weight: 700; letter-spacing: .07em; color: var(--text-faint); width: 74px; flex: none; }
+.barline .track { flex: 1; height: 4px; border-radius: 4px; background: rgba(255,255,255,.07); display: flex; gap: 3px; }
+.barline .track i { flex: 1; border-radius: 4px; background: rgba(255,255,255,.07); transition: background var(--dur) var(--ease); }
+.barline--gain   .track i.on { background: var(--ok);   box-shadow: 0 0 8px var(--ok-glow); }
+.barline--visual .track i.on { background: var(--warn); box-shadow: 0 0 8px var(--warn-glow); }
+
+/* margin-top auto, e nao um valor fixo: os cartoes da mesma linha tem
+   alturas iguais (o grid estica-os), mas as descricoes tem numero de linhas
+   diferente — e mais ainda depois de traduzidas. Empurrar as accoes para o
+   fundo alinha os botoes de todos os cartoes em vez de os deixar a flutuar
+   a alturas diferentes. */
+.preset__actions { display: flex; gap: 8px; margin-top: auto; padding-top: 12px; }
+.preset__actions .btn { flex: 1; padding: 9px 12px; font-size: 11px; }
+/* O botao de eliminar nao alarga: e uma accao secundaria e destrutiva, nao
+   deve ganhar o mesmo peso visual que Aplicar e Testar. */
+.preset__actions .iconbtn { flex: none; width: 34px; height: auto; }
+.iconbtn--danger:hover { color: #FF6B75; background: rgba(255,75,87,.12); }
+
+/* ------------------------------------------------- cartao personalizado --
+   O cartao do rascunho nao e um preset: e um convite. Uma borda tracejada
+   diz isso sem precisar de texto — le-se como "espaco por preencher", que e
+   exactamente o que ele e enquanto nao houver nada guardado. */
+.preset--draft { border-style: dashed; }
+.preset--draft.is-active { border-style: solid; }
+/* Alteracoes por guardar sao um aviso, nao uma confirmacao — por isso ambar
+   e nao a cor de destaque, que neste painel significa "aplicado".
+
+   Este selo e filho directo do cartao, nao da linha do nome: em .preset__top
+   partilhava a largura com o nome e era cortado pelo overflow. Aqui tem a
+   linha toda e o `gap: 10px` do cartao trata do espacamento.
+
+   `margin-left: 0` anula o `margin-left: auto` da regra base, que existe para
+   empurrar os outros selos para a direita da linha do nome e aqui empurraria
+   este para o fim da sua. `width: fit-content` impede-o de esticar de margem a
+   margem — num flex em coluna, os filhos alinham-se por `stretch`. */
+.preset__badge--draft {
+  margin-left: 0;
+  align-self: flex-start;
+  width: fit-content;
+  background: rgba(255,197,49,.12);
+  color: #FFC531;
+  border-color: rgba(255,197,49,.3);
+}
+/* As descricoes dos presets do config sao todas de duas linhas, e o min-height
+   alinha os cartoes. O do rascunho tem um texto seu, mais curto ou mais longo
+   conforme o estado — sem isto, um estado empurrava as accoes para baixo e a
+   grelha deixava de alinhar. */
+.preset--draft .preset__desc,
+.preset--saved .preset__desc { min-height: 34px; }
+
+/* --------------------------------------------------- resultado do preview */
+.card--result { flex: none; animation: viewIn .35s var(--ease); }
+.result__head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; font-weight: 800; letter-spacing: .04em; margin-bottom: 18px;
+}
+.result__cols { display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 20px; align-items: center; }
+.result__col { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.result__col span { font-size: 9.5px; font-weight: 700; letter-spacing: .12em; color: var(--text-faint); }
+.result__col b { font-size: 36px; font-weight: 800; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.result__col i { font-size: 9px; font-style: normal; color: var(--text-faint); font-weight: 700; letter-spacing: .1em; margin-top: -4px; }
+.result__col em { font-size: 10.5px; font-style: normal; color: var(--text-dim); margin-top: 4px; }
+.result__arrow { width: 26px; height: 26px; color: var(--text-faint); }
+.result__delta {
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 14px 22px; border-radius: var(--r-md);
+  background: rgba(52,224,138,.08);
+  border: 1px solid rgba(52,224,138,.2);
+}
+.result__delta span { font-size: 9.5px; font-weight: 700; letter-spacing: .12em; color: var(--text-faint); }
+.result__delta b { font-size: 27px; font-weight: 800; color: var(--ok); font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+.result__delta em { font-size: 11px; font-style: normal; color: var(--ok); font-weight: 700; }
+.result__delta.is-negative { background: rgba(255,75,87,.08); border-color: rgba(255,75,87,.2); }
+.result__delta.is-negative b, .result__delta.is-negative em { color: var(--bad); }
+.result__actions { display: flex; gap: 10px; margin-top: 20px; }
+
+/* ==========================================================================
+   DEFINICOES
+   ========================================================================== */
+.settings-toolbar {
+  display: flex; align-items: center; flex: none;
+  gap: 10px; flex-wrap: wrap;
+}
+/* A pesquisa tem largura propria e NAO estica. Com `flex: 1` ocupava todo o
+   espaco livre e ia encostar aos botoes: um campo largo com pilulas coladas a
+   direita le-se como um campo com botoes dentro dele. O espacador entre os
+   dois grupos e o que torna a separacao inequivoca. */
+.settings-toolbar .search { flex: 0 1 280px; }
+.settings-layout { display: grid; grid-template-columns: 162px minmax(0,1fr); gap: 13px; flex: 1; min-height: 0; }
+
+.grouprail { display: flex; flex-direction: column; gap: 3px; overflow-y: auto; padding-right: 4px; }
+/* Cabecalho de bloco na barra de grupos. Nao e clicavel e nao deve parecer que
+   e: sem fundo, sem hover, e em caixa alta pequena — a mesma linguagem das
+   .section-title do resto do painel. A margem de cima e maior do que a de baixo
+   para o cabecalho pertencer visualmente ao bloco que abre, e nao flutuar entre
+   os dois; o primeiro nao a leva, senao abria com um buraco. */
+.grouprail__head {
+  margin: 14px 0 5px; padding: 0 13px;
+  font-size: 9px; font-weight: 800; letter-spacing: .16em;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.grouprail__head:first-child { margin-top: 2px; }
+.grouprail button {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 13px; border-radius: var(--r-md);
+  font-size: 12.5px; font-weight: 600; color: var(--text-dim);
+  text-align: left;
+  transition: all var(--dur) var(--ease);
+}
+.grouprail button:hover { color: var(--text); background: rgba(255,255,255,.045); }
+.grouprail button.is-active {
+  color: #fff; background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+.grouprail .count {
+  margin-left: auto; font-size: 9.5px; font-weight: 800;
+  color: var(--text-faint); font-variant-numeric: tabular-nums;
+}
+
+.settings { overflow-y: auto; padding-right: 6px; display: flex; flex-direction: column; gap: 9px; }
+
+.setting {
+  border-radius: var(--r-md);
+  padding: 15px 17px;
+  background: linear-gradient(160deg, rgba(255,255,255,.038), rgba(255,255,255,.015));
+  border: 1px solid var(--line);
+  transition: border-color var(--dur) var(--ease);
+}
+.setting:hover { border-color: rgba(255,255,255,.12); }
+.setting.is-locked { opacity: .5; pointer-events: none; }
+.setting.is-disabled { opacity: .42; }
+.setting.is-modified { border-left: 2px solid var(--accent); }
+
+.setting__head { display: flex; align-items: flex-start; gap: 14px; }
+.setting__text { flex: 1; min-width: 0; }
+.setting__name { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.setting__desc { font-size: 11.5px; line-height: 1.5; color: var(--text-dim); margin-top: 3px; }
+.setting__ctrl { flex: none; display: flex; align-items: center; gap: 12px; }
+
+.tag {
+  font-size: 8.5px; font-weight: 800; letter-spacing: .1em;
+  padding: 2px 7px; border-radius: 5px;
+  background: rgba(255,255,255,.07); color: var(--text-faint);
+}
+.tag--mod   { background: var(--accent-soft); color: var(--accent-text); border: 1px solid var(--accent-line); }
+.tag--lock  { background: rgba(255,75,87,.12); color: var(--bad); }
+.tag--admin { background: rgba(255,197,49,.12); color: var(--warn); }
+.tag--req   { background: rgba(255,255,255,.05); }
+
+.impactdots { display: flex; gap: 3px; align-items: center; }
+.impactdots i { width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.14); }
+.impactdots i.on { background: var(--ok); box-shadow: 0 0 6px var(--ok-glow); }
+.impactdots.visual i.on { background: var(--warn); box-shadow: 0 0 6px var(--warn-glow); }
+
+/* ------------------------------------------------------------ interruptor --
+   A calha tem sombra INTERIOR e o botao sombra exterior. E esse par que da a
+   leitura fisica: a calha e um sulco, o botao e uma peca pousada la dentro.
+   Com as duas planas o interruptor parece um desenho; com as duas em relevo
+   parece um brinquedo.
+
+   O botao desloca-se com `transform`, nunca com `left`. Transform e composto
+   pela GPU e nao provoca reposicionamento, por isso a animacao corre a 60fps
+   mesmo com o painel a receber dados a 20Hz. */
+.toggle {
+  position: relative;
+  width: 44px; height: 24px; flex: none;
+  border-radius: 24px;
+  background: rgba(255,255,255,.055);
+  border: 1px solid var(--line-mid);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.38);
+  transition: background var(--dur) var(--ease),
+              border-color var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+.toggle::after {
+  content: '';
+  position: absolute; left: 2.5px; top: 2.5px;
+  width: 17px; height: 17px; border-radius: 50%;
+  background: linear-gradient(180deg, #b6c1d1, #8b97a8);
+  box-shadow: 0 1px 3px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.35);
+  /* A curva ultrapassa ligeiramente o destino e recua. E o que separa um
+     interruptor que ASSENTA de um que apenas desliza — o excesso e de poucos
+     por cento, sente-se mais do que se ve. */
+  transition: transform .32s cubic-bezier(.34, 1.35, .64, 1),
+              background var(--dur) var(--ease);
+}
+
+.toggle.on {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.26);
+}
+.toggle.on::after {
+  transform: translateX(19px);
+  background: linear-gradient(180deg, #ffffff, #dfe6f0);
+}
+
+/* Feedback de pressao: o botao encolhe enquanto o rato esta em baixo. */
+.toggle:active::after    { transform: scale(.88); }
+.toggle.on:active::after { transform: translateX(19px) scale(.88); }
+.toggle:focus-visible    { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+/* range */
+.rangectrl { display: flex; align-items: center; gap: 13px; min-width: 214px; }
+.rangectrl input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  flex: 1; height: 4px; border-radius: 4px;
+  background: rgba(255,255,255,.11);
+  outline: none;
+}
+.rangectrl input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent);
+  border: 2.5px solid #fff;
+  box-shadow: var(--sh-1);
+  cursor: pointer;
+  transition: transform .12s var(--ease);
+}
+.rangectrl input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.12); }
+.rangectrl input[type=range]::-webkit-slider-thumb:active { transform: scale(1.02); }
+.rangectrl .rv {
+  width: 62px; text-align: right; flex: none;
+  font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums;
+}
+
+/* select control */
+.setting .sel { min-width: 156px; }
+/* Nas linhas da tabela de admin a coluna e estreita: o selector encolhe para
+   caber, e o menu (que vive em <body>) continua a abrir com a largura toda. */
+.sel--sm { min-width: 0; width: 100%; padding: 6px 9px; font-size: 11px; gap: 6px; }
+
+/* color */
+/* O controlo de cor empilha: amostras em cima, cor propria por baixo quando
+   aberta. Alinhado a direita para o bloco acompanhar as amostras, que estao no
+   fim da linha da definicao como todos os outros controlos. */
+.colorctrl { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
+.colorctrl__row { display: flex; align-items: center; gap: 7px; }
+.swatch {
+  width: 22px; height: 22px; border-radius: 7px;
+  border: 2px solid transparent;
+  transition: all var(--dur) var(--ease);
+}
+.swatch:hover { transform: scale(1.14); }
+.swatch.is-active { border-color: #fff; box-shadow: 0 0 12px currentColor; }
+
+/* O botao da cor propria nao mostra uma cor fixa: mostra um icone sobre um
+   fundo neutro, e so ganha o anel e o halo quando a cor em uso nao e nenhuma
+   das amostras. `currentColor` traz o halo da cor escolhida, definida em JS. */
+.swatch--custom {
+  display: grid; place-items: center;
+  background: rgba(255,255,255,.07);
+  box-shadow: inset 0 0 0 1px var(--line-mid);
+}
+.swatch--custom svg { width: 13px; height: 13px; color: var(--text-dim); }
+.swatch--custom.is-active svg { color: #fff; }
+
+.colorctrl__custom {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; max-width: 240px;
+}
+
+/* Cursor de matiz. O fundo e o circulo cromatico inteiro, por isso a posicao
+   do cursor E a cor — nao ha que adivinhar o que se vai obter. */
+.huebar {
+  flex: 1; height: 10px; border-radius: 6px;
+  -webkit-appearance: none; appearance: none;
+  background: linear-gradient(90deg,
+    #FF2E43 0%, #FFC531 17%, #31E07A 33%, #22E8D0 50%,
+    #22C7E8 62%, #4B6BFF 75%, #A855F7 87%, #FF2E43 100%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.35);
+  cursor: pointer;
+}
+.huebar::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff;
+  border: 2px solid rgba(0,0,0,.35);
+  box-shadow: 0 1px 4px rgba(0,0,0,.5);
+}
+
+/* Campo hexadecimal em largura fixa e tabular: "#FF2E43" e "#31E07A" tem o
+   mesmo numero de caracteres, e sem numeros de largura fixa o campo abanava a
+   cada digito enquanto se escreve. */
+.hexfield {
+  width: 84px; flex: none;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-mid);
+  background: rgba(0,0,0,.28);
+  color: var(--text);
+  font: inherit; font-size: 11px; font-weight: 700;
+  font-variant-numeric: tabular-nums; letter-spacing: .04em;
+  text-align: center; text-transform: uppercase;
+  outline: none;
+  transition: border-color var(--dur) var(--ease);
+}
+.hexfield:focus { border-color: var(--accent); }
+
+.empty { padding: 40px; text-align: center; font-size: 12.5px; color: var(--text-faint); }
+
+/* ==========================================================================
+   SISTEMA / SOBRE / ADMIN
+   ========================================================================== */
+.syscols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: none; }
+
+.kvlist { display: flex; flex-direction: column; gap: 1px; }
+.kv {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.kv:last-child { border-bottom: 0; }
+.kv > span { color: var(--text-dim); }
+.kv > b { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.kv code {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  font-size: 11.5px; padding: 2px 8px; border-radius: 6px;
+  background: rgba(255,255,255,.06); color: var(--accent-text);
+}
+
+.notebox {
+  font-size: 11.5px; line-height: 1.6; color: var(--text-dim);
+  padding: 13px 15px; border-radius: var(--r-md);
+  background: rgba(255,255,255,.035);
+  border-left: 2px solid var(--warn);
+  margin-top: 12px;
+}
+.notebox--bad { border-left-color: var(--bad); margin-top: 0; }
+
+.sessions { display: flex; flex-direction: column; gap: 7px; }
+.session {
+  display: grid; grid-template-columns: 128px repeat(4, 1fr) 90px;
+  gap: 12px; align-items: center;
+  padding: 11px 14px; border-radius: var(--r-md);
+  background: rgba(255,255,255,.03);
+  border: 1px solid var(--line);
+  font-size: 12px;
+}
+.session .t { color: var(--text-dim); }
+.session .m { display: flex; flex-direction: column; }
+.session .m span { font-size: 9px; letter-spacing: .1em; color: var(--text-faint); font-weight: 700; }
+.session .m b { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.about { display: flex; flex-direction: column; gap: 16px; }
+.about__hero {
+  display: flex; align-items: center; gap: 20px;
+  padding: 26px 28px; border-radius: var(--r-xl);
+}
+.about__hero h2 { font-size: 22px; font-weight: 800; letter-spacing: -.01em; }
+.about__hero p { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
+
+.admin-toolbar { display: flex; align-items: center; gap: 10px; flex: none; }
+/* Espacador generico: empurra o que vem a seguir para a direita. */
+.spacer { flex: 1; min-width: 12px; }
+.table { display: flex; flex-direction: column; gap: 2px; }
+.trow {
+  display: grid; grid-template-columns: 48px minmax(0,1fr) 70px 70px 70px 70px 110px 96px;
+  gap: 10px; align-items: center;
+  padding: 10px 12px; border-radius: var(--r-sm);
+  font-size: 12px;
+}
+.trow--head { font-size: 9.5px; font-weight: 800; letter-spacing: .1em; color: var(--text-faint); }
+.trow--data { background: rgba(255,255,255,.028); }
+.trow--data:hover { background: rgba(255,255,255,.055); }
+.trow b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.trow .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trow.is-stale { opacity: .45; }
+
+.minirow { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr)); gap: 12px; flex: none; }
+.ministat {
+  padding: 15px 17px; border-radius: var(--r-md);
+  background: rgba(255,255,255,.035);
+  border: 1px solid var(--line);
+}
+.ministat span { font-size: 9.5px; font-weight: 700; letter-spacing: .1em; color: var(--text-faint); }
+.ministat b { display: block; font-size: 22px; font-weight: 800; margin-top: 4px;
+  letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+
+.graph-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex: none; }
+.graph-toolbar .segmented { flex: none; }
+/* Mesma regra do .card--fps: o piso vem do .chartwrap la dentro, nao de um
+   numero escrito no cartao. Ver o comentario em .card--fps. */
+.card--bigchart { flex: 1; display: flex; }
+.card--bigchart .chartwrap { flex: 1; }
+
+/* A vista de graficos e um layout de altura FIXA: barra em cima, grafico a
+   ocupar o que sobra, estatisticas em baixo. Nao ha nada para descobrir a
+   deslizar — e mesmo assim aparecia uma barra de scroll.
+
+   Vinha do piso de 260px do .chartwrap--tall: somado a barra de ferramentas e
+   a linha de estatisticas, passava a altura disponivel por poucos pixeis, e o
+   `overflow-y: auto` de .view fazia o resto. Uma barra de scroll para deslizar
+   uma dezena de pixeis nao e navegacao, e ruido — e ainda por cima ruido
+   encostado ao grafico.
+
+   Tirado o piso, o cartao passa a receber exactamente a altura que sobra: o
+   canvas tem `height: 100%`, por isso acompanha sem nunca transbordar. O
+   padding-right de 4px fica — e o espaco que as outras vistas reservam para a
+   barra delas, e sem ele os cartoes saltavam 4px ao mudar de separador. */
+.view[data-view="graph"] { overflow: hidden; }
+.view[data-view="graph"] .card--bigchart { min-height: 0; }
+.view[data-view="graph"] .chartwrap--tall { min-height: 0; }
+
+/* ==========================================================================
+   ECRAS PEQUENOS  ·  1366x768 e portateis
+   ========================================================================== */
+/* O tecto de tamanho em .app__grid ja trata dos ecras grandes, por isso so
+   precisamos de um breakpoint: ecras estreitos ou baixos, onde a rail direita
+   deixa de caber.
+
+   Atencao ao mexer nos aneis: a largura do canvas (.gauge__ring) tem de ser
+   sempre a do .gauge MAIS ~2x15px, senao o shadowBlur volta a ser cortado e
+   reaparece a aresta quadrada. */
+@media (max-width: 1180px), (max-height: 720px) {
+  .app__grid {
+    width: 96vw; height: 94vh;
+    grid-template-columns: 190px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 11px;
+  }
+  .rail { display: none; }
+  /* Duas colunas neste ponto (a rail desaparece): a barra atravessa ambas. */
+  .bottombar { grid-column: 1 / 3; gap: 16px; padding-left: 15px; }
+  .main { padding: 15px 17px 14px; }
+  .head__title { font-size: 18px; }
+  .card--fps { grid-template-columns: 180px minmax(0,1fr); gap: 16px; }
+  .bignum span { font-size: 46px; }
+  .statgrid { gap: 11px 8px; margin-top: 14px; }
+  .stat b { font-size: 16px; }
+  .chartwrap { min-height: 130px; }
+  .gauge { width: 100px; height: 100px; }
+  .gauge__ring { inset: -14px; width: 128px; height: 128px; }
+  .gauge__val b { font-size: 20px; }
+  .card--gauges { flex-wrap: wrap; }
+  /* Tambem aqui o piso vem da area do grafico, nunca do cartao. */
+  .worldgrid { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px 16px; }
+  .syscols { grid-template-columns: 1fr; }
+  .settings-layout { grid-template-columns: 148px minmax(0,1fr); }
+  .bb:nth-child(4), .bb:nth-child(5) { display: none; }
+}

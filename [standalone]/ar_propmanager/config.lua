@@ -13,8 +13,8 @@ return {
     --   3 (playerAccess) – view and edit the player access list
     ace = {
         [1] = 'mod',
-        [2] = 'admin',
-        [3] = 'superadmin',
+        [2] = 'mod',
+        [3] = 'mod',
     },
 
     command = 'quanlyprops'

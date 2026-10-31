@@ -363,7 +363,7 @@ Citizen.CreateThread(function()
     
     -- Farm zone 12
     local z12 = FarmRental and FarmRental.FarmZones and FarmRental.FarmZones[12]
-    local farmZone12 = CircleZone:Create(z12 and z12.center or vector3(1481.9066, -2354.6516, 71.9142), (z12 and z12.radius) or 100.0, {
+    local farmZone12 = CircleZone:Create(z12 and z12.center or vector3(1350.3269, -1022.3098, 40.0573), (z12 and z12.radius) or 100.0, {
         name = "farm 12",
         useZ = false
     })
@@ -387,8 +387,8 @@ Citizen.CreateThread(function()
         {zone = farmZone8, id = 8},
         {zone = farmZone9, id = 9},
         {zone = farmZone10, id = 10},
-        {zone = farmZone11, id = 11}
-        -- {zone = farmZone12, id = 12},
+        {zone = farmZone11, id = 11},
+        {zone = farmZone12, id = 12}
         -- {zone = farmZone13, id = 13}
     }
     
@@ -451,6 +451,10 @@ AddEventHandler('xx_farming:client:useitem', function()
             end
             -- Check if player has permission to plant in this zone BEFORE starting progress bar
             lib.callback('xx_farming:checkPlantingPermissionByZone', false, function(result)
+                if not result then
+                    QBCore.Functions.Notify("Không thể kiểm tra quyền trồng cây, vui lòng thử lại!", "error")
+                    return
+                end
                 if not result.canPlant then
                     QBCore.Functions.Notify(result.message or "Bạn cần thuê ruộng này hoặc được chia sẻ quyền trước khi trồng cây!", "error")
                     return
@@ -975,14 +979,25 @@ function getStageFromPercent(pPercent, cropConfig)
     return math.floor((pPercent / percentPerStage) + 1.5)
 end
 
-function getPlantGrowthPercent(pPlant)
+-- Tổng thời gian lớn (phút) của cây, đã tính hệ số và giảm theo khu
+local function getPlantGrowthMinutes(pPlant)
     local cropConfig = GetCropConfig(GetPlantCropType(pPlant))
-    local timeDiff = (GetCloudTimeAsInt() - pPlant.timestamp) / 60
     local genderFactor = (pPlant.plantgender == 1 and cropConfig.MaleFactor or 1)
     local fertilizerFactor = pPlant.fertilizer >= 50 and cropConfig.FertilizerFactor or 1.0
     local growthFactors = (cropConfig.GrowthTime * genderFactor * fertilizerFactor)
-    local growth = math.min((timeDiff / growthFactors) * 100, 100.0)
-    return growth
+    local zoneConf = FarmRental and FarmRental.FarmZones and FarmRental.FarmZones[tonumber(pPlant.zone_id)]
+    return math.max(growthFactors - ((zoneConf and zoneConf.growthTimeReduction) or 0), 1)
+end
+
+function getPlantGrowthPercent(pPlant)
+    local timeDiff = (GetCloudTimeAsInt() - pPlant.timestamp) / 60
+    return math.min((timeDiff / getPlantGrowthMinutes(pPlant)) * 100, 100.0)
+end
+
+-- Số giây còn lại đến khi cây lớn hoàn toàn
+local function getPlantGrowthRemainingSeconds(pPlant)
+    local elapsed = GetCloudTimeAsInt() - pPlant.timestamp
+    return math.max(0, math.floor(getPlantGrowthMinutes(pPlant) * 60 - elapsed))
 end
 
 function getPlantId(pEntity)
@@ -1097,6 +1112,7 @@ function showPlantMenu(pPlantId)
         SendNUIMessage({
             action = "openMenu",
             growth = growth,
+            remaining = getPlantGrowthRemainingSeconds(plant),
             water = water,
             fertilizer = fertilizer,
             health = health,

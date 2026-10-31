@@ -350,16 +350,16 @@ RegisterNetEvent('xn_pingjob:setWaypoint', function(coords, callerName, callerId
     end
 end)
 
-RegisterCommand('keoxac', function(source, args)
-    if not QBX or not QBX.PlayerData or not QBX.PlayerData.job or not QBX.PlayerData.job.onduty then
-        return exports.qbx_core:Notify("Bạn cần On-Duty để dùng lệnh này!", "error")
-    end
-    local targetId = (args and tonumber(args[1])) or (activeGpsTarget and activeGpsTarget.id)
-    if not targetId then
-        return exports.qbx_core:Notify("Vui lòng nhập ID hoặc bấm GPS người cần kéo trên bảng F4!", "error")
-    end
-    TriggerServerEvent("xn_pingjob:pullPlayerBody", targetId)
-end, false)
+-- RegisterCommand('keoxac', function(source, args)
+--     if not QBX or not QBX.PlayerData or not QBX.PlayerData.job or not QBX.PlayerData.job.onduty then
+--         return exports.qbx_core:Notify("Bạn cần On-Duty để dùng lệnh này!", "error")
+--     end
+--     local targetId = (args and tonumber(args[1])) or (activeGpsTarget and activeGpsTarget.id)
+--     if not targetId then
+--         return exports.qbx_core:Notify("Vui lòng nhập ID hoặc bấm GPS người cần kéo trên bảng F4!", "error")
+--     end
+--     TriggerServerEvent("xn_pingjob:pullPlayerBody", targetId)
+-- end, false)
 
 TriggerEvent('chat:addSuggestion', '/keoxac', 'Kéo người ngất dưới lòng đất về vị trí của bạn (Dành cho bác sĩ)', {
     { name = "targetId", help = "ID người chơi cần kéo (Để trống sẽ lấy người đang có GPS)" }

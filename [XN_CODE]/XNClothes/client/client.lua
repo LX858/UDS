@@ -387,6 +387,8 @@ function toggleNuiFrame(shouldShow, category, isTattoShop)
     SendReactMessage('setVisible', shouldShow)
 
     if shouldShow then
+        isViewOnlyMode = false
+        SendReactMessage('setViewOnlyShop', { active = false })
         -- Set player to random routing bucket to isolate from other players
         TriggerServerEvent('XNClothes:setRoutingBucket', true)
         QBCore.Functions.TriggerCallback('clothes:isstaff', function(isStaff)
@@ -542,6 +544,81 @@ AddEventHandler('XNClothes:adminOpenClothes', function()
     FreezeEntityPosition(playerPed, true)
 end)
 
+-- =====================================================
+-- SHOWROOM / VIEW-ONLY RARITY SHOP
+-- Chỉ xem các vật phẩm có độ hiếm trong SQL, không thể mua
+-- =====================================================
+local isViewOnlyMode = false
+
+function openRarityViewShop(title)
+    isViewOnlyMode = true
+    if Config.Animation then
+        PlayAnimation(Config.AnimationName, Config.AnimationName2)
+    end
+    getAllPriceClothes()
+    SetNuiFocus(true, true)
+    SendReactMessage('setVisible', true)
+
+    TriggerServerEvent('XNClothes:setRoutingBucket', true)
+    SendReactMessage('setIsStaff', false)
+    SendReactMessage('SaveOutfit', false)
+
+    local playerPed = PlayerPedId()
+    local sex = getPedSexForClothes(playerPed)
+    local isFemale = sex == 'female'
+
+    -- Bỏ qua blacklist để hiển thị tất cả các đồ có độ hiếm
+    SendReactMessage('setBlackListClothes', {})
+
+    SendReactMessage('setUrl', Config.Url)
+    SendReactMessage('setExtension', Config.Extension)
+    SendReactMessage('setServerLogo', Config.ServerLogo)
+    SendReactMessage('setCategory', ALL_CATEGORIES)
+    SendReactMessage('setDefaultPrice', Config.DefaultPrice)
+    SendReactMessage('setTextureChangePrice', Config.TextureChangePrice)
+    SendReactMessage('setGender', { isFemale = isFemale })
+
+    -- Bật cờ viewOnlyShop để UI chuyển sang chế độ chỉ xem
+    SendReactMessage('setViewOnlyShop', {
+        active = true,
+        title = title or (Config.RarityViewShop and Config.RarityViewShop.Title) or "SHOWROOM ĐỒ HIẾM"
+    })
+    SendReactMessage('setCustomShop', { active = false })
+
+    QBCore.Functions.TriggerCallback('clothes:getUICompatibleConfig', function(rarityData)
+        if rarityData then
+            SendReactMessage('setBackgroundColor', rarityData)
+        end
+    end, sex)
+
+    savedOutfit = saveCurrentOutfit()
+    local clothes = getAllClothes()
+    SendReactMessage('setClothingData', clothes)
+    SendReactMessage('setDefaultOutfit', Config.DefaultOutfit)
+    SendReactMessage('setScreenshot', false)
+    SendReactMessage('setServerName', Config.ServerName)
+
+    createCameraForPlayer()
+    FreezeEntityPosition(playerPed, true)
+end
+
+RegisterNetEvent('XNClothes:openRarityViewShop')
+AddEventHandler('XNClothes:openRarityViewShop', function(title)
+    openRarityViewShop(title)
+end)
+
+exports('OpenRarityViewShop', function(title)
+    openRarityViewShop(title)
+end)
+
+RegisterCommand('viewdohiem', function()
+    openRarityViewShop()
+end, false)
+
+RegisterCommand('showroom', function()
+    openRarityViewShop()
+end, false)
+
 function saveCurrentOutfit()
     local playerPed = PlayerPedId()
     local outfit = {
@@ -603,6 +680,14 @@ end
 
 RegisterNUICallback('hideFrame', function(_, cb)
     toggleNuiFrame(false)
+    
+    if isViewOnlyMode then
+        isViewOnlyMode = false
+        SendReactMessage('setViewOnlyShop', { active = false })
+        if savedOutfit then
+            restoreOutfit(savedOutfit)
+        end
+    end
     
     -- Reset routing bucket back to 0
     TriggerServerEvent('XNClothes:setRoutingBucket', false)
@@ -883,6 +968,10 @@ function restoreCamera()
 end 
 
 RegisterNUICallback('purchaseClothes', function(data, cb)
+    if isViewOnlyMode then
+        QBCore.Functions.Notify("Đây là showroom chỉ để xem, không thể mua!", "error")
+        return cb({success = false})
+    end
     local playerPed = PlayerPedId()
     local sex = getPedSexForClothes(playerPed)
 
@@ -895,6 +984,10 @@ RegisterNUICallback('purchaseClothes', function(data, cb)
 end)
 
 RegisterNUICallback('purchaseTextureChange', function(data, cb)
+    if isViewOnlyMode then
+        QBCore.Functions.Notify("Đây là showroom chỉ để xem, không thể mua!", "error")
+        return cb({success = false})
+    end
     -- Purchase texture change with rarity-based pricing
     local playerPed = PlayerPedId()
     local sex = getPedSexForClothes(playerPed)
@@ -911,6 +1004,10 @@ RegisterNUICallback('purchaseTextureChange', function(data, cb)
 end)
 
 RegisterNUICallback('purchaseClothesoutfit', function(data, cb)
+    if isViewOnlyMode then
+        QBCore.Functions.Notify("Đây là showroom chỉ để xem, không thể mua!", "error")
+        return cb({success = false})
+    end
     local playerPed = PlayerPedId()
     local sex = getPedSexForClothes(playerPed)
 
@@ -1115,6 +1212,21 @@ Citizen.CreateThread(function()
         })
     end
 
+    if Config.RarityViewShop and Config.RarityViewShop.Enabled and Config.RarityViewShop.Coords then
+        table.insert(Config.Coords, {
+            x = Config.RarityViewShop.Coords.x,
+            y = Config.RarityViewShop.Coords.y,
+            z = Config.RarityViewShop.Coords.z,
+            blips = true,
+            BlipsName = Config.RarityViewShop.BlipsName or "Showroom Đồ Hiếm (Chỉ Xem)",
+            blipsid = Config.RarityViewShop.BlipsId or 617,
+            blipcolor = Config.RarityViewShop.BlipColor or 5,
+            category = ALL_CATEGORIES,
+            isViewOnly = true,
+            drawtext = Config.RarityViewShop.DrawText or "Mở Showroom Đồ Hiếm (Chỉ Xem)"
+        })
+    end
+
     local isTextUIShowing = false
     
     for _, coord in pairs(Config.Coords) do
@@ -1154,10 +1266,14 @@ Citizen.CreateThread(function()
 
                 if IsControlJustPressed(0, 38) then
                     FreezeEntityPosition(playerPed, true)
-                    getOutfits()
-                    savedOutfit = saveCurrentOutfit()
-                    toggleNuiFrame(true, coord.category, coord.isTattoShop)
-                    createCameraForPlayer()
+                    if coord.isViewOnly then
+                        openRarityViewShop(coord.BlipsName)
+                    else
+                        getOutfits()
+                        savedOutfit = saveCurrentOutfit()
+                        toggleNuiFrame(true, coord.category, coord.isTattoShop)
+                        createCameraForPlayer()
+                    end
                 end
                 break -- Thoát khỏi vòng lặp khi tìm thấy marker gần nhất
             end

@@ -526,6 +526,7 @@ function Impl:FinishRound(winner)
   end
   SetTimeout(Config.Airdrop.ResultSeconds * 1000, function()
     if self.round == round then self:CleanRound() end
+    self:StartProtectionReset(0)
   end)
 end
 

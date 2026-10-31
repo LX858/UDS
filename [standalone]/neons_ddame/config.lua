@@ -226,6 +226,15 @@ Config = {
             blip = false -- Đặt false để tắt blip cho khu vực này (hoặc { enabled = false })
         },
         {
+            name = 'Bãi LV1',
+            coords = vector3(1350.3269, -1022.3098, 40.0573),
+            radius = 70.0,
+            activationPadding = 110.0,
+            scanInterval = 250,
+            deleteEmptyVehicles = false,
+            blip = false -- Đặt false để tắt blip cho khu vực này (hoặc { enabled = false })
+        },
+        {
             name = 'Bãi dò kim loại',
             coords = vector3(-1171.4543, 33.4847, 51.4955),
             radius = 100.0,

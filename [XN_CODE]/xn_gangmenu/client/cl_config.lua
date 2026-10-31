@@ -5,6 +5,16 @@ Config.UseTarget = GetConvar('UseTarget', 'false') == 'true' -- Use qb-target in
 
 Config.Max_Cap_Gang = 5
 
+-- ============================================================
+-- CẤU HÌNH THỜI GIAN ĐẾM NGƯỢC (COUNTDOWN) RỜI GANG / KHAI TRỪ
+-- ============================================================
+Config.GangCooldown = {
+    enabled = true, -- Bật (true) hoặc Tắt (false) tính năng cooldown
+    days = 3,       -- Số ngày đếm ngược trước khi được phép gia nhập gang mới (Mặc định: 3 ngày)
+    hours = 0,      -- Số giờ bổ sung (để 0 nếu chỉ tính theo ngày)
+    minutes = 0,    -- Số phút bổ sung (để 0 nếu chỉ tính theo ngày)
+}
+
 Config.Cap_Do = {
     [1] = {
         ["exp"] = 1000,
@@ -13,8 +23,9 @@ Config.Cap_Do = {
         ["require_items"] = {
             { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 400 },
             { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 400 },
-            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 30 },
-            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 700 },
+            { item = 'the_can_thu', label = 'Thẻ Cần Thủ', amount = 1000 },
+            { item = 'the_da_quy', label = 'Thẻ Đá Quý', amount = 1000 },
+            -- { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 700 },
         },
         ["nhiemvu"] = {
             [1] = {
@@ -96,9 +107,14 @@ Config.Cap_Do = {
                 ['label'] = 'Áo Giáp Xã Đoàn (Cấp 1)',
                 ['sodiem'] = '30000',
             },
-            [4] = {
+            [3] = {
                 ['vatpham'] = 'bandage_lv2',
                 ['label'] = 'Băng gạc LV2',
+                ['sodiem'] = '3000',
+            },
+            [4] = {
+                ['vatpham'] = 'carry_item',
+                ['label'] = 'Carry',
                 ['sodiem'] = '3000',
             },
         },
@@ -110,8 +126,8 @@ Config.Cap_Do = {
         ["require_items"] = {
             { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 800 },
             { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 800 },
-            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 70 },
-            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 1300 },
+            { item = 'the_can_thu', label = 'Thẻ Cần Thủ', amount = 3000 },
+            { item = 'the_da_quy', label = 'Thẻ Đá Quý', amount = 3000 },
         },
         ["nhiemvu"] = {
             [1] = {
@@ -193,9 +209,14 @@ Config.Cap_Do = {
                 ['label'] = 'Áo Giáp Xã Đoàn (Cấp 1)',
                 ['sodiem'] = '30000',
             },
-            [4] = {
+            [3] = {
                 ['vatpham'] = 'bandage_lv2',
                 ['label'] = 'Băng gạc LV2',
+                ['sodiem'] = '3000',
+            },
+            [4] = {
+                ['vatpham'] = 'carry_item',
+                ['label'] = 'Carry',
                 ['sodiem'] = '3000',
             },
         },
@@ -207,8 +228,8 @@ Config.Cap_Do = {
         ["require_items"] = {
             { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 1600 },
             { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 1600 },
-            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 100 },
-            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 2700 },
+            { item = 'the_sieu_trom', label = 'Thẻ Sêu trộm', amount = 100 },
+            { item = 'tinh_thach', label = 'Thẻ Đá Quý', amount = 1000 },
         },
         ["nhiemvu"] = {
             [1] = {
@@ -290,9 +311,14 @@ Config.Cap_Do = {
                 ['label'] = 'Áo Giáp Xã Đoàn (Cấp 1)',
                 ['sodiem'] = '30000',
             },
-            [4] = {
+            [3] = {
                 ['vatpham'] = 'bandage_lv2',
                 ['label'] = 'Băng gạc LV2',
+                ['sodiem'] = '3000',
+            },
+            [4] = {
+                ['vatpham'] = 'carry_item',
+                ['label'] = 'Carry',
                 ['sodiem'] = '3000',
             },
         },
@@ -304,8 +330,8 @@ Config.Cap_Do = {
         ["require_items"] = {
             { item = 'hoa_mynhan', alt_items = {'the_hoa_mn', 'hoamynhan'}, label = 'Hoa Mỹ Nhân', amount = 3200 },
             { item = 'traidudu', alt_items = {'the_du_du', 'dudu', 'ladudu_tuoi'}, label = 'Đu Đủ', amount = 3200 },
-            { item = 'the_sieu_trom', label = 'Thẻ Siêu Trộm', amount = 130 },
-            { item = 'tinhthach', alt_items = {'tinh_thach'}, label = 'Tinh Thạch', amount = 5300 },
+            { item = 'the_sieu_trom', label = 'Thẻ Sêu trộm', amount = 300 },
+            { item = 'tinh_thach', label = 'Tinh thạch', amount = 3000 },
         },
         ["nhiemvu"] = {
             [1] = {
@@ -387,9 +413,14 @@ Config.Cap_Do = {
                 ['label'] = 'Áo Giáp Xã Đoàn (Cấp 1)',
                 ['sodiem'] = '30000',
             },
-            [4] = {
+            [3] = {
                 ['vatpham'] = 'bandage_lv2',
                 ['label'] = 'Băng gạc LV2',
+                ['sodiem'] = '3000',
+            },
+            [4] = {
+                ['vatpham'] = 'carry_item',
+                ['label'] = 'Carry',
                 ['sodiem'] = '3000',
             },
         },
@@ -478,9 +509,14 @@ Config.Cap_Do = {
                 ['label'] = 'Áo Giáp Xã Đoàn (Cấp 1)',
                 ['sodiem'] = '30000',
             },
-            [4] = {
+            [3] = {
                 ['vatpham'] = 'bandage_lv2',
                 ['label'] = 'Băng gạc LV2',
+                ['sodiem'] = '3000',
+            },
+            [4] = {
+                ['vatpham'] = 'carry_item',
+                ['label'] = 'Carry',
                 ['sodiem'] = '3000',
             },
         },
@@ -537,7 +573,7 @@ Config.GangLabel = {
 -- Cấu hình tạo xã đoàn mới & quản lý
 Config.CreateGangCost = 1000000 -- Phí tạo xã đoàn (Cash), mặc định: $1.000.000
 Config.MaxDescriptionWords = 100 -- Giới hạn số từ cho phần giới thiệu xã đoàn
-Config.DiscordWebhook = "" -- Điền URL Discord Webhook để nhận thông báo đăng ký xã đoàn (để trống nếu không dùng)
+Config.DiscordWebhook = "https://discord.com/api/webhooks/1547588427195748517/XtHZ-NELWebdcey7WSgVf7qnhtKxhdQpFfgos31nDjAtNlSZy0xl_vbZaN2aQJvkh3ee" -- Điền URL Discord Webhook để nhận thông báo đăng ký xã đoàn (để trống nếu không dùng)
 Config.AdminGroups = { -- Nhóm quyền được sử dụng lệnh /quanlygang
     ['god'] = true,
     ['admin'] = true,

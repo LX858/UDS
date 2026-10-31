@@ -2554,6 +2554,19 @@ return {
 				usetime = 2500
 			}
 		},
+
+		['skin_machete_vip'] = {
+			label = 'Skin Katana Bá khí',
+			type = 'skin',
+			weight = 50,
+			client = {
+				component = {
+					`COMPONENT_SKIN_MACHETEVIP`,
+					`COMPONENT_ANDREW_BLUE_KATANA_ANIM`,
+				},
+				usetime = 2500
+			}
+		},
 	},
 
 

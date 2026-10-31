@@ -60,6 +60,14 @@ CREATE TABLE IF NOT EXISTS `xn_gang_inventory` (
     KEY `idx_gang_name` (`gang_name`)
 );
 
+-- Bảng xn_gang_kick_cooldown lưu thời gian cooldown 3 ngày sau khi bị khai trừ
+CREATE TABLE IF NOT EXISTS `xn_gang_kick_cooldown` (
+    `citizenid` VARCHAR(50) NOT NULL,
+    `gang_name` VARCHAR(50) NOT NULL,
+    `expires_at` BIGINT NOT NULL,
+    PRIMARY KEY (`citizenid`)
+);
+
 -- Bảng xn_gang_welfare_claims lưu lịch sử nhận quà mốc phúc lợi gang
 CREATE TABLE IF NOT EXISTS `xn_gang_welfare_claims` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,

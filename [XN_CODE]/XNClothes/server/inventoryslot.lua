@@ -2242,37 +2242,39 @@ end
 
 
 
-local stockUpdates = {}
-local function sameClothes(a, b)
-    if type(a) ~= type(b) then return false end
-    if type(a) ~= 'table' then return a == b end
-    for k, value in pairs(a) do if not sameClothes(value, b[k]) then return false end end
-    for k in pairs(b) do if a[k] == nil then return false end end
-    return true
-end
-
 function GetPlayerClothesAndStock(source)
-    if stockUpdates[source] then return end
-    local token = {}
-    stockUpdates[source] = token
-    SetTimeout(200, function()
-        if stockUpdates[source] ~= token then return end
-        stockUpdates[source] = nil
+    
+    Citizen.CreateThread(function()
+        Wait(200)
         local player = QBCore.Functions.GetPlayer(source)
-        if not player then return end
-        local slot = componentMapping.clothes.clothesSlotID
-        local itemInSlot = exports.ox_inventory:GetSlot(source, slot)
+        if not player then
+            return
+        end
+
+        local itemInSlot = exports.ox_inventory:GetSlot(player.PlayerData.source, componentMapping.clothes.clothesSlotID)
         local clothesdata = GetPlayerClothes(source)
-        if not clothesdata or #clothesdata == 0 then return end
-        if itemInSlot then clothesdata.label = itemInSlot.metadata.label end
-        if not itemInSlot then
-            exports.ox_inventory:AddItem(source, 'clothes', 1, clothesdata, slot)
-        elseif itemInSlot.name == 'clothes' and not sameClothes(itemInSlot.metadata, clothesdata) then
-            exports.ox_inventory:SetMetadata(source, slot, clothesdata)
+        
+        if clothesdata and itemInSlot then  
+            clothesdata.label = itemInSlot.metadata.label
+        end 
+
+        if itemInSlot == nil then
+            if clothesdata then  
+                exports.ox_inventory:AddItem(
+                    player.PlayerData.source,
+                    'clothes',
+                    1,
+                    clothesdata,
+                    componentMapping.clothes.clothesSlotID
+                )
+            end
+            
+        elseif itemInSlot and itemInSlot.name == 'clothes' then
+            exports.ox_inventory:SetMetadata(player.PlayerData.source, componentMapping.clothes.clothesSlotID, clothesdata)
+            Wait(200)
         end
     end)
 end
-AddEventHandler('playerDropped', function() stockUpdates[source] = nil end)
 
 function GetPlayerSource(player)
     if not player then return nil end

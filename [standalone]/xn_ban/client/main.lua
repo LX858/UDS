@@ -32,6 +32,14 @@ RegisterNetEvent('xn_ban:client:receiveOnlinePlayers', function(players)
     })
 end)
 
+-- Nhận kết quả tìm kiếm người chơi Offline từ server và chuyển sang NUI
+RegisterNetEvent('xn_ban:client:receiveOfflineSearchResults', function(results)
+    SendNUIMessage({
+        action = 'setOfflineSearchResults',
+        data = results
+    })
+end)
+
 -- NUI Callbacks
 RegisterNUICallback('close', function(_, cb)
     SetNuiFocus(false, false)
@@ -46,6 +54,11 @@ end)
 
 RegisterNUICallback('getOnlinePlayers', function(_, cb)
     TriggerServerEvent('xn_ban:server:getOnlinePlayers')
+    cb('ok')
+end)
+
+RegisterNUICallback('searchOfflinePlayers', function(data, cb)
+    TriggerServerEvent('xn_ban:server:searchOfflinePlayers', data and data.query or '')
     cb('ok')
 end)
 

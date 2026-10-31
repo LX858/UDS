@@ -240,6 +240,19 @@ Config.DiscountCoupons = {
         vehicle = 'did_halloentity3',
         event = true,
     },
+    ['key_gladitor'] = {
+        label = 'Vé đổi xe Gladitor',
+        discount = 100,
+        vehicle = 'gladiator20',
+        event = true,
+    },
+    ['key_batti_hlw'] = {
+        label = 'Vé đổi xe Batti',
+        discount = 100,
+        vehicle = 'dc_skullbike',
+        event = true,
+    },
+
 }
 
 -- =========================================================================

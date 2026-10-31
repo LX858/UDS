@@ -1199,6 +1199,8 @@ function Inventory.AddItem(inv, item, count, metadata, slot, cb)
 	count = math.floor(count + 0.5)
 	if count <= 0 then return false, 'negative_count' end
 
+	local totalCount = count
+
 	inv = Inventory(inv) --[[@as OxInventory]]
 
 	if not inv?.slots then return false, 'invalid_inventory' end
@@ -1309,6 +1311,15 @@ function Inventory.AddItem(inv, item, count, metadata, slot, cb)
     end
 
 	if not toSlot then return false, 'inventory_full' end
+
+	if inv.player then
+		local itemWeight = (slotMetadata and slotMetadata.weight) or item.weight
+
+		if itemWeight and itemWeight > 0 and (inv.weight + itemWeight * totalCount) > inv.maxWeight then
+			TriggerClientEvent('ox_inventory:notify', inv.id, { type = 'error', description = locale('cannot_carry') })
+			return false, 'cannot_carry'
+		end
+	end
 
 	inv.changed = true
 

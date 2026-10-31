@@ -11,6 +11,7 @@ return {
         chair = {model = `prop_chair_08`, freeze = true},
         chairs = {model = `prop_chair_pile_01`, freeze = true},
         tabe = {model = `prop_table_03`, freeze = true},
+        table = {model = `prop_table_03`, freeze = true},
         monitor = {model = `des_tvsmash_root`, freeze = true},
     },
 

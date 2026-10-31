@@ -4,6 +4,70 @@ local prisonTimers = {} -- Track prison timers
 local playerScreenshotUrls = {} -- Lưu link screenshot cho mỗi player
 local playerPenaltyApplied = {} -- Track xem player nào đã bị trừ điểm (cho Discord B)
 
+-- ============ TỐI ƯU CHO SERVER ĐÔNG NGƯỜI ============
+
+-- Hàng đợi webhook Discord: tránh bị rate limit (429) khi nhiều người vi phạm cùng lúc
+local rawPerformHttpRequest = PerformHttpRequest
+local WEBHOOK_INTERVAL_MS = 2000 -- 1 request / 2 giây
+local WEBHOOK_MAX_QUEUE = 100    -- Quá giới hạn thì bỏ log cũ nhất
+local webhookQueue, webhookHead, webhookTail = {}, 1, 0
+local webhookWorkerRunning = false
+
+local function PerformHttpRequest(url, cb, method, body, headers)
+    if webhookTail - webhookHead + 1 >= WEBHOOK_MAX_QUEUE then
+        webhookQueue[webhookHead] = nil
+        webhookHead = webhookHead + 1
+    end
+    webhookTail = webhookTail + 1
+    webhookQueue[webhookTail] = { url = url, cb = cb, method = method, body = body, headers = headers }
+
+    if webhookWorkerRunning then return end
+    webhookWorkerRunning = true
+    CreateThread(function()
+        while webhookHead <= webhookTail do
+            local item = webhookQueue[webhookHead]
+            webhookQueue[webhookHead] = nil
+            webhookHead = webhookHead + 1
+            rawPerformHttpRequest(item.url, item.cb, item.method, item.body, item.headers)
+            Wait(WEBHOOK_INTERVAL_MS)
+        end
+        webhookWorkerRunning = false
+    end)
+end
+
+-- Chặn client gửi URL tuỳ ý / spam event log
+local screenshotLastReceived = {}
+local SCREENSHOT_MIN_INTERVAL_MS = 1500
+
+local function acceptScreenshotUrl(source, url, skipRateLimit)
+    if type(url) ~= 'string' or #url > 512 then return false end
+    if not (url:find('^https://cdn%.discordapp%.com/') or url:find('^https://media%.discordapp%.net/')) then
+        return false
+    end
+    if skipRateLimit then return true end
+    local now = GetGameTimer()
+    if screenshotLastReceived[source] and (now - screenshotLastReceived[source]) < SCREENSHOT_MIN_INTERVAL_MS then
+        return false
+    end
+    screenshotLastReceived[source] = now
+    return true
+end
+
+-- Tra cứu job công an bằng set thay vì lặp mảng mỗi lần
+local policeJobSet = {}
+for _, jobName in ipairs(Config.TargetSystem.policeJobs) do
+    policeJobSet[jobName] = true
+end
+
+-- Dọn dữ liệu theo player khi thoát để không rò rỉ bộ nhớ
+AddEventHandler('playerDropped', function()
+    local src = source
+    playerCooldowns[tostring(src)] = nil
+    playerScreenshotUrls[src] = nil
+    playerPenaltyApplied[src] = nil
+    screenshotLastReceived[src] = nil
+end)
+
 -- Safe wrapper cho lib commands
 local function safeAddCommand(name, options, handler)
     if lib and lib.addCommand then
@@ -57,13 +121,7 @@ local function isPoliceOnDuty(source)
     end
     
     -- Kiểm tra job có trong danh sách police jobs hoặc bác sĩ
-    local isPoliceJob = false
-    for _, policeJob in ipairs(Config.TargetSystem.policeJobs) do
-        if job.name == policeJob then
-            isPoliceJob = true
-            break
-        end
-    end
+    local isPoliceJob = policeJobSet[job.name] == true
     
     -- Thêm bác sĩ vào danh sách được miễn phạt
     local isDoctorJob = (job.name == 'ambulance' or job.name == 'ems')
@@ -606,6 +664,8 @@ end)
 -- Event xử lý khi người chơi đánh nhau trong khu vực cấm
 RegisterNetEvent('diemuytin:combatInForbiddenZone', function(zoneName, victimServerId)
     local source = source
+    victimServerId = tonumber(victimServerId)
+    zoneName = type(zoneName) == 'string' and zoneName:sub(1, 64) or nil
     local zoneNameDisplay = zoneName or "Khu vực cấm"
     
     -- KIỂM TRA BUCKET - CHỈ TRỪ ĐIỂM Ở BUCKET 0
@@ -663,6 +723,7 @@ end)
 -- Event xử lý khi người chơi đâm xe vào người khác
 RegisterNetEvent('diemuytin:vehicleRamming', function(victimServerId)
     local source = source
+    victimServerId = tonumber(victimServerId)
     
     -- KIỂM TRA BUCKET - CHỈ TRỪ ĐIỂM Ở BUCKET 0
     local playerBucket = GetPlayerRoutingBucket(source)
@@ -720,8 +781,12 @@ RegisterNetEvent('diemuytin:vehicleRamming', function(victimServerId)
 end)
 
 -- Event nhận URL screenshot từ đâm xe và gửi Discord B
-RegisterNetEvent('diemuytin:sendScreenshotUrl', function(screenshotUrl, victimServerId)
+RegisterNetEvent('diemuytin:sendScreenshotUrl', function(screenshotUrl, victimServerId, damage)
     local source = source
+    -- Kiểm tra lại ngưỡng ở server, không tin hoàn toàn client
+    if (tonumber(damage) or 0) <= (Config.ReputationSystem.vehicleRammingDetection.logMinDamage or 2) then return end
+    if not acceptScreenshotUrl(source, screenshotUrl) then return end
+    victimServerId = tonumber(victimServerId)
     
     -- LƯU URL để dùng cho prison log
     playerScreenshotUrls[source] = screenshotUrl
@@ -739,8 +804,8 @@ RegisterNetEvent('diemuytin:sendScreenshotUrl', function(screenshotUrl, victimSe
         end
     end
     
-    -- CHỈ GỬI DISCORD B nếu server đã thực sự trừ điểm
-    if isApplied and Config.DiscordWebhook.enabled and Config.DiscordWebhook.prisonDetailedURL and screenshotUrl then
+    -- Luôn gửi log đâm xe (kể cả khi chưa đủ sát thương để bị trừ điểm)
+    if Config.DiscordWebhook.enabled and Config.DiscordWebhook.prisonDetailedURL and screenshotUrl then
         local player = QBX:GetPlayer(source)
         if player then
             local citizenid = player.PlayerData.citizenid
@@ -750,7 +815,8 @@ RegisterNetEvent('diemuytin:sendScreenshotUrl', function(screenshotUrl, victimSe
             
             local fields = {
                 { ['name'] = '👤 Người vi phạm (Đâm xe)', ['value'] = string.format('**Tên**: %s\n**Citizen ID**: `%s`\n**Player ID**: `%d`\n**Uy tín hiện tại**: `%d/100`', charName, citizenid, source, currentRep), ['inline'] = false },
-                { ['name'] = '🔑 License', ['value'] = '`' .. license .. '`', ['inline'] = true }
+                { ['name'] = '🔑 License', ['value'] = '`' .. license .. '`', ['inline'] = true },
+                { ['name'] = '💥 Sát thương gây ra', ['value'] = '`' .. tostring(tonumber(damage) or 'N/A') .. '`', ['inline'] = true }
             }
             
             if targetVictim then
@@ -775,7 +841,7 @@ RegisterNetEvent('diemuytin:sendScreenshotUrl', function(screenshotUrl, victimSe
             
             local embed = {
                 {
-                    ['title'] = '🚗 VI PHẠM ĐÂM XE',
+                    ['title'] = isApplied and '🚗 VI PHẠM ĐÂM XE' or '🚗 ĐÂM XE (CHƯA ĐỦ SÁT THƯƠNG - KHÔNG TRỪ ĐIỂM)',
                     ['color'] = 16744192,
                     ['fields'] = fields,
                     ['image'] = { ['url'] = screenshotUrl },
@@ -789,13 +855,18 @@ RegisterNetEvent('diemuytin:sendScreenshotUrl', function(screenshotUrl, victimSe
         end
         
         -- Xóa flag sau khi gửi xong
-        playerPenaltyApplied[source] = nil
+        if isApplied then
+            playerPenaltyApplied[source] = nil
+        end
     end
 end)
 
 -- Event nhận URL screenshot từ combat và gửi Discord B
 RegisterNetEvent('diemuytin:sendCombatScreenshotUrl', function(screenshotUrl, victimServerId, zoneName)
     local source = source
+    if not acceptScreenshotUrl(source, screenshotUrl) then return end
+    victimServerId = tonumber(victimServerId)
+    zoneName = type(zoneName) == 'string' and zoneName:sub(1, 64) or nil
     
     -- LƯU URL để dùng cho prison log
     playerScreenshotUrls[source] = screenshotUrl
@@ -875,6 +946,10 @@ end)
 -- Event nhận link screenshot từ client (cho prison)
 RegisterNetEvent('diemuytin:sendScreenshotForPrison', function(screenshotUrl)
     local source = source
+    if not acceptScreenshotUrl(source, screenshotUrl, true) then
+        playerScreenshotUrls[source] = nil
+        return
+    end
     
     -- Lưu URL vào bảng
     playerScreenshotUrls[source] = screenshotUrl

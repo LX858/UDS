@@ -29,6 +29,103 @@ local function NotifyPlayer(src, message, notifyType, duration)
 	exports.qbx_core:Notify(src, message, notifyType or 'info', duration or 5000)
 end
 
+-- ============================================================
+-- GANG COOLDOWN (ZERO-LOOP O(1) IN-MEMORY + SQL PERSISTENCE)
+-- ============================================================
+local GangCooldownCache = {}
+
+local function GetConfigCooldownSeconds()
+	if not Config or not Config.GangCooldown or Config.GangCooldown.enabled == false then
+		return 0
+	end
+	local days = tonumber(Config.GangCooldown.days) or 0
+	local hours = tonumber(Config.GangCooldown.hours) or 0
+	local minutes = tonumber(Config.GangCooldown.minutes) or 0
+	local totalSec = (days * 86400) + (hours * 3600) + (minutes * 60)
+	if totalSec <= 0 and (Config.GangCooldown.enabled == nil or Config.GangCooldown.enabled == true) then
+		totalSec = 3 * 86400 -- Mặc định 3 ngày nếu chưa cấu hình
+	end
+	return totalSec
+end
+
+local function FormatRemaining(sec)
+	if not sec or sec <= 0 then return "0 giây" end
+	local d = math.floor(sec / 86400)
+	local h = math.floor((sec % 86400) / 3600)
+	local m = math.floor((sec % 3600) / 60)
+	local s = sec % 60
+	if d > 0 then
+		return ("%d ngày %d giờ %d phút"):format(d, h, m)
+	elseif h > 0 then
+		return ("%d giờ %d phút"):format(h, m)
+	elseif m > 0 then
+		return ("%d phút %d giây"):format(m, s)
+	else
+		return ("%d giây"):format(s)
+	end
+end
+
+local function GetKickCooldownRemaining(citizenid)
+	if not citizenid then return 0 end
+	if Config and Config.GangCooldown and Config.GangCooldown.enabled == false then
+		return 0
+	end
+
+	local now = os.time()
+	local expires = GangCooldownCache[citizenid]
+
+	if not expires then
+		local dbExpires = MySQL.scalar.await('SELECT `expires_at` FROM `xn_gang_kick_cooldown` WHERE `citizenid` = ? LIMIT 1', { citizenid })
+		if dbExpires then
+			expires = tonumber(dbExpires)
+			GangCooldownCache[citizenid] = expires
+		end
+	end
+
+	if not expires then return 0 end
+
+	local remain = expires - now
+	if remain <= 0 then
+		-- Đã hết thời gian chờ: tự động dọn rác bộ nhớ RAM và SQL bất đồng bộ (Zero-loop, 0ms lag)
+		GangCooldownCache[citizenid] = nil
+		MySQL.query('DELETE FROM `xn_gang_kick_cooldown` WHERE `citizenid` = ?', { citizenid })
+		return 0
+	end
+
+	return remain
+end
+
+local function SetPlayerCooldown(citizenid, gangName)
+	local cooldownSec = GetConfigCooldownSeconds()
+	if cooldownSec <= 0 then return end
+
+	local expiresAt = os.time() + cooldownSec
+	GangCooldownCache[citizenid] = expiresAt
+
+	MySQL.insert.await(
+		'INSERT INTO `xn_gang_kick_cooldown` (`citizenid`, `gang_name`, `expires_at`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `gang_name` = VALUES(`gang_name`), `expires_at` = VALUES(`expires_at`)',
+		{ citizenid, gangName or 'none', expiresAt }
+	)
+end
+
+local function RemovePlayerCooldown(citizenid)
+	if not citizenid then return end
+	GangCooldownCache[citizenid] = nil
+	MySQL.query('DELETE FROM `xn_gang_kick_cooldown` WHERE `citizenid` = ?', { citizenid })
+end
+
+local function comma_valueGang(amount)
+	local formatted = tostring(amount or 0)
+	while true do
+		local k
+		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+		if (k == 0) then
+			break
+		end
+	end
+	return formatted
+end
+
 function GetGangAccount(account)
 	return GangAccounts[account] or 0
 end
@@ -91,8 +188,16 @@ local function GangLikePattern(gangName)
 	return '%"' .. gangName .. '"%'
 end
 
--- Khởi tạo bảng xn_gang_inventory và xn_gang_welfare_claims tự động khi server khởi động
+-- Khởi tạo các bảng cơ sở dữ liệu tự động khi server khởi động nếu chưa tồn tại
 MySQL.ready(function()
+	MySQL.query([[
+		CREATE TABLE IF NOT EXISTS `xn_gang_kick_cooldown` (
+			`citizenid` VARCHAR(50) NOT NULL,
+			`gang_name` VARCHAR(50) NOT NULL,
+			`expires_at` BIGINT NOT NULL,
+			PRIMARY KEY (`citizenid`)
+		);
+	]])
 	MySQL.query([[
 		CREATE TABLE IF NOT EXISTS `xn_gang_inventory` (
 			`id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -1283,10 +1388,16 @@ RegisterNetEvent('xn_gang:server:thoatgang', function()
 	else
 		local gangName = Player.PlayerData.gang.name
 		if gangName and gangName ~= 'none' then
+			SetPlayerCooldown(Player.PlayerData.citizenid, gangName)
 			exports.qbx_core:RemovePlayerFromGang(Player.PlayerData.citizenid, gangName)
 		end
 		Player.Functions.SetGang('none', 0)
-		NotifyPlayer(src, "Bạn đã rời khỏi Xã đoàn!", "error")
+		local coolSec = GetConfigCooldownSeconds()
+		if coolSec > 0 then
+			NotifyPlayer(src, "Bạn đã rời khỏi Xã đoàn! Bạn phải chờ " .. FormatRemaining(coolSec) .. " mới có thể gia nhập Xã đoàn mới.", "error", 8000)
+		else
+			NotifyPlayer(src, "Bạn đã rời khỏi Xã đoàn!", "success")
+		end
 	end
 end)
 
@@ -1329,10 +1440,17 @@ RegisterNetEvent('xn_gangmenu:server:FireMember', function(target)
 			end
 		end
 
+		SetPlayerCooldown(target, currentGangName)
+
 		exports.qbx_core:RemovePlayerFromGang(target, currentGangName)
 		if Employee then
 			Employee.Functions.SetGang('none', 0)
-			NotifyPlayer(Employee.PlayerData.source, "Bạn đã bị khai trừ khỏi Xã đoàn!", "error")
+			local coolSec = GetConfigCooldownSeconds()
+			if coolSec > 0 then
+				NotifyPlayer(Employee.PlayerData.source, "Bạn đã bị khai trừ khỏi Xã đoàn! Bạn phải chờ " .. FormatRemaining(coolSec) .. " mới có thể gia nhập Xã đoàn mới.", "error", 8000)
+			else
+				NotifyPlayer(Employee.PlayerData.source, "Bạn đã bị khai trừ khỏi Xã đoàn!", "error")
+			end
 		end
 		NotifyPlayer(src, "Đã khai trừ thành viên khỏi xã đoàn!", "success")
 		--TriggerEvent('qb-log:server:CreateLog', 'gangmenu', 'Gang Fire', 'orange', Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname .. ' successfully fired ' .. target .. " (" .. currentGangName .. ")", false)
@@ -1351,6 +1469,13 @@ RegisterNetEvent('xn_gangmenu:server:HireMember', function(recruit)
 
 	if Target ~= nil and Player ~= nil then
 		if Target.PlayerData.gang.name == "none" then
+			local remain = GetKickCooldownRemaining(Target.PlayerData.citizenid)
+			if remain > 0 then
+				local timeStr = FormatRemaining(remain)
+				NotifyPlayer(src, "Người chơi này vừa rời/bị khai trừ khỏi xã đoàn, còn " .. timeStr .. " mới được vào lại Xã đoàn!", "error")
+				NotifyPlayer(Target.PlayerData.source, "Bạn đang trong thời gian chờ sau khi rời xã đoàn, còn " .. timeStr .. " nữa mới có thể gia nhập Xã đoàn mới!", "error")
+				return
+			end
 			local callerGrade = (Player.PlayerData.gang.grade and Player.PlayerData.gang.grade.level) or 0
 			local canHire = Player.PlayerData.gang.isboss or callerGrade >= 2
 			if canHire then
@@ -1361,6 +1486,7 @@ RegisterNetEvent('xn_gangmenu:server:HireMember', function(recruit)
 				if result and result[1] ~= nil then
 					if memberCount < result[1].so_member then
 						if Target.Functions.SetGang(gangName, 0) then
+							RemovePlayerCooldown(Target.PlayerData.citizenid)
 							local allGangs = exports.qbx_core:GetGangs()
 							local gradeInfo = allGangs[gangName] and allGangs[gangName].grades and (allGangs[gangName].grades['0'] or allGangs[gangName].grades[0])
 							NotifyPlayer(src, "Bạn đã mời " .. (Target.PlayerData.charinfo.firstname .. ' ' .. Target.PlayerData.charinfo.lastname) .. " vào " .. Player.PlayerData.gang.label, "success")
@@ -1510,18 +1636,6 @@ MySQL.ready(function()
 	]])
 end)
 
-local function comma_valueGang(amount)
-	local formatted = tostring(amount or 0)
-	while true do
-		local k
-		formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
-		if (k == 0) then
-			break
-		end
-	end
-	return formatted
-end
-
 local function SendGangDiscordWebhook(title, description, color, fields)
 	local webhook = Config.DiscordWebhook
 	if not webhook or webhook == "" or webhook:sub(1, 4) ~= "http" then return end
@@ -1597,6 +1711,11 @@ lib.callback.register('xn_gangmenu:server:SubmitGangRequest', function(source, d
 	if Player.PlayerData.gang.name ~= "none" then
 		local currentGangLabel = Player.PlayerData.gang.label or Player.PlayerData.gang.name
 		return { success = false, message = "Bạn hiện đang là thành viên của xã đoàn [" .. currentGangLabel .. "]. Hãy rời xã đoàn cũ trước khi thành lập xã đoàn mới!" }
+	end
+
+	local remain = GetKickCooldownRemaining(Player.PlayerData.citizenid)
+	if remain > 0 then
+		return { success = false, message = "Bạn vừa rời/bị khai trừ khỏi xã đoàn, còn " .. FormatRemaining(remain) .. " nữa mới có thể đăng ký thành lập xã đoàn mới!" }
 	end
 
 	local existing = MySQL.query.await("SELECT `id`, `gang_label` FROM `xn_gang_requests` WHERE `citizenid` = ? AND `status` = 'pending' LIMIT 1", { Player.PlayerData.citizenid })
@@ -1695,6 +1814,11 @@ lib.callback.register('xn_gangmenu:server:ClaimApprovedGang', function(source)
 
 	if not result or not result[1] then
 		return { success = false, message = "Không tìm thấy đơn đăng ký hợp lệ nào đã được phê duyệt!" }
+	end
+
+	local remain = GetKickCooldownRemaining(Player.PlayerData.citizenid)
+	if remain > 0 then
+		return { success = false, message = "Bạn vừa rời/bị khai trừ khỏi xã đoàn, còn " .. FormatRemaining(remain) .. " mới được vào lại!" }
 	end
 
 	local req = result[1]
@@ -1934,6 +2058,7 @@ lib.addCommand('removegang', {
 	targetPlayer.Functions.SetGang('none', 0)
 
 	MySQL.update("UPDATE `players` SET `conghien` = 0, `tien_conghien` = 0 WHERE `citizenid` = ?", { citizenid })
+	RemovePlayerCooldown(citizenid)
 
 	local targetName = (targetPlayer.PlayerData.charinfo and (targetPlayer.PlayerData.charinfo.firstname .. " " .. targetPlayer.PlayerData.charinfo.lastname)) or citizenid
 
@@ -1945,4 +2070,26 @@ lib.addCommand('removegang', {
 
 	NotifyPlayer(targetPlayer.PlayerData.source, "Bạn đã được quản trị viên xóa khỏi Gang / Xã đoàn!", "info")
 	--TriggerEvent('qb-log:server:CreateLog', 'gangmenu', 'Admin Remove Gang', 'red', 'Admin đã xóa gang của ' .. targetName .. ' (' .. citizenid .. ')', false)
+end)
+
+-- Lệnh kiểm tra thời gian đếm ngược (countdown) cho người chơi (Không vòng lặp, truy xuất tức thì O(1))
+lib.addCommand({'gangcooldown', 'thoigiangang'}, {
+	help = 'Kiểm tra thời gian đếm ngược còn lại để vào lại Xã đoàn / Gang',
+	params = {},
+}, function(source, args)
+	local Player = GetPlayer(source)
+	if not Player then return end
+
+	local citizenid = Player.PlayerData.citizenid
+	if Player.PlayerData.gang and Player.PlayerData.gang.name and Player.PlayerData.gang.name ~= 'none' then
+		NotifyPlayer(source, "Bạn hiện đang ở trong Xã đoàn [" .. (Player.PlayerData.gang.label or Player.PlayerData.gang.name) .. "].", "info")
+		return
+	end
+
+	local remain = GetKickCooldownRemaining(citizenid)
+	if remain > 0 then
+		NotifyPlayer(source, "Thời gian chờ gia nhập Xã đoàn của bạn còn lại: " .. FormatRemaining(remain), "error", 8000)
+	else
+		NotifyPlayer(source, "Bạn không có thời gian chờ! Bạn có thể tự do gia nhập hoặc thành lập Xã đoàn mới ngay bây giờ.", "success", 7000)
+	end
 end)

@@ -156,8 +156,8 @@ function CanStealPlant(thiefPid, plantId)
     local zoneId = GetZoneIdFromCoords(plantCoords)
     
     if zoneId then
-        local hasPermission = CheckFarmPermission(thiefPid, zoneId)
-        if hasPermission then
+        local hasPermission, permissionType = CheckFarmPermission(thiefPid, zoneId)
+        if hasPermission or permissionType == 'locked' then
             return false
         end
     end
@@ -219,7 +219,11 @@ AddEventHandler('xx_farming:plantSeed', function(coords, zoneId, cropType)
     
     local hasPermission, permissionType = CheckFarmPermission(playerId, zoneId)
     if not hasPermission then
-        TriggerClientEvent('QBCore:Notify', src, string.format('Bạn cần thuê ruộng #%d hoặc được chia sẻ quyền trước khi trồng cây!', zoneId), 'error')
+        if permissionType == 'locked' then
+            ZoneCapture.NotifyLocked(src, zoneId)
+        else
+            TriggerClientEvent('QBCore:Notify', src, string.format('Bạn cần thuê ruộng #%d hoặc được chia sẻ quyền trước khi trồng cây!', zoneId), 'error')
+        end
         return
     end
 
@@ -297,6 +301,11 @@ lib.callback.register('xx_farming:removePlant', function(source, pId)
     pId = tonumber(pId)
     local plant = Plants[pId]
     if not plant then return false end
+
+    if ZoneCapture.IsLockedForSource(source, plant.zone_id) then
+        ZoneCapture.NotifyLocked(source, plant.zone_id)
+        return false
+    end
     
     deletePlantFromMemory(pId)
     MySQL.update('DELETE FROM tomato_db WHERE id = ?', { pId })
@@ -324,24 +333,6 @@ local function CheckHarvestEventReward(src)
 end
 
 -- ==================== KIỂM TRA GANG KHU VỰC 13 ====================
-local function GetGangName(playerData)
-    local gang = playerData and playerData.gang
-    local gangName = gang and gang.name
-    if gangName == nil then return nil end
-
-    gangName = string.lower(tostring(gangName)):gsub('%s+', '')
-    if gangName == ''
-        or gangName == 'none'
-        or gangName == 'nogang'
-        or gangName == 'no_gang'
-        or gangName == 'unaffiliated'
-        or gangName == 'civilian' then
-        return nil
-    end
-
-    return gangName
-end
-
 local function HasMultipleGangsNearPlayer(src, radius)
     local sourcePed = GetPlayerPed(src)
     if sourcePed == 0 then return false end
@@ -399,9 +390,13 @@ lib.callback.register('xx_farming:harvestPlant', function(source, pId)
     local zoneId = GetZoneIdFromCoords(plantCoords)
     
     if zoneId then
-        local hasPermission = CheckFarmPermission(playerId, zoneId)
+        local hasPermission, permissionType = CheckFarmPermission(playerId, zoneId)
         if not hasPermission then
-            TriggerClientEvent('QBCore:Notify', src, 'Bạn không có quyền thu hoạch trên ruộng này hoặc thời gian thuê đã hết!', "error")
+            if permissionType == 'locked' then
+                ZoneCapture.NotifyLocked(src, zoneId)
+            else
+                TriggerClientEvent('QBCore:Notify', src, 'Bạn không có quyền thu hoạch trên ruộng này hoặc thời gian thuê đã hết!', "error")
+            end
             return false
         end
     else
@@ -410,7 +405,7 @@ lib.callback.register('xx_farming:harvestPlant', function(source, pId)
     end
 
     if zoneId == 13 and HasMultipleGangsNearPlayer(src, 100.0) then
-        TriggerClientEvent('QBCore:Notify', src, 'Không thể thu hoạch khi có nhiều gang trong khu vực!', 'error')
+        TriggerClientEvent('QBCore:Notify', src, 'Không thể thu hoạch khi có nhiều xã đoàn trong khu vực!', 'error')
         return false
     end
     
@@ -778,6 +773,11 @@ lib.callback.register('xx_farming:addbugs', function(source, plantId, cropType)
     local plant = Plants[plantId]
     if not plant then return false end
 
+    if ZoneCapture.IsLockedForSource(src, plant.zone_id) then
+        ZoneCapture.NotifyLocked(src, plant.zone_id)
+        return false
+    end
+
     if not ox:RemoveItem(src, bugsItem, 1) then
         TriggerClientEvent('QBCore:Notify', src, 'Bạn không có vật phẩm sâu bệnh!', 'error')
         return false
@@ -821,6 +821,11 @@ lib.callback.register('xx_farming:applyPesticide', function(source, plantId, pes
     local plant = Plants[plantId]
     if not plant then return false end
 
+    if ZoneCapture.IsLockedForSource(src, plant.zone_id) then
+        ZoneCapture.NotifyLocked(src, plant.zone_id)
+        return false
+    end
+
     if not ox:RemoveItem(src, pesticideType, 1) then
         TriggerClientEvent('QBCore:Notify', src, 'Bạn không có ' .. treatConf.label .. '!', 'error')
         return false
@@ -855,6 +860,11 @@ lib.callback.register('xx_farming:addFertilizerk', function(source, key, fertTyp
     key = tonumber(key)
     local plant = Plants[key]
     if not plant then return false end
+
+    if ZoneCapture.IsLockedForSource(src, plant.zone_id) then
+        ZoneCapture.NotifyLocked(src, plant.zone_id)
+        return false
+    end
     
     local cropConf = (CropTypes and plant.crop_type and CropTypes[plant.crop_type]) or Melons
     local waterItem = cropConf.WaterItem or Melons.WaterItem or 'xo_co_nuoc'
@@ -1218,7 +1228,8 @@ lib.callback.register('xx_farming:checkPlantingPermission', function(source, coo
     if not hasPermission then
         return { 
             canPlant = false, 
-            message = string.format("Bạn cần thuê ruộng #%d hoặc được chia sẻ quyền trước khi trồng cây!", zoneId)
+            message = permissionType == 'locked' and ZoneCapture.GetLockMessage(zoneId)
+                or string.format("Bạn cần thuê ruộng #%d hoặc được chia sẻ quyền trước khi trồng cây!", zoneId)
         }
     end
     
@@ -1246,7 +1257,8 @@ lib.callback.register('xx_farming:checkPlantingPermissionByZone', function(sourc
     if not hasPermission then
         return { 
             canPlant = false, 
-            message = string.format("Bạn cần thuê ruộng #%d hoặc được chia sẻ quyền trước khi trồng cây!", zoneId)
+            message = permissionType == 'locked' and ZoneCapture.GetLockMessage(zoneId)
+                or string.format("Bạn cần thuê ruộng #%d hoặc được chia sẻ quyền trước khi trồng cây!", zoneId)
         }
     end
     
@@ -1266,9 +1278,13 @@ lib.callback.register('xx_farming:checkPlantPermissionByCoords', function(source
     
     local pid = xPlayer.PlayerData.pid or xPlayer.PlayerData.citizenid
     local zoneId = GetZoneIdFromCoords(plantCoords)
-    local hasPermission = false
+    local hasPermission, permissionType = false, nil
     if zoneId then
-        hasPermission = CheckFarmPermission(pid, zoneId)
+        hasPermission, permissionType = CheckFarmPermission(pid, zoneId)
+    end
+
+    if permissionType == 'locked' then
+        return { canInteract = false, canSteal = false, zoneId = zoneId, hasPermission = false, isOwner = false }
     end
     
     local isOwner = (plantOwner == pid)

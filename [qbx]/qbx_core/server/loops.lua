@@ -65,6 +65,36 @@ local function measurePaycheck(stage, fn, ...)
 end
 exports('GetPaycheckProfile', function() return paycheckProfile end)
 
+---@param player Player
+---@return table dutyPay bộ đếm lương của ngày hiện tại
+local function getDutyPay(player)
+    local today = os.date('%Y-%m-%d')
+    local dutyPay = player.PlayerData.metadata.dutypay
+    if type(dutyPay) ~= 'table' or dutyPay.day ~= today then
+        dutyPay = { day = today, count = 0, minutes = 0 }
+    end
+    return dutyPay
+end
+
+---@param player Player
+---@return boolean
+local function hasReachedDailyPayLimit(player)
+    local maxCount = config.money.paycheckMaxCountPerDay or 0
+    local maxMinutes = config.money.paycheckMaxMinutesPerDay or 0
+    local dutyPay = getDutyPay(player)
+    if maxCount > 0 and dutyPay.count + 1 > maxCount then return true end
+    if maxMinutes > 0 and dutyPay.minutes + config.money.paycheckTimeout > maxMinutes then return true end
+    return false
+end
+
+---@param player Player
+local function recordDutyPay(player)
+    local dutyPay = getDutyPay(player)
+    dutyPay.count += 1
+    dutyPay.minutes += config.money.paycheckTimeout
+    player.Functions.SetMetaData('dutypay', dutyPay)
+end
+
 local function runPaychecks()
     local eligible = {}
     local totalPayment = 0
@@ -80,7 +110,7 @@ local function runPaychecks()
                     local payment = (jobConfig.grades and jobConfig.grades[gradeLevel] and jobConfig.grades[gradeLevel].payment) or job.payment or 0
                     local isOffDutyPay = jobConfig.offDutyPay or false
                     local isOnDuty = (job.onduty == true or job.onduty == 1)
-                    if payment > 0 and (isOffDutyPay or isOnDuty) then
+                    if payment > 0 and (isOffDutyPay or isOnDuty) and not hasReachedDailyPayLimit(player) then
                         eligible[#eligible + 1] = {
                             source = src,
                             player = player,
@@ -122,7 +152,9 @@ local function runPaychecks()
             end
             return
         end
-        print(('[QBX Paycheck] Đã trừ $%s từ tài khoản %s để chi trả lương cho %d nhân viên'):format(totalPayment, accountName, #eligible))
+        if GetConvarInt('qbx:profilePaychecks', 0) == 1 then
+            print(('[QBX Paycheck] Đã trừ $%s từ tài khoản %s để chi trả lương cho %d nhân viên'):format(totalPayment, accountName, #eligible))
+        end
     end
 
     -- Bước 3: Phát tiền cho từng người chơi với Wait(50) phân tán tải mạng
@@ -130,6 +162,7 @@ local function runPaychecks()
         local item = eligible[i]
         if QBX.Players[item.source] == item.player then
             measurePaycheck('payment', config.sendPaycheck, item.player, item.payment)
+            recordDutyPay(item.player)
             Wait(50)
         end
     end

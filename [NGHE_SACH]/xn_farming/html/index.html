@@ -8,18 +8,6 @@
     <link rel="stylesheet" crossorigin href="./assets/index.css">
   </head>
   <body>
-    <div id="root"></div>
-    <script>
-      window.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape') return;
-        const closeButton = document.querySelector('.close-btn');
-        if (closeButton) {
-          closeButton.click();
-          return;
-        }
-        const resource = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'xn_farming';
-        fetch(`https://${resource}/closeMenu`, { method: 'POST', body: '{}' }).catch(() => {});
-      });
-    </script>
+    <div id="root"></div>
   </body>
 </html>

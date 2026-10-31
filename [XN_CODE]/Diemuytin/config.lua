@@ -55,7 +55,7 @@ Config.ReputationSystem = {
         {
             name = "Bệnh viện Pillbox",
             coords = vector3(352.5245, -1407.5192, 32.5110),
-            radius = 150.0 -- bán kính 75 mét
+            radius = 200.0 -- bán kính 75 mét
         },
         {
             name = "Cardealer Thành phố",
@@ -304,7 +304,7 @@ Config.ReputationSystem = {
         {
             name = "Quán Bar Sài Gòn Đà Nẵng",
             coords = vector3(381.4493, -342.4826, 47.4023),
-            radius = 50.0
+            radius = 150.0
         }
 
         -- Có thể thêm nhiều khu vực khác tại đây
@@ -346,7 +346,8 @@ Config.ReputationSystem = {
         detectionDistance = 2.5, -- Khoảng cách phát hiện va chạm (mét)
         checkInterval = 100,     -- Kiểm tra mỗi bao nhiêu ms
         cooldownMs = 3000,       -- Cooldown giữa các lần phát hiện (ms)
-        minDamage = 10,          -- Sát thương tối thiểu (> 15 máu) mới bị trừ uy tín
+        minDamage = 10,          -- Sát thương tối thiểu (> giá trị này) mới bị trừ uy tín
+        logMinDamage = 2,        -- Sát thương tối thiểu (> giá trị này) mới chụp ảnh + gửi log CRM
 
         -- Các loại xe bị bỏ qua (không trừ điểm khi lái)
         -- Sử dụng tên model xe (string), ví dụ: 'dodo', 'lazer', 'hydra'

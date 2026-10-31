@@ -129,7 +129,7 @@ Config.Coords = {
     { x = 72.3, y = -1399.1, z = 28.4, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = -703.8, y = -152.3, z = 36.4, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = -167.9, y = -299.0, z = 38.7, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
-    { x = 428.7, y = -800.1, z = 28.5, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
+    -- { x = 428.7, y = -800.1, z = 28.5, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = -829.4, y = -1073.7, z = 10.3, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = -1447.8, y = -242.5, z = 48.8, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = 11.6, y = 6514.2, z = 30.9, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "shoes", "decal"} },
@@ -142,6 +142,21 @@ Config.Coords = {
     { x = -1108.4, y = 2708.9, z = 18.1, blips = true, BlipsName = "Cửa hàng quần áo", blipsid = 73, blipcolor = 47, category = { "shirt", "torso", "gloves", "earrings", "bag", "vest", "pants", "shoes", "hat"} },
     { x = -1337.459351, y = -1277.657104, z = 4.064502, blips = true, BlipsName = "Cửa hàng mặt nạ", blipsid = 362, blipcolor = 0, category = { "mask" } }
 
+}
+
+-- =====================================================
+-- CẤU HÌNH CỬA HÀNG / SHOWROOM XEM ĐỒ HIẾM (CHỈ XEM, KHÔNG BÁN)
+-- Lấy toàn bộ danh sách trang phục có độ hiếm từ SQLx = 72.3, y = -1399.1, z = 28.4
+-- =====================================================
+Config.RarityViewShop = {
+    Enabled = true,
+    Title = "SHOWROOM ĐỒ HIẾM",
+    Coords = vector3(428.7, -800.1, 28.5),   -- Tọa độ đặt Showroom trên bản đồ
+    BlipsName = "Showroom Đồ Hiếm",
+    BlipsId = 617,                            -- Icon kim cương đồ hiếm
+    BlipColor = 5,                            -- Màu vàng gold
+    DrawText = "Mở Showroom Đồ Hiếm",
+    Command = "viewdohiem"                    -- Lệnh /viewdohiem hoặc /showroom
 }
 
 Config.ShowNotificationHelpMessage = "Nhấn ~INPUT_CONTEXT~ để thay đổi trang phục"

@@ -981,16 +981,16 @@ exports['monitors']:RegisterProtectedEvent('xn-sellitem:cfx:action', function(pl
         local playerCoords = GetEntityCoords(GetPlayerPed(playerId))
         local locationName = GetLocationName(playerCoords)
         
-        -- lib.logger(playerId, 'Chợ đầu mối', string.format(
-        --     'Người chơi: %s %s (%s) | Tại vị trí: %s | Đã bán vật phẩm: %s x%d | Với giá: $%d',
-        --     xPlayer.PlayerData.charinfo.firstname,
-        --     xPlayer.PlayerData.charinfo.lastname,
-        --     xPlayer.PlayerData.pid,
-        --     locationName,
-        --     itemTarget.label,
-        --     amount,
-        --     totalPrice
-        -- ))
+        lib.logger(playerId, 'Chợ đầu mối', string.format(
+            'Người chơi: %s %s (%s) | Tại vị trí: %s | Đã bán vật phẩm: %s x%d | Với giá: $%d',
+            xPlayer.PlayerData.charinfo.firstname,
+            xPlayer.PlayerData.charinfo.lastname,
+            xPlayer.PlayerData.pid,
+            locationName,
+            itemTarget.label,
+            amount,
+            totalPrice
+        ))
         -- print(string.format('^2[SELLITEM LOG]^7 %s %s bán %s x%d tại %s với giá $%d',
         --     xPlayer.PlayerData.charinfo.firstname,
         --     xPlayer.PlayerData.charinfo.lastname,

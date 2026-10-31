@@ -40,6 +40,11 @@ end
 ---Spawn police object.
 ---@param item string name from `config/shared.lua`
 RegisterNetEvent('police:client:spawnPObj', function(item)
+    if type(item) == 'table' then
+        item = item.parameters or item.item or item[1] or item.type
+    end
+    if not item or not sharedConfig.objects[item] then return end
+
     if QBX.PlayerData.job.type ~= 'leo' or not QBX.PlayerData.job.onduty then return end
 
     if cache.vehicle then return exports.qbx_core:Notify(locale('error.in_vehicle'), 'error') end
@@ -319,4 +324,97 @@ AddEventHandler('onResourceStop', function (resource)
     if isOpen and text == locale('info.delete_spike') then
         lib.hideTextUI()
     end
+end)
+
+
+local function removePoliceObject(entity)
+    if not DoesEntityExist(entity) or not NetworkGetEntityIsNetworked(entity) then return end
+    local netId = NetworkGetNetworkIdFromEntity(entity)
+    if not netId or netId == 0 then return end
+
+    local isSpike = false
+    local spikeStrips = GlobalState.spikeStrips or {}
+    for i = 1, #spikeStrips do
+        if spikeStrips[i] == netId then
+            isSpike = true
+            break
+        end
+    end
+
+    if lib.progressBar({
+        duration = 2500,
+        label = locale('progressbar.remove_object') or 'Đang thu dọn vật thể...',
+        useWhileDead = false,
+        canCancel = true,
+        disable = {
+            car = true,
+            move = true,
+            combat = true,
+            mouse = false
+        },
+        anim = {
+            dict = 'weapons@first_person@aim_rng@generic@projectile@thermal_charge@',
+            clip = 'plant_floor'
+        }
+    }) then
+        if isSpike then
+            TriggerServerEvent('police:server:despawnSpikeStrip', netId)
+        else
+            TriggerServerEvent('police:server:despawnObject', netId)
+        end
+    else
+        exports.qbx_core:Notify(locale('error.canceled'), 'error')
+    end
+end
+
+local function setupObjectTargets()
+    local targetModels = {}
+    for _, v in pairs(sharedConfig.objects) do
+        targetModels[#targetModels + 1] = v.model
+    end
+    targetModels[#targetModels + 1] = `P_ld_stinger_s`
+
+    exports.ox_target:addModel(targetModels, {
+        {
+            name = 'police_delete_object',
+            icon = 'fas fa-trash-can',
+            label = 'Thu dọn vật thể',
+            distance = 2.5,
+            canInteract = function(entity, distance, coords, name, bone)
+                if not LocalPlayer.state.isLoggedIn then return false end
+                if QBX.PlayerData.job.type ~= 'leo' or not QBX.PlayerData.job.onduty then return false end
+                if cache.vehicle then return false end
+                if not DoesEntityExist(entity) or not NetworkGetEntityIsNetworked(entity) then return false end
+
+                local netId = NetworkGetNetworkIdFromEntity(entity)
+                if not netId or netId == 0 then return false end
+
+                local policeObjects = GlobalState.policeObjects or {}
+                for i = 1, #policeObjects do
+                    if policeObjects[i] == netId then
+                        return true
+                    end
+                end
+
+                local spikeStrips = GlobalState.spikeStrips or {}
+                for i = 1, #spikeStrips do
+                    if spikeStrips[i] == netId then
+                        return true
+                    end
+                end
+
+                return false
+            end,
+            onSelect = function(data)
+                removePoliceObject(data.entity)
+            end
+        }
+    })
+end
+
+CreateThread(function()
+    while GetResourceState('ox_target') ~= 'started' do
+        Wait(500)
+    end
+    setupObjectTargets()
 end)

@@ -13,7 +13,12 @@ local DisableControlAction = DisableControlAction
 local GetVehicleClass = GetVehicleClass
 local IsPedInAnyHeli = IsPedInAnyHeli
 local IsPedInAnyPlane = IsPedInAnyPlane
-local PlaySoundFromEntity = PlaySoundFromEntity
+local _PlaySoundFromEntity = PlaySoundFromEntity
+local PlaySoundFromEntity = function(...)
+    print(...)
+    return _PlaySoundFromEntity(...)
+
+end
 local GetSoundId = GetSoundId
 local DoesEntityExist = DoesEntityExist
 local IsEntityDead = IsEntityDead

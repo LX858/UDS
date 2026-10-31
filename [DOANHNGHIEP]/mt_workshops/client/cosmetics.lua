@@ -7,6 +7,7 @@ end
 local function getRequiredItemForMod(modData)
     local item = ''
     local money = 0
+    local count = 1
     if modData.isPaint then
         if modData.id == 'pearl' or modData.id == 'wheels' then
             if isChameleonColor(modData.value) then
@@ -26,6 +27,7 @@ local function getRequiredItemForMod(modData)
         for _, mcv in pairs(Config.cosmetics) do
             if mcv.item == item then
                 money = mcv.money or 0
+                count = mcv.count or 1
                 break
             end
         end
@@ -34,13 +36,14 @@ local function getRequiredItemForMod(modData)
             if tonumber(modData.id) == mcv.value or tostring(modData.id) == tostring(mcv.value) then 
                 item = mcv.item 
                 money = mcv.money or 0
+                count = mcv.count or 1
                 break 
             end
         end
     end
     
     local itemLabel = Config.itemLabels[item] or item or 'Không rõ'
-    return item, itemLabel, money
+    return item, itemLabel, money, count
 end
 
 ---@param data table | nil
@@ -55,8 +58,8 @@ openCosmeticsMenu = function(data, item)
             for k, v in pairs(mod) do
                 modCopy[k] = v
             end
-            local _, itemLabel, money = getRequiredItemForMod(modCopy)
-            local reqText = string.format("1x %s", itemLabel)
+            local _, itemLabel, money, count = getRequiredItemForMod(modCopy)
+            local reqText = string.format("%dx %s", count, itemLabel)
             if money and money > 0 then
                 reqText = string.format("%s, %dx Tiền sạch", reqText, money)
             end
@@ -143,7 +146,7 @@ RegisterNuiCallback('applyMod', function(data, cb)
     local vehicle = getClosestVehicle()
     if not vehicle then notify(locale('notify_error_no_vehicle'), 'error') cb(true) return end
     
-    local item, itemLabel, money = getRequiredItemForMod({
+    local item, itemLabel, money, count = getRequiredItemForMod({
         id = data.id,
         value = data.value,
         isPaint = data.isPaint,
@@ -151,11 +154,11 @@ RegisterNuiCallback('applyMod', function(data, cb)
     })
     
     if not data.isMission then
-        local hasRequirements = lib.callback.await('mt_workshops:server:checkItemAndMoney', false, item, 1, money)
+        local hasRequirements = lib.callback.await('mt_workshops:server:checkItemAndMoney', false, item, count, money)
         if not hasRequirements then
             local msg = locale('notify_missing_item') .. ' ' .. itemLabel
             if money and money > 0 then
-                msg = string.format("Bạn thiếu vật phẩm hoặc không đủ tiền! Yêu cầu: 1x %s và %dx Tiền sạch", itemLabel, money)
+                msg = string.format("Bạn thiếu vật phẩm hoặc không đủ tiền! Yêu cầu: %dx %s và %dx Tiền sạch", count, itemLabel, money)
             end
             notify(msg, 'error')
             cb(true)
@@ -204,7 +207,7 @@ RegisterNuiCallback('applyMod', function(data, cb)
         end
         lib.callback.await('mt_workshops:server:setItemMetadata', false, 'mods_list', data.slot, { plate = data.plate, modsList = savedModsList, isMission = data.isMission })
         if not data.isMission then
-            lib.callback.await('mt_workshops:server:removeItemAndMoney', false, item, 1, money, data.slot)
+            lib.callback.await('mt_workshops:server:removeItemAndMoney', false, item, count, money, data.slot)
         end
         if data.isMission then checkMissionModsFinished() end
         Wait(500)

@@ -20,7 +20,8 @@ Config.TradeShop = {
     AllowedDrawables = {
         gloves = {
             male = { 228, 237, 245, 248, 270, 272, 273, 274, 275, 276, 278, 279, 280, 229, 231, 232, 233, 234, 266,
-            281, 244, 246, 268, 269, 235, 236, 247, 249, 251, 255, 258, 259, 261, 262, 263, 264, 265, 277, 282, 283, 284 },
+            281, 244, 246, 268, 269, 235, 236, 247, 249, 251, 255, 258, 259, 261, 262, 263, 264, 265, 277, 282, 283, 284,
+            286, 287, 288, 289, 290, 291, 292, 293, 294, 295},
             female = { 266, 271, 272, 273, 275, 276, 277, 278, 279, 280, 281, 282 }
         },
         pants = {
@@ -58,11 +59,9 @@ Config.TradeShop = {
                 [219] = { rarity = "epic", item = "manhtatto_s", count = 200 },
                 [254] = { rarity = "epic", item = "manhtatto_s", count = 200 },
                 [260] = { rarity = "epic", item = "manhtatto_s", count = 200 },
-                [269] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
                 [266] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
                 [268] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
                 [269] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
-
                 [235] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
                 [236] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
                 [247] = { rarity = "epic", item = "manhtatto_s", count = 200 },
@@ -79,8 +78,17 @@ Config.TradeShop = {
                 [277] = { rarity = "rare", item = "manhtatto_s", count = 150 },
                 [282] = { rarity = "legendary", item = "manhtatto_s", count = 250 },
                 [283] = { rarity = "legendary", item = "manhtatto_s", count = 250 },
-                [284] = { rarity = "legendary", item = "manhtatto_s", count = 250 }
-
+                [284] = { rarity = "legendary", item = "manhtatto_s", count = 250 },
+                [286] = { rarity = "rare", item = "manhtatto_s", count = 150 },
+                [287] = { rarity = "rare", item = "manhtatto_s", count = 150 },
+                [288] = { rarity = "epic", item = "manhtatto_s", count = 250 },
+                [289] = { rarity = "epic", item = "manhtatto_s", count = 200 },
+                [290] = { rarity = "legendary", item = "manhtatto_s", count = 350 },
+                [291] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
+                [292] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
+                [293] = { rarity = "epic", item = "manhtatto_s", count = 250 },
+                [294] = { rarity = "legendary", item = "manhtatto_s", count = 300 },
+                [295] = { rarity = "epic", item = "manhtatto_s", count = 250 }
             },
             female = {
                 [266] = { rarity = "rare", item = "manhtatto_s", count = 100 },

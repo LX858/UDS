@@ -311,6 +311,27 @@
                   <Name>COMPONENT_SKIN_MACHETESAU</Name>
                   <Default value="false" />
                 </Item>
+                <Item>
+                  <Name>COMPONENT_HS_HUY_LONG_RAUDAI_VUOTSAU_24S_V21_ANIM</Name>
+                  <Default value="false" />
+                </Item>
+                <Item>
+                  <Name>COMPONENT_ANDREW_BLUE_KATANA_ANIM</Name>
+                  <Default value="false" />
+                </Item>
+              </Components>
+            </Item>
+            <Item>
+              <AttachBone>WAPScop</AttachBone>
+              <Components>
+                <Item>
+                  <Name>COMPONENT_SKIN_MACHETERONG</Name>
+                  <Default value="false" />
+                </Item>
+                <Item>
+                  <Name>COMPONENT_SKIN_MACHETEVIP</Name>
+                  <Default value="false" />
+                </Item>
               </Components>
             </Item>
           </AttachPoints>

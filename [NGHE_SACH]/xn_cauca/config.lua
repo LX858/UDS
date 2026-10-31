@@ -94,9 +94,9 @@ Config.FishingZones = {
             ["cachep"] = 20
         },
         specialReward = {
-            item = "the_cau_ca",
-            label = "Thẻ Câu Cá",
-            chance = 10, -- 10% tỷ lệ nhận được
+            item = "the_can_thu",
+            label = "Thẻ Cần Thủ",
+            chance = 1, -- 10% tỷ lệ nhận được
             amount = 1
         },
         allowedRods = {
@@ -123,8 +123,8 @@ Config.FishingZones = {
             ["ca_hoi"] = 10
         },
         specialReward = {
-            item = "the_cau_ca",
-            label = "Thẻ Câu Cá",
+            item = "the_can_thu",
+            label = "Thẻ Cần Thủ",
             chance = 20, -- 20% tỷ lệ nhận được
             amount = 1
         },
@@ -151,8 +151,8 @@ Config.FishingZones = {
             ["shark"] = 3
         },
         specialReward = {
-            item = "the_cau_ca",
-            label = "Thẻ Câu Cá",
+            item = "the_can_thu",
+            label = "Thẻ Cần Thủ",
             chance = 30, -- 30% tỷ lệ nhận được
             amount = 1
         },

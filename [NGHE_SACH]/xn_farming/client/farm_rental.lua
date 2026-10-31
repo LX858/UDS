@@ -180,8 +180,15 @@ AddEventHandler('xx_farming:openFarmRentalMenu', function()
         for zoneId, zone in pairs(FarmRental.FarmZones) do
             local status = farmStatus[zoneId]
             
+            if zone.capture then
+                table.insert(options, {
+                    title = '⚔️ ' .. zone.name .. ' (Chiếm khu)',
+                    description = 'Không thuê được, xã đoàn chiếm khu bằng cách bấm E tại vòng tròn đỏ',
+                    icon = 'flag',
+                    disabled = true
+                })
             -- Ruộng không cho thuê (công cộng)
-            if zone.no_rent then
+            elseif zone.no_rent then
                 table.insert(options, {
                     title = '🌿 ' .. zone.name .. ' (Công Cộng)',
                     description = 'Ruộng này mở tự do, ai cũng có thể trồng cây',

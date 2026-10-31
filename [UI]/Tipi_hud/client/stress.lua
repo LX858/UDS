@@ -336,13 +336,13 @@ local function CheckStressCommand()
     end
 end
 
-RegisterCommand('checkstress', function()
-    CheckStressCommand()
-end, false)
+-- RegisterCommand('checkstress', function()
+--     CheckStressCommand()
+-- end, false)
 
-RegisterCommand('stress', function()
-    CheckStressCommand()
-end, false)
+-- RegisterCommand('stress', function()
+--     CheckStressCommand()
+-- end, false)
 
 -- ─── Hàm & Command Set Stress để Test ──────────────────────────────────
 
@@ -370,22 +370,22 @@ local function SetStress(val)
     return true
 end
 
-RegisterCommand('setstress', function(_, args)
-    local val = tonumber(args[1])
-    if not val then
-        if lib and lib.notify then
-            lib.notify({
-                title = "Lỗi cú pháp",
-                description = "Vui lòng nhập số stress: /setstress [0-100]",
-                type = "error"
-            })
-        else
-            print("^1[Tipi_hud] Cú pháp: /setstress [0-100]^0")
-        end
-        return
-    end
-    SetStress(val)
-end, false)
+-- RegisterCommand('setstress', function(_, args)
+--     local val = tonumber(args[1])
+--     if not val then
+--         if lib and lib.notify then
+--             lib.notify({
+--                 title = "Lỗi cú pháp",
+--                 description = "Vui lòng nhập số stress: /setstress [0-100]",
+--                 type = "error"
+--             })
+--         else
+--             print("^1[Tipi_hud] Cú pháp: /setstress [0-100]^0")
+--         end
+--         return
+--     end
+--     SetStress(val)
+-- end, false)
 
 TriggerEvent('chat:addSuggestion', '/checkstress', 'Kiểm tra chỉ số stress thực tế từ metadata qbx_core')
 TriggerEvent('chat:addSuggestion', '/stress', 'Kiểm tra chỉ số stress thực tế từ metadata qbx_core')

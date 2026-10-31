@@ -281,7 +281,7 @@ Config.SmeltingRewards = {
     {item = "ls_copper_ingot", chance = 30, name = "Thỏi đồng"},
     {item = "ls_silver_ingot", chance = 15, name = "Thỏi Bạc"},
     {item = "carbon", chance = 4, name = "carbon"},
-    {item = "the_dao_da", chance = 1, name = "Thẻ đào đá"},
+    {item = "the_da_quy", chance = 1, name = "Thẻ Đá Quý"},
 }
 
 -- Smelting UI Text

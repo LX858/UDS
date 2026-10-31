@@ -102,6 +102,15 @@ return {
         {
             id = 'redzone_5',
             name = 'Vùng Đỏ 5',
+            coords = vec3(1350.3269, -1022.3098, 40.0573), -- Example location 2
+            radius = 70.0,
+            cooldownMinutes = 30,
+            hospitalCoords = vec3(306.3737, -1434.9941, 29.8052),
+            hospitalHeading = 139.0527,
+        },
+        {
+            id = 'redzone_6',
+            name = 'Vùng Đỏ 6',
             -- Vùng đa giác (thay cho coords + radius)
             points = {
                 vec2(128.33653259277, -1397.6218261719),
@@ -145,7 +154,7 @@ return {
             name = 'Vùng Đỏ Cayo Perico',
             coords = vec3(4840.571, -5174.425, 2.0),
             radius = 2000.0,
-            waitHTime = 180, -- 3 phút trước khi được giữ H về bệnh viện
+            waitHTime = 180, -- 3 phút trước khi được giữ H về bệnh viện vector3(1350.3269, -1022.3098, 40.0573)
             hospitalCoords = vec3(306.3737, -1434.9941, 29.8052),
             hospitalHeading = 139.0527,
         },

@@ -166,7 +166,7 @@ CropTypes = {
             {hash = joaat('bzzz_plants_papaya_c'),  zOffset = 0.05},
             {hash = joaat('bzzz_plants_papaya_d'), zOffset = 0.05},
         },
-        GrowthTime = 15, -- Thời gian lớn (phút)
+        GrowthTime = 25, -- Thời gian lớn (phút)
         planamount = 50,
         decreaseRate = 0,
         decreaseInterval = 120000, -- 3 phút
@@ -191,7 +191,7 @@ CropTypes = {
             {item = 'traidudu',    ratio = 1.0},  -- Trái đu đủ: nhận nhiều hơn
         },
         PerfectHarvestTotal = 6, -- Nếu nước/phân/health đạt chuẩn hoàn hảo, tổng sản lượng cố định là 6
-        FertilizerFactor = 0.9,
+        FertilizerFactor = 1.0, -- 1.0: phân bón không rút ngắn thời gian lớn (đúng 25 phút)
         NWeight = 20,
         PWeight = -10,
         KWeight = 20,
@@ -209,7 +209,7 @@ CropTypes = {
             {hash = joaat('bzzz_plants_poppy_2c'),  zOffset = 0.05},
             {hash = joaat('bzzz_plants_poppy_2c'),  zOffset = 0.05},
         },
-        GrowthTime = 15, -- Thời gian lớn (phút)
+        GrowthTime = 25, -- Thời gian lớn (phút)
         planamount = 50,
         decreaseRate = 0,
         decreaseInterval = 120000, -- 3 phút
@@ -234,7 +234,7 @@ CropTypes = {
             {item = 'hoa_mynhan',    ratio = 1.0},  -- Hoa / quả poppy: nhận nhiều hơn
         },
         PerfectHarvestTotal = 6, -- Nếu nước/phân/health đạt chuẩn hoàn hảo, tổng sản lượng cố định là 6
-        FertilizerFactor = 0.9,
+        FertilizerFactor = 1.0, -- 1.0: phân bón không rút ngắn thời gian lớn (đúng 25 phút)
         NWeight = 20,
         PWeight = -10,
         KWeight = 20,
@@ -424,26 +424,38 @@ FarmRental = {
             name = "Ruộng 11",
             center = vector3(1231.5006, -86.8380, 59.6442),
             radius = 100.0,
-            no_rent = true,
             blip = false,
             cameraPos = vector3(1232.3610, -85.5546, 59.7014),
             cameraRot = vector3(-45.0, 0.0, 0.0),
             rentalPrice = 6000, -- Giá thuê $1600/giờ
             cropTypes = {'dudu', 'poppy'}, -- Ruộng bí ngô
+            growthTimeReduction = 10, -- Cây trong khu này lớn nhanh hơn khu khác 10 phút (tối thiểu còn 1 phút)
+            capture = {
+                markerRadius = 1.0,   -- bán kính marker đỏ + khoảng cách bấm E
+                minMembers = 5,       -- tối thiểu thành viên xã đoàn (còn sống) trong zone để bắt đầu chiếm
+                keepMembers = 1,      -- trong lúc chiếm, nếu số thành viên còn sống trong zone < giá trị này thì hủy
+                captureTime = 300,    -- 5 phút đếm ngược
+                holdTime = 1800,      -- 30 phút xã đoàn khác không thể trồng/khai thác/chiếm
+                requireOwner = true,  -- true: khu chưa ai chiếm thì không ai được trồng/khai thác
+                cooldown = 1800,      -- 30 phút khóa chiếm khi bị hủy
+                winnerCooldown = 0,   -- (giây) xã đoàn thắng không được chiếm lại ngay sau khi hết hạn; 0 = tắt
+                tickMs = 1000,
+                blip = false,          -- hiện vùng trên bản đồ khi đang chiếm / bị chiếm
+            },
         },
 
-        -- [12] = {
-        --     id = 12,
-        --     name = "Ruộng 12",
-        --     center = vector3(1481.9066, -2354.6516, 71.9142),
-        --     radius = 100.0,
-        --     no_rent = true,
-        --     blip = false,
-        --     cameraPos = vector3(1481.9066, -2354.6516, 71.9142),
-        --     cameraRot = vector3(-45.0, 0.0, 0.0),
-        --     rentalPrice = 6000, -- Giá thuê $1600/giờ
-        --     cropTypes = {'poppy'}, -- Ruộng bí ngô
-        -- },
+        [12] = {
+            id = 12,
+            name = "Ruộng 12",
+            center = vector3(1350.3269, -1022.3098, 40.0573),
+            radius = 70.0,
+            no_rent = true,
+            blip = false,
+            cameraPos = vector3(1350.3269, -1022.3098, 60.0573),
+            cameraRot = vector3(-45.0, 0.0, 0.0),
+            rentalPrice = 6000,
+            cropTypes = {'dudu', 'poppy'},
+        },
         -- [13] = {
         --     id = 13,
         --     name = "Ruộng 13 (Đu đủ, Hoa Mỹ Nhân)",

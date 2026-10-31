@@ -1,4 +1,6 @@
-return {
+local config
+
+config = {
     updateInterval = 5, -- how often to update player data in minutes
 
     money = {
@@ -10,6 +12,9 @@ return {
         paycheckTimeout = 10, -- The time in minutes that it will give the paycheck
         paycheckSociety = true, -- Bật trừ lương từ tài khoản tổ chức/ngân sách
         paycheckAccount = 'bcso', -- Tài khoản ngân sách trả lương duty (Tòa thị chính)
+        paycheckMaxMinutesPerDay = 480, -- Tối đa số phút duty được trả lương mỗi ngày (8 tiếng), 0 = không giới hạn. Mỗi lần nhận lương tính bằng paycheckTimeout phút
+        paycheckMaxCountPerDay = 48, -- Tối đa số lần nhận lương duty mỗi ngày, 0 = không giới hạn. Ngày reset lúc 00:00 giờ server
+        paycheckLedger = false, -- true: ghi mỗi lần trả lương vào lịch sử giao dịch Renewed-Banking (dễ làm phình dữ liệu)
     },
 
     player = {
@@ -130,7 +135,7 @@ return {
         if GetResourceState('Renewed-Banking') ~= 'started' then return false end
         local success, removed = pcall(function()
             local ok = exports['Renewed-Banking']:removeAccountMoney(accountName, payment)
-            if ok then
+            if ok and config.money.paycheckLedger then
                 pcall(function()
                     exports['Renewed-Banking']:handleTransaction(
                         accountName,
@@ -156,3 +161,5 @@ return {
         Notify(player.PlayerData.source, locale('info.received_paycheck', payment))
     end,
 }
+
+return config

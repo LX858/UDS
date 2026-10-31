@@ -256,15 +256,25 @@ lib.callback.register('mt_workshops:server:removeItemAndMoney', function(source,
     
     -- 2. Remove Money (Cash)
     if money and money > 0 then
+        local removed = false
         if Config.framework == 'qb' then
             Player = Player or Config.core.Functions.GetPlayer(src)
-            if Player then Player.Functions.RemoveMoney('cash', money, 'cosmetic-tuning') end
+            if Player then removed = Player.Functions.RemoveMoney('cash', money, 'cosmetic-tuning') end
         elseif Config.framework == 'esx' then
             Player = Player or Config.core.GetPlayerFromId(src)
-            if Player then Player.removeMoney(money, 'cosmetic-tuning') end
+            if Player then
+                Player.removeMoney(money, 'cosmetic-tuning')
+                removed = true
+            end
         elseif Config.framework == 'qbx' then
             Player = Player or exports.qbx_core:GetPlayer(src)
-            if Player then Player.Functions.RemoveMoney('cash', money, 'cosmetic-tuning') end
+            if Player then removed = Player.Functions.RemoveMoney('cash', money, 'cosmetic-tuning') end
+        end
+
+        if removed then
+            pcall(function()
+                exports['Renewed-Banking']:addAccountMoney('bcso', money)
+            end)
         end
     end
     return true

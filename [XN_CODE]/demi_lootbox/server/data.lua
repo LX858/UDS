@@ -18,10 +18,6 @@ CASES = {
             {
                 name = 'ao_giap_gang_lv1',
                 amount = 1,
-            },
-            {
-                name = 'manhtatto_s',
-                amount = 1,
             }
         },
         uncommon = {
@@ -35,7 +31,7 @@ CASES = {
             },
             {
                 name = 'manhtatto_s',
-                amount = 2,
+                amount = 1,
             }
         },
         rare = {
@@ -49,7 +45,7 @@ CASES = {
             },
             {
                 name = 'manhtatto_s',
-                amount = 5,
+                amount = 3,
             },
             {
                 name = 'cong_thuc_machete',
@@ -71,7 +67,7 @@ CASES = {
             },
             {
                 name = 'manhtatto_s',
-                amount = 10,
+                amount =5,
             },
             {
                 name = 'cong_thuc_machete',
@@ -87,7 +83,7 @@ CASES = {
         legendary = {
             {
                 name = 'manhtatto_s',
-                amount = 50,
+                amount = 30,
             },
             {
                 name = 'cong_thuc_machete',

@@ -599,7 +599,6 @@ Config.Uniforms = {
                     ['tshirt'] = {drawable = 218, texture = 0},
                     ['pants'] = {drawable = 260, texture = 0},
                     ['arms'] = {drawable = 4, texture = 0},
-                    ['shoes'] = {drawable = 199, texture = 0},
                 }
             },
         },

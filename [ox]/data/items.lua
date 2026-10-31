@@ -1,11 +1,24 @@
 return {
+    ['the_can_thu'] = {
+        label = 'Thẻ Cần Thủ',
+        weight = 100,
+        stack = true,
+        close = true,
+        description = 'Thẻ Cần Thủ'
+    },
+    ['the_da_quy'] = {
+        label = 'Thẻ Đá Quý',
+        weight = 100,
+        stack = true,
+        close = true,
+        description = 'Thẻ Đá Quý'
+    },
     ['cay_huong'] = {
         label = 'Cây Hương',
         weight = 100,
         stack = true,
         close = true,
         description = 'Cây hương tươi, dùng để thắp hương'
-
     },
     ["cloth_outfit"] = {
         label = 'Trang phục',
@@ -517,11 +530,11 @@ return {
         close = false,
         allowArmed = true
         -- client = {
-        -- 	anim = { dict = 'rcmfanatic3', clip = 'kneel_idle_a', flag = 1},--, blendIn = 3.0, blendOut = 1.0, flag = 0 ,playbackRate= 0, lockX=0,lockY=0,lockZ=0 },
-        -- 	usetime = 4000,
-        -- 	useWhileDead = false,
-        -- 	cancel = true,
-        -- 	disable = {move = true, car = true, combat = true}
+        --  anim = { dict = 'rcmfanatic3', clip = 'kneel_idle_a', flag = 1},--, blendIn = 3.0, blendOut = 1.0, flag = 0 ,playbackRate= 0, lockX=0,lockY=0,lockZ=0 },
+        --  usetime = 4000,
+        --  useWhileDead = false,
+        --  cancel = true,
+        --  disable = {move = true, car = true, combat = true}
         -- },
         -- allowArmed = true
 
@@ -533,11 +546,11 @@ return {
         stack = true,
         close = true,
         -- client = {
-        -- 	anim = { dict = 'rcmfanatic3', clip = 'kneel_idle_a', flag = 1},--, blendIn = 3.0, blendOut = 1.0, flag = 0 ,playbackRate= 0, lockX=0,lockY=0,lockZ=0 },
-        -- 	usetime = 4000,
-        -- 	useWhileDead = false,
-        -- 	cancel = true,
-        -- 	disable = {move = true, car = true, combat = true}
+        --  anim = { dict = 'rcmfanatic3', clip = 'kneel_idle_a', flag = 1},--, blendIn = 3.0, blendOut = 1.0, flag = 0 ,playbackRate= 0, lockX=0,lockY=0,lockZ=0 },
+        --  usetime = 4000,
+        --  useWhileDead = false,
+        --  cancel = true,
+        --  disable = {move = true, car = true, combat = true}
         -- },
         allowArmed = true
 
@@ -1781,11 +1794,11 @@ return {
     },
 
     -- ["giong_ca_ngu"] = {
-    -- 	label = "Giống cá Ngừ",
-    -- 	weight = 500,
-    -- 	stack = true,
-    -- 	close = true,
-    -- 	-- consume = 0.2,
+    --  label = "Giống cá Ngừ",
+    --  weight = 500,
+    --  stack = true,
+    --  close = true,
+    --  -- consume = 0.2,
     -- },
 
     ["hat_giong_cay"] = {
@@ -1939,11 +1952,11 @@ return {
         -- consume = 0.2,
     },
     -- ["rua_bien_giong"] = {
-    -- 	label = "Rùa biển giống",
-    -- 	weight = 1000,
-    -- 	stack = true,
-    -- 	close = true,
-    -- 	-- consume = 0.2,
+    --  label = "Rùa biển giống",
+    --  weight = 1000,
+    --  stack = true,
+    --  close = true,
+    --  -- consume = 0.2,
     -- },
 
     ["ca_bong_mu"] = {
@@ -2892,19 +2905,19 @@ return {
     },
 
     -- ["armorpolice"] = {
-    -- 	label = "Giáp Police",
-    -- 	weight = 3000,
-    -- 	stack = true,
-    -- 	close = true,
-    -- 	client = {
-    -- 		anim = { dict = 'rcmfanatic3', clip = 'kneel_idle_a', flag = 1},--, blendIn = 3.0, blendOut = 1.0, flag = 0 ,playbackRate= 0, lockX=0,lockY=0,lockZ=0 },
-    -- 		usetime = 5000,
-    -- 		useWhileDead = false,
-    -- 		cancel = true,
-    -- 		disable = {move = true, car = true, combat = true}
-    -- 	},
-    -- 	allowArmed = true
-    -- 	--consume = 1
+    --  label = "Giáp Police",
+    --  weight = 3000,
+    --  stack = true,
+    --  close = true,
+    --  client = {
+    --      anim = { dict = 'rcmfanatic3', clip = 'kneel_idle_a', flag = 1},--, blendIn = 3.0, blendOut = 1.0, flag = 0 ,playbackRate= 0, lockX=0,lockY=0,lockZ=0 },
+    --      usetime = 5000,
+    --      useWhileDead = false,
+    --      cancel = true,
+    --      disable = {move = true, car = true, combat = true}
+    --  },
+    --  allowArmed = true
+    --  --consume = 1
     -- },
 
     ["oxygenmask"] = {
@@ -2914,7 +2927,7 @@ return {
         close = true,
         do_hiem = 1
         -- client = {
-        -- 	usetime = 0,
+        --  usetime = 0,
         -- },
         -- allowArmed = true
     },
@@ -2954,7 +2967,7 @@ return {
         stack = true,
         close = true,
         -- client={
-        -- 	usetime = 0
+        --  usetime = 0
         -- },
         allowArmed = true
     },
@@ -2980,7 +2993,7 @@ return {
         stack = true,
         close = true,
         -- client={
-        -- 	usetime = 0
+        --  usetime = 0
         -- },
         allowArmed = true
     },
@@ -2991,7 +3004,7 @@ return {
         stack = true,
         close = true,
         -- client={
-        -- 	usetime = 0
+        --  usetime = 0
         -- },
         allowArmed = true
     },
@@ -8824,20 +8837,20 @@ return {
     },
 
     ['acid'] = {
-		label = 'Kẹo Thần tiên',
-		weight = 1000,
-		stack = true,
-		close = true,
-		description = 'Lên nóc nhà',
-	},
+        label = 'Kẹo Thần tiên',
+        weight = 1000,
+        stack = true,
+        close = true,
+        description = 'Lên nóc nhà',
+    },
 
     ['methadone'] = {
-		label = 'Thuốc cai nghiện',
-		weight = 1000,
-		stack = true,
-		close = true,
-		description = 'thuốc chữa nghiện',
-	},
+        label = 'Thuốc cai nghiện',
+        weight = 1000,
+        stack = true,
+        close = true,
+        description = 'thuốc chữa nghiện',
+    },
 
 
 }

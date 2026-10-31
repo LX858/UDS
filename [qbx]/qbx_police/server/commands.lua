@@ -93,27 +93,6 @@ lib.addCommand('revokelicense',{
     exports.qbx_core:Notify(source, locale('success.revoke_license'), 'success')
 end)
 
-lib.addCommand('pobject', {
-    help = locale('commands.place_object'),
-    params = {
-        {
-            name = 'type',
-            type = 'string',
-            help = locale('info.poobject_object')
-        }
-    },
- }, function(source, args)
-    local type = args.type:lower()
-    local player = exports.qbx_core:GetPlayer(source)
-    if not checkLeoAndOnDuty(player) then return end
-
-    if type == 'delete' then
-        TriggerClientEvent('police:client:deleteObject', source)
-    elseif sharedConfig.objects[type] then
-        TriggerClientEvent('police:client:spawnPObj', source, type)
-    end
-end)
-
 -- lib.addCommand('cuff', {help = locale('commands.cuff_player')}, function(source)
 --     local player = exports.qbx_core:GetPlayer(source)
 --     if not checkLeoAndOnDuty(player) then return end
